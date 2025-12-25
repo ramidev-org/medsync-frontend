@@ -42,20 +42,6 @@ export default function Home() {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Decorative icons */}
-          <Ionicons
-            name="add"
-            size={60}
-            color="rgba(255,255,255,0.15)"
-            style={styles.plusTop}
-          />
-          <Ionicons
-            name="add"
-            size={40}
-            color="rgba(255,255,255,0.15)"
-            style={styles.plusBottom}
-          />
         </LinearGradient>
 
         {/* ===== CABINETS ===== */}

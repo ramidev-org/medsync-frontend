@@ -28,7 +28,7 @@ export default function Layout() {
 
   // Configurable icon and label sizes
   const iconSize = 26;
-  const labelSize = 18;
+  const labelSize = 16;
 
   return (
     <Drawer

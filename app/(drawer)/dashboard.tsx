@@ -232,7 +232,7 @@ export default function DashboardPage() {
           <View style={styles.rightColumn}>
             <View style={styles.doctorCard}>
               <Image
-                source={{ uri: "https://i.imgur.com/6VBx3io.png" }}
+                source={{ uri: "https://i.pravatar.cc/40" }}
                 style={styles.avatar}
               />
 
