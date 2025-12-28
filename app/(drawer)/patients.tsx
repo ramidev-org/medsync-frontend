@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/top_bar";
 import { useTheme } from "@/theme/theme_provider";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
