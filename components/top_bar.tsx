@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useAuth } from "../app/contexts/auth_context"; // adjust path
+import { useAuth } from "../contexts/auth_context"; // adjust path
 
 interface TopBarProps {
   theme: any; // replace with your theme type if you have one
@@ -33,24 +33,43 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
         zIndex: 1,
       }}
     >
-      <View style={{ alignItems: "center" }}>
+      {/* Left side: you can keep logo or empty */}
+      <View style={{ width: 100 }} />
+
+      {/* Right side: date + button + icons */}
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        {/* Nouveau Patient button next to the date */}
         <TouchableOpacity style={styles.primaryBtn}>
           <Text style={styles.primaryBtnText}>Nouveau Patient</Text>
         </TouchableOpacity>
-      </View>
 
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Text style={{ fontSize: 16, color: theme.colors.text, marginHorizontal: 8 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            color: theme.colors.text,
+            marginHorizontal: 8,
+          }}
+        >
           Mardi 31/05/2022
         </Text>
+
+        {/* Icons */}
         <TouchableOpacity style={{ marginHorizontal: 8 }}>
           <Ionicons name="calendar" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <TouchableOpacity style={{ marginHorizontal: 8 }}>
-          <Ionicons name="chatbubble-ellipses" size={24} color={theme.colors.text} />
+          <Ionicons
+            name="chatbubble-ellipses"
+            size={24}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
         <TouchableOpacity style={{ marginHorizontal: 8 }}>
-          <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
+          <Ionicons
+            name="notifications-outline"
+            size={24}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
 
         {/* Avatar */}
@@ -71,8 +90,13 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
               <Text style={styles.avatarMenuText}>Settings</Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
-            <TouchableOpacity style={styles.avatarMenuItem} onPress={handleLogout}>
-              <Text style={[styles.avatarMenuText, { color: "red" }]}>Logout</Text>
+            <TouchableOpacity
+              style={styles.avatarMenuItem}
+              onPress={handleLogout}
+            >
+              <Text style={[styles.avatarMenuText, { color: "red" }]}>
+                Logout
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -80,10 +104,6 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
     </View>
   );
 };
-
-
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -239,5 +259,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#e0e0e0",
     marginVertical: 4,
-  }
+  },
 });

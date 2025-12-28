@@ -1,6 +1,6 @@
 // app/contexts/ProfileContext.tsx
 import { Profile } from "@/models";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 
 type ProfileContextType = {
   profile: Profile | null;

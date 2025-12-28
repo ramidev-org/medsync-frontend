@@ -1,14 +1,14 @@
-import { useAuth } from "@/app/contexts/auth_context";
+import { useAuth } from "@/contexts/auth_context";
 import { FontAwesome } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 export default function Login() {
@@ -20,19 +20,16 @@ export default function Login() {
 
   const handleLogin = () => {
     login(username, password); // placeholder
-    router.replace("/");       // redirect to drawer
+    router.replace("/"); // redirect to drawer
   };
 
   const handleGoogleLogin = () => {
-    loginWithGoogle();         // placeholder
-    router.replace("/");       // redirect to drawer
+    loginWithGoogle(); // placeholder
+    router.replace("/"); // redirect to drawer
   };
 
   return (
-    <LinearGradient
-      colors={["#6366f1", "#4f46e5"]}
-      style={styles.container}
-    >
+    <LinearGradient colors={["#6366f1", "#4f46e5"]} style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>Welcome Back</Text>
 
@@ -57,7 +54,10 @@ export default function Login() {
         <Text style={styles.orText}>OR</Text>
 
         <View style={styles.socialBtns}>
-          <TouchableOpacity style={styles.socialBtn} onPress={handleGoogleLogin}>
+          <TouchableOpacity
+            style={styles.socialBtn}
+            onPress={handleGoogleLogin}
+          >
             <FontAwesome name="google" size={24} color="#DB4437" />
             <Text style={styles.socialBtnText}>Google</Text>
           </TouchableOpacity>
@@ -77,7 +77,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-end",
-    
   },
   card: {
     width: "25%",
@@ -90,7 +89,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 10,
     alignItems: "center",
-    margin:120
+    margin: 120,
   },
   title: {
     fontSize: 24,

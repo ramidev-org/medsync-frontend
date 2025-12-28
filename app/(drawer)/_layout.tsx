@@ -1,4 +1,4 @@
-import { useAuth } from "@/app/contexts/auth_context"; // adjust path if needed
+import { useAuth } from "@/contexts/auth_context"; // adjust path if needed
 import { useTheme } from "@/theme/theme_provider";
 import { Fontisto, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
@@ -7,18 +7,13 @@ import { Drawer } from "expo-router/drawer";
 import { useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
-
 export default function Layout() {
-
-
   const { user } = useAuth();
 
   // If not logged in, redirect to login page
   if (!user) {
-    return <Redirect href="/login"  />;
+    return <Redirect href="/login" />;
   }
-
-
 
   const { theme } = useTheme();
   const styles = getStyles(theme);
@@ -59,7 +54,6 @@ export default function Layout() {
         />
       )}
     >
-
       <Drawer.Screen name="index" options={{ drawerLabel: "Home" }} />
       <Drawer.Screen name="dashboard" options={{ drawerLabel: "Dashboard" }} />
       <Drawer.Screen name="visits" options={{ drawerLabel: "Visits" }} />
@@ -88,11 +82,7 @@ function CustomDrawerContent({
       {/* Burger icon at the top */}
       <View style={{ padding: 16 }}>
         <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-          <Ionicons
-            name="menu"
-            size={iconSize}
-            color={"#94a3b8"}
-          />
+          <Ionicons name="menu" size={iconSize} color={"#94a3b8"} />
         </TouchableOpacity>
       </View>
 
@@ -114,11 +104,14 @@ function CustomDrawerContent({
         label="Dashboard"
         labelStyle={{ fontSize: labelSize }}
         icon={({ color }) => (
-          <MaterialIcons name="space-dashboard" size={iconSize} color={currentRoute === "dashboard" ? theme.colors.primary : color} />
-       
+          <MaterialIcons
+            name="space-dashboard"
+            size={iconSize}
+            color={currentRoute === "dashboard" ? theme.colors.primary : color}
+          />
         )}
         onPress={() => navigation.navigate("dashboard")}
-      />      
+      />
       <DrawerItem
         label="Visits"
         labelStyle={{ fontSize: labelSize }}
