@@ -2,10 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useAuth } from "../contexts/auth_context"; // adjust path
+import { useAuth } from "../contexts/auth_context";
 
 interface TopBarProps {
-  theme: any; // replace with your theme type if you have one
+  theme: any;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
@@ -16,85 +16,75 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const handleLogout = () => {
     logout();
     setMenuVisible(false);
-    router.replace("/login"); // redirect to login page
+    router.replace("/login");
   };
 
+  const styles = createStyles(theme);
+
   return (
-    <View
-      style={{
-        height: 60,
-        backgroundColor: theme.colors.surface,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#e0e0e0",
-        zIndex: 1,
-      }}
-    >
-      {/* Left side: you can keep logo or empty */}
+    <View style={styles.container}>
+      {/* Left side: Logo or brand */}
       <View style={{ width: 100 }} />
 
       {/* Right side: date + button + icons */}
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        {/* Nouveau Patient button next to the date */}
+      <View style={styles.rightSection}>
+        {/* Nouveau Patient button */}
         <TouchableOpacity style={styles.primaryBtn}>
+          <Ionicons name="add" size={18} color="#fff" />
           <Text style={styles.primaryBtnText}>Nouveau Patient</Text>
         </TouchableOpacity>
 
-        <Text
-          style={{
-            fontSize: 16,
-            color: theme.colors.text,
-            marginHorizontal: 8,
-          }}
-        >
-          Mardi 31/05/2022
-        </Text>
+        {/* Date */}
+        <Text style={styles.dateText}>Mardi 31/05/2022</Text>
 
         {/* Icons */}
-        <TouchableOpacity style={{ marginHorizontal: 8 }}>
-          <Ionicons name="calendar" size={24} color={theme.colors.text} />
+        <TouchableOpacity style={styles.iconButton}>
+          <Ionicons name="calendar-outline" size={22} color={theme.colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={{ marginHorizontal: 8 }}>
-          <Ionicons
-            name="chatbubble-ellipses"
-            size={24}
-            color={theme.colors.text}
-          />
+        
+        <TouchableOpacity style={styles.iconButton}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={{ marginHorizontal: 8 }}>
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={theme.colors.text}
-          />
+        
+        <TouchableOpacity style={styles.iconButton}>
+          <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
         </TouchableOpacity>
 
         {/* Avatar */}
         <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
           <Image
             source={{ uri: "https://i.pravatar.cc/40" }}
-            style={{ width: 32, height: 32, borderRadius: 16, marginLeft: 8 }}
+            style={styles.avatar}
           />
         </TouchableOpacity>
 
         {/* Dropdown Menu */}
         {menuVisible && (
           <View style={styles.avatarMenu}>
-            <TouchableOpacity style={styles.avatarMenuItem} onPress={() => {}}>
+            <TouchableOpacity 
+              style={styles.avatarMenuItem} 
+              onPress={() => setMenuVisible(false)}
+            >
+              <Ionicons name="person-outline" size={18} color={theme.colors.text} />
               <Text style={styles.avatarMenuText}>Profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.avatarMenuItem} onPress={() => {}}>
+            
+            <TouchableOpacity 
+              style={styles.avatarMenuItem} 
+              onPress={() => setMenuVisible(false)}
+            >
+              <Ionicons name="settings-outline" size={18} color={theme.colors.text} />
               <Text style={styles.avatarMenuText}>Settings</Text>
             </TouchableOpacity>
+            
             <View style={styles.menuDivider} />
+            
             <TouchableOpacity
               style={styles.avatarMenuItem}
               onPress={handleLogout}
             >
-              <Text style={[styles.avatarMenuText, { color: "red" }]}>
+              <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+              <Text style={[styles.avatarMenuText, { color: "#ef4444" }]}>
                 Logout
               </Text>
             </TouchableOpacity>
@@ -105,159 +95,91 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 32,
-  },
+/* ================= STYLES ================= */
 
-  /* ===== HERO ===== */
-  hero: {
-    borderRadius: 16,
-    padding: 24,
-    margin: 16,
-    overflow: "hidden",
-  },
-  welcome: {
-    color: "#e0f2fe",
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  brand: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "800",
-    marginVertical: 4,
-  },
-  subtitle: {
-    color: "#e0f2fe",
-    fontSize: 14,
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  heroButtons: {
+const createStyles = (theme: any) => StyleSheet.create({
+  container: {
+    height: 64,
+    backgroundColor: theme.colors.card,
     flexDirection: "row",
-    marginTop: 16,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    zIndex: 1,
+  },
+  rightSection: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   primaryBtn: {
-    backgroundColor: "#6366f1",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 999,
+    borderRadius: 10,
   },
   primaryBtnText: {
     color: "#fff",
     fontWeight: "600",
+    fontSize: 14,
   },
-  secondaryBtn: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
+  dateText: {
+    fontSize: 14,
+    color: theme.colors.text,
+    fontWeight: "500",
+    marginLeft: 8,
   },
-  secondaryBtnText: {
-    color: "#2563eb",
-    fontWeight: "600",
+  iconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: theme.colors.background,
+    marginLeft: 4,
   },
-  plusTop: {
-    position: "absolute",
-    top: -10,
-    right: 20,
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    marginLeft: 8,
   },
-  plusBottom: {
-    position: "absolute",
-    bottom: 10,
-    right: 80,
-  },
-
-  /* ===== CARDS ===== */
-  cardsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    paddingHorizontal: 16,
-    justifyContent: "space-between", // ensures even spacing
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    width: "30%", // two cards per row
-    marginBottom: 16,
-    elevation: 4,
-  },
-
-  cardIcon: {
-    backgroundColor: "#e0f2fe",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  status: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginBottom: 12,
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  cardActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  cardBtn: {
-    borderWidth: 1,
-    borderColor: "#6366f1",
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  cardBtnText: {
-    color: "#6366f1",
-    fontWeight: "600",
-  },
-  iconBtn: {
-    padding: 6,
-  },
-  // Avatar dropdown menu
   avatarMenu: {
     position: "absolute",
-    top: 50,
+    top: 56,
     right: 0,
-    width: 150,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    minWidth: 180,
+    backgroundColor: theme.colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 5,
     zIndex: 20,
+    paddingVertical: 8,
   },
   avatarMenuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   avatarMenuText: {
-    fontSize: 16,
-    color: "#333",
+    fontSize: 14,
+    color: theme.colors.text,
+    fontWeight: "500",
   },
   menuDivider: {
     height: 1,
-    backgroundColor: "#e0e0e0",
-    marginVertical: 4,
+    backgroundColor: theme.colors.border,
+    marginVertical: 8,
   },
 });

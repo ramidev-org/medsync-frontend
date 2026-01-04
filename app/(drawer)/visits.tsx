@@ -13,31 +13,31 @@ import {
 /* ================= MOCK DATA ================= */
 
 const VISITS = [
-  { id: "1", name: "TEST Test", phone: "0794638935", time: "08:00", status: "traité" },
-  { id: "2", name: "ILYES Ilyes", phone: "", time: "08:00", status: "en_cours" },
-  { id: "3", name: "NADHIR Nadhir", phone: "", time: "09:00", status: "confirmé" },
-  { id: "4", name: "LOUBNA Loubna", phone: "", time: "09:00", status: "annulé" },
-  { id: "5", name: "OMAR Omar", phone: "", time: "11:00", status: "confirmé" },
-  { id: "6", name: "NOM Prenom", phone: "", time: "11:30", status: "confirmé" },
+  { id: "1", name: "TEST Test", phone: "0794638935", time: "08:00", status: "treated" },
+  { id: "2", name: "ILYES Ilyes", phone: "", time: "08:00", status: "pending" },
+  { id: "3", name: "NADHIR Nadhir", phone: "", time: "09:00", status: "confirmed" },
+  { id: "4", name: "LOUBNA Loubna", phone: "", time: "09:00", status: "canceled" },
+  { id: "5", name: "OMAR Omar", phone: "", time: "11:00", status: "confirmed" },
+  { id: "6", name: "NOM Prenom", phone: "", time: "11:30", status: "confirmed" },
 ];
 
 /* ================= PAGE ================= */
 
 export default function VisitsPage() {
   const { theme } = useTheme();
-  const [filter, setFilter] = useState("tous");
+  const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
   const filteredVisits = useMemo(() => {
     return VISITS.filter(v => {
-      const matchesStatus = filter === "tous" || v.status === filter;
+      const matchesStatus = filter === "all" || v.status === filter;
       const matchesSearch = v.name.toLowerCase().includes(search.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   }, [filter, search]);
 
   const progress = Math.round(
-    (VISITS.filter(v => v.status === "traité").length / VISITS.length) * 100
+    (VISITS.filter(v => v.status === "treated").length / VISITS.length) * 100
   );
 
   return (
@@ -67,10 +67,11 @@ export default function VisitsPage() {
           {/* Tabs */}
           <View style={styles.tabs}>
             {[
-              { key: "tous", label: "Tous" },
-              { key: "en_cours", label: "En cours" },
-              { key: "annulé", label: "Annulés" },
-              { key: "traité", label: "Traités" },
+              { key: "all", label: "Tous" },
+              { key: "pending", label: "En cours" },
+              { key: "canceled", label: "Annulés" },
+              { key: "treated", label: "Traités" },
+              { key: "confirmed", label: "Confirmé" }
             ].map(tab => (
               <TouchableOpacity
                 key={tab.key}
@@ -103,7 +104,7 @@ export default function VisitsPage() {
                 <Text style={[styles.cell, { flex: 1 }]}>{v.time}</Text>
 
                 <View style={[styles.status, statusColor(v.status)]}>
-                  <Text style={styles.statusText}>{v.status}</Text>
+                  <Text style={styles.statusText}>{STATUS_LABELS[v.status as Status] || v.status}</Text>
                 </View>
 
                 <TouchableOpacity style={{ flex: 0.5 }}>
@@ -120,7 +121,7 @@ export default function VisitsPage() {
           <View style={styles.progressBox}>
             <View style={styles.progressHeader}>
               <Text style={{ fontWeight: "600" }}>Etat d'avancement – {progress}%</Text>
-              <Text>{VISITS.filter(v => v.status === "traité").length}/{VISITS.length}</Text>
+              <Text>{VISITS.filter(v => v.status === "treated").length}/{VISITS.length}</Text>
             </View>
 
             <View style={styles.progressBg}>
@@ -131,7 +132,7 @@ export default function VisitsPage() {
           {/* Waiting room */}
           <Text style={styles.waitingTitle}>Salle d'attente d'aujourd'hui</Text>
 
-          {VISITS.filter(v => v.status === "confirmé").map(v => (
+          {VISITS.filter(v => v.status === "confirmed").map(v => (
             <View key={v.id} style={styles.waitingCard}>
               <Text style={styles.waitingTime}>{v.time}</Text>
               <View>
@@ -148,21 +149,33 @@ export default function VisitsPage() {
 
 /* ================= HELPERS ================= */
 
+
+
+type Status = "confirmed" | "pending" | "canceled" | "treated";
+
+const STATUS_LABELS: Record<Status, string> = {
+  confirmed: "Confirmé",
+  pending: "En attente",
+  canceled: "Annulé",
+  treated: "Traité",
+};
+
+
+
 function statusColor(status: string) {
   switch (status) {
-    case "confirmé":
+    case "confirmed":
       return { backgroundColor: "#22c55e" };
-    case "en_cours":
+    case "pending":
       return { backgroundColor: "#60a5fa" };
-    case "annulé":
+    case "canceled":
       return { backgroundColor: "#d1d5db" };
-    case "traité":
+    case "treated":
       return { backgroundColor: "#38bdf8" };
     default:
       return {};
   }
 }
-
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
