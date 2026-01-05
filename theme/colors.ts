@@ -1,6 +1,6 @@
 export const colors = {
   // Primary brand colors - calming medical blues
-  primary: "#0077B6", // Deep medical blue - trust and professionalism
+  primary: "#207dd4ff", // Deep medical blue - trust and professionalism
   secondary: "#00B4D8", // Lighter blue - modern and clean
   accent: "#90E0EF", // Soft blue accent - calming
   success: "#06D6A0", // Medical green - healthy and positive

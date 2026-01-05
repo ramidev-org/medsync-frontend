@@ -55,5 +55,6 @@ export const lightTheme = {
   card: {
     radius: 12,
     elevation: 2,
+    
   },
 };

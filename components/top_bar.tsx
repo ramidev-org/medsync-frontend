@@ -1,3 +1,4 @@
+import PatientForm from "@/components/new_patient"; // Import the patient form
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -10,6 +11,7 @@ interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  const [patientFormVisible, setPatientFormVisible] = useState(false);
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -22,78 +24,91 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const styles = createStyles(theme);
 
   return (
-    <View style={styles.container}>
-      {/* Left side: Logo or brand */}
-      <View style={{ width: 100 }} />
+    <>
+      <View style={styles.container}>
+        {/* Left side: Logo or brand */}
+        <View style={{ width: 100 }} />
 
-      {/* Right side: date + button + icons */}
-      <View style={styles.rightSection}>
-        {/* Nouveau Patient button */}
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.primaryBtnText}>Nouveau Patient</Text>
-        </TouchableOpacity>
+        {/* Right side: date + button + icons */}
+        <View style={styles.rightSection}>
+          {/* Nouveau Patient button */}
+          <TouchableOpacity 
+            style={styles.primaryBtn}
+            onPress={() => setPatientFormVisible(true)}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.primaryBtnText}>Nouveau Patient</Text>
+          </TouchableOpacity>
 
-        {/* Date */}
-        <Text style={styles.dateText}>Mardi 31/05/2022</Text>
+          {/* Date */}
+          <Text style={styles.dateText}>Mardi 31/05/2022</Text>
 
-        {/* Icons */}
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="calendar-outline" size={22} color={theme.colors.text} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.text} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
-        </TouchableOpacity>
+          {/* Icons */}
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="calendar-outline" size={22} color={theme.colors.text} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.text} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
+          </TouchableOpacity>
 
-        {/* Avatar */}
-        <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-          <Image
-            source={{ uri: "https://i.pravatar.cc/40" }}
-            style={styles.avatar}
-          />
-        </TouchableOpacity>
+          {/* Avatar */}
+          <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
+            <Image
+              source={{ uri: "https://i.pravatar.cc/40" }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
 
-        {/* Dropdown Menu */}
-        {menuVisible && (
-          <View style={styles.avatarMenu}>
-            <TouchableOpacity 
-              style={styles.avatarMenuItem} 
-              onPress={() => setMenuVisible(false)}
-            >
-              <Ionicons name="person-outline" size={18} color={theme.colors.text} />
-              <Text style={styles.avatarMenuText}>Profile</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.avatarMenuItem} 
-              onPress={() => setMenuVisible(false)}
-            >
-              <Ionicons name="settings-outline" size={18} color={theme.colors.text} />
-              <Text style={styles.avatarMenuText}>Settings</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
-            
-            <TouchableOpacity
-              style={styles.avatarMenuItem}
-              onPress={handleLogout}
-            >
-              <Ionicons name="log-out-outline" size={18} color="#ef4444" />
-              <Text style={[styles.avatarMenuText, { color: "#ef4444" }]}>
-                Logout
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          {/* Dropdown Menu */}
+          {menuVisible && (
+            <View style={styles.avatarMenu}>
+              <TouchableOpacity 
+                style={styles.avatarMenuItem} 
+                onPress={() => setMenuVisible(false)}
+              >
+                <Ionicons name="person-outline" size={18} color={theme.colors.text} />
+                <Text style={styles.avatarMenuText}>Profile</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.avatarMenuItem} 
+                onPress={() => setMenuVisible(false)}
+              >
+                <Ionicons name="settings-outline" size={18} color={theme.colors.text} />
+                <Text style={styles.avatarMenuText}>Settings</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.menuDivider} />
+              
+              <TouchableOpacity
+                style={styles.avatarMenuItem}
+                onPress={handleLogout}
+              >
+                <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+                <Text style={[styles.avatarMenuText, { color: "#ef4444" }]}>
+                  Logout
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
+
+      {/* Patient Form Dialog */}
+      <PatientForm 
+        visible={patientFormVisible}
+        onClose={() => setPatientFormVisible(false)}
+      />
+    </>
   );
 };
+
+// ... rest of your styles
 
 /* ================= STYLES ================= */
 

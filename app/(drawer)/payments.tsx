@@ -1,18 +1,12 @@
+import DatePickerField from "@/components/datepicker";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { MOCK_PAYMENTS } from "@/data/payments_data";
+import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import "react-day-picker/style.css";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function PaymentsPage() {
   const { theme } = useTheme();
@@ -21,8 +15,6 @@ export default function PaymentsPage() {
   const [toDate, setToDate] = useState<Date>(new Date("2024-12-31"));
   const [globalSearch, setGlobalSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [showFromPicker, setShowFromPicker] = useState(false);
-  const [showToPicker, setShowToPicker] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -59,6 +51,7 @@ export default function PaymentsPage() {
     });
 
   const styles = createStyles(theme);
+  const tableStyles = createTableStyles(theme);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -92,112 +85,110 @@ export default function PaymentsPage() {
             )}
           </View>
 
-          {/* Dates */}
-          <TouchableOpacity
-            style={styles.dateInputWrapper}
-            onPress={() => setShowFromPicker(true)}
-          >
-            <Ionicons name="calendar-outline" size={18} />
-            <Text style={styles.dateText}>{fromDate.toLocaleDateString("fr-FR")}</Text>
-          </TouchableOpacity>
-
+          {/* Date Pickers */}
+          <DatePickerField label="Du" date={fromDate} setDate={setFromDate} />
           <Text style={styles.dateLabel}>à</Text>
-
-          <TouchableOpacity
-            style={styles.dateInputWrapper}
-            onPress={() => setShowToPicker(true)}
-          >
-            <Ionicons name="calendar-outline" size={18} />
-            <Text style={styles.dateText}>{toDate.toLocaleDateString("fr-FR")}</Text>
-          </TouchableOpacity>
+          <DatePickerField label="Au" date={toDate} setDate={setToDate}  />
         </View>
       </View>
 
       {/* ===== TABLE ===== */}
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.tableCard}>
+        <View style={tableStyles.tableCard}>
           {/* Header */}
-          <View style={styles.tableHeader}>
-            <View style={styles.headerCell}><Ionicons name="image-outline" size={18} /></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Code</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Nom</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Prénom</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Montant</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Méthode</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Statut</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Date</Text></View>
-            <View style={styles.headerCell}><Text style={styles.headerText}>Actions</Text></View>
+          <View style={tableStyles.tableHeader}>
+            <View style={tableStyles.headerCell}><Ionicons name="image-outline" size={18} /></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Code</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Nom</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Prénom</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Montant</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Méthode</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Statut</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Date</Text></View>
+            <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Actions</Text></View>
           </View>
+
+          {currentPayments.length === 0 && (
+            <View style={tableStyles.emptyState}>
+              <Text style={tableStyles.emptyText}>Aucun paiement trouvé</Text>
+            </View>
+          )}
 
           {currentPayments.map((p, i) => (
             <View
               key={i}
               style={[
-                styles.tableRow,
-                { backgroundColor: i % 2 === 0 ? theme.colors.background : "transparent" },
+                tableStyles.tableRow,
+                i % 2 === 0 ? tableStyles.tableRowAlt : null,
               ]}
             >
-              {/* Avatar */}
-              <View style={styles.cell}>
-                <Avatar
-                  firstName={p.prenom}
-                  lastName={p.nom}
-                  size={56}
-                  borderRadius={12}
-                />
+              <View style={tableStyles.cell}>
+                <Avatar firstName={p.prenom} lastName={p.nom} size={56} borderRadius={12} />
               </View>
-
-              <View style={styles.cell}>
-                <Text style={{ color: theme.colors.primary, fontWeight: "600" }}>
+              <View style={tableStyles.cell}>
+                <Text style={[tableStyles.cellText, { fontWeight: "600", color: theme.colors.primary }]}>
                   #{p.code}
                 </Text>
               </View>
-
-              <View style={styles.cell}>
-                <Text style={{ fontWeight: "600" }}>{p.nom}</Text>
+              <View style={tableStyles.cell}>
+                <Text style={[tableStyles.cellText, { fontWeight: "600" }]}>{p.nom}</Text>
               </View>
-
-              <View style={styles.cell}>
-                <Text>{p.prenom}</Text>
+              <View style={tableStyles.cell}>
+                <Text style={tableStyles.cellText}>{p.prenom}</Text>
               </View>
-
-              <View style={styles.cell}>
-                <Text style={{ fontWeight: "600" }}>{p.amount} DA</Text>
+              <View style={tableStyles.cell}>
+                <Text style={[tableStyles.cellText, { fontWeight: "600" }]}>{p.amount} DA</Text>
               </View>
-
-              <View style={styles.cell}>
-                <Text>{p.method}</Text>
+              <View style={tableStyles.cell}>
+                <Text style={tableStyles.cellText}>{p.method}</Text>
               </View>
-
-              <View style={styles.cell}>
+              <View style={tableStyles.cell}>
                 <View
                   style={[
-                    styles.badge,
+                    tableStyles.badge,
                     { backgroundColor: p.status === "Payé" ? "#dcfce7" : "#fee2e2" },
                   ]}
                 >
-                  <Text
-                    style={{
-                      color: p.status === "Payé" ? "#166534" : "#991b1b",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <Text style={{ color: p.status === "Payé" ? "#166534" : "#991b1b", fontWeight: "600" }}>
                     {p.status}
                   </Text>
                 </View>
               </View>
-
-              <View style={styles.cell}>
-                <Text>{formatDateTime(p.createdAt)}</Text>
+              <View style={tableStyles.cell}>
+                <Text style={tableStyles.cellText}>{formatDateTime(p.createdAt)}</Text>
               </View>
-
-              <View style={styles.cell}>
+              <View style={tableStyles.cell}>
                 <TouchableOpacity>
                   <Ionicons name="ellipsis-vertical" size={18} />
                 </TouchableOpacity>
               </View>
             </View>
           ))}
+
+          {/* ===== PAGINATION ===== */}
+          {totalPages > 1 && (
+            <View style={tableStyles.paginationContainer}>
+              <View style={tableStyles.paginationButtons}>
+                <TouchableOpacity
+                  style={tableStyles.paginationButton}
+                  disabled={currentPage === 1}
+                  onPress={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                >
+                  <Text style={tableStyles.paginationText}>{"<"}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={tableStyles.paginationButton}
+                  disabled={currentPage === totalPages}
+                  onPress={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                >
+                  <Text style={tableStyles.paginationText}>{">"}</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={tableStyles.paginationText}>
+                Page {currentPage} / {totalPages}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -227,40 +218,6 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
     },
     searchInput: { flex: 1 },
-    dateInputWrapper: {
-      flexDirection: "row",
-      gap: 6,
-      borderWidth: 1,
-      padding: 10,
-      borderRadius: 10,
-    },
-    dateText: { fontWeight: "500" },
     dateLabel: { alignSelf: "center" },
     container: { padding: 24 },
-    tableCard: {
-      borderWidth: 1,
-      borderRadius: 12,
-      overflow: "hidden",
-      borderColor: theme.colors.border,
-    },
-    tableHeader: {
-      flexDirection: "row",
-      backgroundColor: theme.colors.background,
-      paddingVertical: 12,
-    },
-    headerCell: { flex: 1, paddingHorizontal: 12 },
-    headerText: { fontWeight: "700", fontSize: 12 },
-    tableRow: {
-      flexDirection: "row",
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    cell: { flex: 1, paddingHorizontal: 12 },
-    badge: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-      alignSelf: "flex-start",
-    },
   });
