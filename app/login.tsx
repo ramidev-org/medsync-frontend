@@ -39,8 +39,12 @@ export default function Login() {
           onChangeText={setUsername}
           style={styles.input}
         />
+
+
+
+
         <TextInput
-          placeholder="Password"
+          placeholder="Mot de passe"
           value={password}
           onChangeText={setPassword}
           secureTextEntry

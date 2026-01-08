@@ -1,15 +1,20 @@
+import {
+  DateField,
+  Dropdown,
+  NumberField,
+  PhoneField,
+  TextField,
+} from "@/components/input_fields";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 interface PatientFormProps {
@@ -34,12 +39,43 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
     numeroAssurance: "",
   });
 
-  const [openDropdown, setOpenDropdown] = useState<
-    "sexe" | "situation" | "assurance" | null
-  >(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  const handleChange = (field: string, value: string) =>
+  const handleChange = (field: string, value: string) => {
     setFormData((p) => ({ ...p, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.nom.trim()) newErrors.nom = "Le nom est requis";
+    if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est requis";
+    if (!formData.dateNaissance.trim())
+      newErrors.dateNaissance = "La date de naissance est requise";
+    if (!formData.sexe) newErrors.sexe = "Le sexe est requis";
+    if (!formData.telephone.trim())
+      newErrors.telephone = "Le téléphone est requis";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      console.log("Form submitted:", formData);
+      // Add your submit logic here
+      onClose();
+    }
+  };
 
   const styles = StyleSheet.create({
     modalOverlay: {
@@ -54,14 +90,15 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
       maxHeight: "90%",
       backgroundColor: theme.colors.background,
       borderRadius: 12,
-      overflow: "visible", // ✅ critical
+      overflow: "visible",
     },
-
     header: {
       backgroundColor: theme.colors.primary,
       padding: 20,
       flexDirection: "row",
       alignItems: "center",
+      borderTopRightRadius: 12,
+      borderTopLeftRadius: 12,
     },
     title: {
       flex: 1,
@@ -70,92 +107,25 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
       fontSize: 20,
       fontWeight: "700",
     },
-
     formWrapper: {
-      maxHeight: Platform.OS === "web" ? 520 : 420,
+      maxHeight: 520,
       overflow: "visible",
     },
     form: {
       padding: 24,
       overflow: "visible",
     },
-
-    /* 🔑 ROW FIX */
     row: {
-      flexDirection: Platform.OS === "web" ? "row" : "column",
+      flexDirection: "row",
       flexWrap: "wrap",
       gap: 16,
-      marginBottom: 20,
+      marginBottom: 0,
       position: "relative",
-      zIndex: 1,
     },
-    rowActive: {
-      zIndex: 1000, // ✅ lifts entire row
-    },
-
     field: {
       flex: 1,
-      minWidth: Platform.OS === "web" ? 250 : "100%",
+      minWidth: 250,
     },
-    label: {
-      marginBottom: 6,
-      fontSize: 14,
-      fontWeight: "600",
-      color: theme.colors.text,
-    },
-    input: {
-      padding: 14,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
-      color: theme.colors.text,
-    },
-
-    /* -------- DROPDOWN -------- */
-    dropdownContainer: {
-      position: "relative",
-    },
-    dropdown: {
-      padding: 14,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    dropdownText: {
-      color: theme.colors.text,
-    },
-    placeholder: {
-      color: theme.colors.textSecondary,
-    },
-    dropdownMenu: {
-      position: "absolute",
-      top: "100%",
-      left: 0,
-      right: 0,
-      marginTop: 4,
-      backgroundColor: theme.colors.background, // ✅ solid bg
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      zIndex: 9999,
-      elevation: 999,
-      pointerEvents: "auto",
-    },
-    dropdownItem: {
-      padding: 14,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      cursor: Platform.OS === "web" ? "pointer" : "default",
-    },
-    dropdownItemLast: {
-      borderBottomWidth: 0,
-    },
-
     actions: {
       flexDirection: "row",
       gap: 12,
@@ -176,68 +146,17 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
       borderWidth: 2,
       borderColor: theme.colors.border,
     },
+    buttonText: {
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    buttonTextPrimary: {
+      color: "#fff",
+    },
+    buttonTextSecondary: {
+      color: theme.colors.text,
+    },
   });
-
-  const Dropdown = ({
-    label,
-    value,
-    options,
-    name,
-  }: {
-    label: string;
-    value: string;
-    options: string[];
-    name: "sexe" | "situation" | "assurance";
-  }) => {
-    const open = openDropdown === name;
-
-    return (
-      <View style={styles.field}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={styles.dropdownContainer}>
-          <TouchableOpacity
-            style={styles.dropdown}
-            onPress={() => setOpenDropdown(open ? null : name)}
-          >
-            <Text
-              style={[
-                styles.dropdownText,
-                !value && styles.placeholder,
-              ]}
-            >
-              {value || "Sélectionner..."}
-            </Text>
-            <Ionicons
-              name={open ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={theme.colors.textSecondary}
-            />
-          </TouchableOpacity>
-
-          {open && (
-            <View style={styles.dropdownMenu}>
-              {options.map((o, i) => (
-                <TouchableOpacity
-                  key={o}
-                  style={[
-                    styles.dropdownItem,
-                    i === options.length - 1 &&
-                      styles.dropdownItemLast,
-                  ]}
-                  onPress={() => {
-                    handleChange(name, o);
-                    setOpenDropdown(null);
-                  }}
-                >
-                  <Text>{o}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -252,85 +171,134 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
           </View>
 
           <View style={styles.formWrapper}>
-            <ScrollView keyboardShouldPersistTaps="handled">
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <View style={styles.form}>
-
                 {/* Names */}
                 <View style={styles.row}>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Nom</Text>
-                    <TextInput style={styles.input} />
-                  </View>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Prénom</Text>
-                    <TextInput style={styles.input} />
-                  </View>
+                  <TextField
+                    label="Nom"
+                    value={formData.nom}
+                    onChangeText={(value) => handleChange("nom", value)}
+                    placeholder="Entrez le nom"
+                    prefixIcon="person-outline"
+                    error={errors.nom}
+                    required
+                    containerStyle={styles.field}
+                  />
+                  <TextField
+                    label="Prénom"
+                    value={formData.prenom}
+                    onChangeText={(value) => handleChange("prenom", value)}
+                    placeholder="Entrez le prénom"
+                    prefixIcon="person-outline"
+                    error={errors.prenom}
+                    required
+                    containerStyle={styles.field}
+                  />
                 </View>
-  
+
+
                 {/* Birth */}
                 <View style={styles.row}>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Date de naissance</Text>
-                    <TextInput style={styles.input} />
-                  </View>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Lieu de naissance</Text>
-                    <TextInput style={styles.input} />
-                  </View>
+                  <DateField
+                    label="Date de naissance"
+                    value={formData.dateNaissance}
+                    onChangeText={(value) =>
+                      handleChange("dateNaissance", value)
+                    }
+                    format="DD/MM/YYYY"
+                    error={errors.dateNaissance}
+                    required
+                    containerStyle={styles.field}
+                  />
+                  <TextField
+                    label="Lieu de naissance"
+                    value={formData.lieuNaissance}
+                    onChangeText={(value) =>
+                      handleChange("lieuNaissance", value)
+                    }
+                    placeholder="Entrez le lieu de naissance"
+                    prefixIcon="location-outline"
+                    containerStyle={styles.field}
+                  />
                 </View>
 
                 {/* Dropdown row */}
-                <View
-                  style={[
-                    styles.row,
-                    openDropdown && styles.rowActive,
-                  ]}
-                >
+                <View style={styles.row}>
                   <Dropdown
                     label="Sexe"
-                    name="sexe"
                     value={formData.sexe}
+                    onChange={(value) => {
+                      handleChange("sexe", value);
+                    }}
                     options={["Masculin", "Féminin"]}
+                    error={errors.sexe}
+                    required
+                    containerStyle={styles.field}
                   />
                   <Dropdown
-                    label="Situation"
-                    name="situation"
+                    label="Situation familiale"
                     value={formData.situation}
+                    onChange={(value) => {
+                      handleChange("situation", value);
+                    }}
                     options={[
                       "Célibataire",
                       "Marié(e)",
                       "Divorcé(e)",
                       "Veuf(ve)",
                     ]}
+                    containerStyle={styles.field}
                   />
                 </View>
 
                 {/* Assurance */}
-                <View style={[styles.row, openDropdown === "assurance" && styles.rowActive,]} >
+                <View style={styles.row}>
                   <Dropdown
                     label="Assurance"
-                    name="assurance"
                     value={formData.assurance}
-                    options={["CNAS", "CASNOS", "Privée"]}
+                    onChange={(value) => {
+                      handleChange("assurance", value);
+                    }}
+                    options={["CNAS", "CASNOS", "Privée", "Aucune"]}
+                    prefixIcon="shield-checkmark-outline"
+                    containerStyle={styles.field}
                   />
-                  <View style={styles.field}>
-                    <Text style={styles.label}>N° Assurance</Text>
-                    <TextInput style={styles.input} />
-                  </View>
-                </View>
-               
-                {/* Contact */}
-                <View style={styles.row}>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Téléphone</Text>
-                    <TextInput style={styles.input} />
-                  </View>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Adresse</Text>
-                    <TextInput style={styles.input} />
-                  </View>
+                  <NumberField
+                    label="N° Assurance"
+                    value={formData.numeroAssurance}
+                    onChangeText={(value) =>
+                      handleChange("numeroAssurance", value)
+                    }
+                    placeholder="Entrez le numéro d'assurance"
+                    prefixIcon="card-outline"
+                    containerStyle={styles.field}
+                    maxLength={15}
+                  />
                 </View>
 
+                {/* Contact */}
+                <View style={styles.row}>
+                  <PhoneField
+                    label="Téléphone"
+                    value={formData.telephone}
+                    onChangeText={(value) => handleChange("telephone", value)}
+                    error={errors.telephone}
+                    required
+                    containerStyle={styles.field}
+                  />
+                  <TextField
+                    label="Adresse"
+                    value={formData.adresse}
+                    onChangeText={(value) => handleChange("adresse", value)}
+                    placeholder="Entrez l'adresse"
+                    prefixIcon="home-outline"
+                    containerStyle={styles.field}
+                  />
+                </View>
               </View>
             </ScrollView>
           </View>
@@ -340,12 +308,17 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
               style={[styles.button, styles.secondary]}
               onPress={onClose}
             >
-              <Text>Annuler</Text>
+              <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
+                Annuler
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.primary]}
+              onPress={handleSubmit}
             >
-              <Text style={{ color: "#fff" }}>Enregistrer</Text>
+              <Text style={[styles.buttonText, styles.buttonTextPrimary]}>
+                Enregistrer
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
