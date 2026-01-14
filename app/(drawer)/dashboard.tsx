@@ -1,4 +1,5 @@
 import { TopBar } from "@/components/top_bar";
+import { useAuth } from "@/contexts/auth_context";
 import { chartData } from "@/data/chart_data";
 import { useTheme } from "@/theme/theme_provider";
 import {
@@ -41,6 +42,8 @@ export default function DashboardPage() {
   const [selectedTab, setSelectedTab] = useState<ChartKey>("RDV - CONS");
 
   const [chartWidth, setChartWidth] = useState(500); // Default fallback width
+
+   const { user } = useAuth();
 
   const renderChart = () => {
 
@@ -159,7 +162,7 @@ export default function DashboardPage() {
             {/* Welcome Card */}
             <View style={styles.welcomeCard}>
               <Text style={styles.welcomeTitle}>
-                Bonjour, Dr Docteur DOCTEUR 👋
+                Bonjour, Dr {user?.fullname} 👋
               </Text>
               <Text style={styles.welcomeSubtitle}>
                 Bienvenue sur votre tableau de bord
@@ -276,7 +279,8 @@ export default function DashboardPage() {
                   <Text
                     style={[styles.doctorName, { color: theme.colors.text }]}
                   >
-                    Dr Docteur DOCTEUR
+                    Dr {user?.fullname}
+
                   </Text>
                   <Text
                     style={[styles.doctorRole, { color: theme.colors.muted }]}

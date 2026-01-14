@@ -1,7 +1,7 @@
+// app/login.tsx
 import { useAuth } from "@/contexts/auth_context";
 import { FontAwesome } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   StyleSheet,
@@ -12,20 +12,22 @@ import {
 } from "react-native";
 
 export default function Login() {
-  const { login, loginWithGoogle } = useAuth();
-  const router = useRouter();
+  const { login } = useAuth();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    login(username, password); // placeholder
-    router.replace("/"); // redirect to drawer
-  };
-
-  const handleGoogleLogin = () => {
-    loginWithGoogle(); // placeholder
-    router.replace("/"); // redirect to drawer
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      await login(email, password);
+      // NO navigation here
+    } catch {
+      alert("Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,39 +36,41 @@ export default function Login() {
         <Text style={styles.title}>Welcome Back</Text>
 
         <TextInput
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
           style={styles.input}
         />
 
-
-
-
         <TextInput
-          placeholder="Mot de passe"
+          placeholder="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           style={styles.input}
         />
 
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-          <Text style={styles.loginBtnText}>Login</Text>
+        <TouchableOpacity
+          style={styles.loginBtn}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          <Text style={styles.loginBtnText}>
+            {loading ? "Logging in..." : "Login"}
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.orText}>OR</Text>
 
         <View style={styles.socialBtns}>
-          <TouchableOpacity
-            style={styles.socialBtn}
-            onPress={handleGoogleLogin}
-          >
+          <TouchableOpacity style={styles.socialBtn} disabled>
             <FontAwesome name="google" size={24} color="#DB4437" />
             <Text style={styles.socialBtnText}>Google</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.socialBtn}>
+          <TouchableOpacity style={styles.socialBtn} disabled>
             <FontAwesome name="facebook" size={24} color="#4267B2" />
             <Text style={styles.socialBtnText}>Facebook</Text>
           </TouchableOpacity>
@@ -142,6 +146,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     marginHorizontal: 5,
+    opacity: 0.5,
   },
   socialBtnText: {
     marginLeft: 8,

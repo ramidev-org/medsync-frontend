@@ -1,19 +1,13 @@
-import { useAuth } from "@/contexts/auth_context"; // adjust path if needed
 import { useTheme } from "@/theme/theme_provider";
 import { Fontisto, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
-import { Redirect } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 export default function Layout() {
-  const { user } = useAuth();
 
-  // If not logged in, redirect to login page
-  if (!user) {
-    return <Redirect href="/login" />;
-  }
+
 
   const { theme } = useTheme();
   const styles = getStyles(theme);

@@ -1,100 +1,122 @@
 // app/contexts/auth_context.tsx
-import { User } from "@/models"; // your User model
+import { db } from "@/database/database_conn";
+import { User } from "@/models/User";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
-import React, { createContext, ReactNode, useEffect, useState } from "react";
-import { db } from "../database/database_conn"; // Supabase DB handler
+import React, { createContext, useEffect, useState } from "react";
+
+
 
 type AuthContextType = {
   user: User | null;
-  login: (username: string, password: string) => void;
-  loginWithGoogle: () => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Google Auth
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
-    redirectUri: makeRedirectUri(),
+    redirectUri: makeRedirectUri(), // important for web + mobile
     scopes: ["profile", "email"],
   });
 
+  // Load session on mount
   useEffect(() => {
-    if (response?.type === "success") {
-      const { authentication } = response;
-      fetchUserInfo(authentication?.accessToken);
-    }
-  }, [response]);
+    let mounted = true;
 
-  const fetchUserInfo = async (token?: string) => {
-    if (!token) return;
+    const initAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await db.auth.getSession();
+
+        if (error) {
+          console.error("Error getting session:", error);
+        }
+
+        if (session && mounted) {
+          await loadUser(session.user.id);
+        }
+      } catch (err) {
+        console.error("Error checking session:", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: listener } = db.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadUser(session.user.id).finally(() => setLoading(false));
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const loadUser = async (id: string) => {
     try {
-      const res = await fetch("https://www.googleapis.com/userinfo/v2/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-
-      // Create the User object
-      const loggedInUser: User = {
-        name: data.name,
-        email: data.email,
-        role: "",
-        save: function (): Promise<any> {
-          throw new Error("Function not implemented.");
-        },
-      };
-      setUser(loggedInUser);
-
-      // Check DB for existing user
-      const { data: existingUser, error } = await db
-        .from("users") // assuming your table is now 'users'
+      const { data, error } = await db
+        .from("profiles")
         .select("*")
-        .eq("email", data.email)
+        .eq("id", id)
         .single();
 
-      if (error || !existingUser) {
-        // create new user
-        const { data: newUser } = await db
-          .from("users")
-          .insert({ name: data.name, email: data.email, role: "patient" }) // add other fields as needed
-          .select()
-          .single();
-        setUser(newUser as User);
+      if (error || !data) {
+        await db.auth.signOut();
+        setUser(null);
       } else {
-        setUser(existingUser as User);
+        setUser(User.fromDb(data));
       }
-    } catch (e) {
-      console.error("Google Auth error:", e);
+    } catch (err) {
+      console.error("Error loading user:", err);
+      setUser(null);
     }
   };
 
-  const login = (username: string, password: string) => {
-    console.log("Login called:", username, password);
-    setUser({ name: username, email: "", role: "", save: async () => {} }); // simple placeholder login
+  const login = async (email: string, password: string) => {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (data?.user) await loadUser(data.user.id);
   };
 
-  const loginWithGoogle = async () => {
-    await promptAsync();
-  };
-
-  const logout = () => {
+  const logout = async () => {
+    await db.auth.signOut();
     setUser(null);
   };
 
+  if (loading) {
+    // show a minimal splash instead of white screen
+    return (
+      <div style={{ width: "100vw", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+
+
 export const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
+  const ctx = React.useContext(AuthContext);
+  if (!ctx) throw new Error("AuthProvider missing");
+  return ctx;
 };
