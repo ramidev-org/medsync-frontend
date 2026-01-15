@@ -22,29 +22,43 @@ interface PatientFormProps {
   onClose: () => void;
 }
 
-const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
+const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }) => {
   const { theme } = useTheme();
 
+  const [activeTab, setActiveTab] = useState<"patient" | "medical">("patient");
+
   const [formData, setFormData] = useState({
-    nom: "",
-    prenom: "",
-    deuxiemeNom: "",
-    dateNaissance: "",
-    lieuNaissance: "",
-    sexe: "",
-    situation: "",
-    telephone: "",
-    adresse: "",
-    assurance: "",
-    numeroAssurance: "",
+    // Patient info
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+    placeOfBirth: "",
+    sex: "",
+    phone: "",
+    email: "",
+    addressStreet: "",
+    addressCity: "",
+    addressState: "",
+    emergencyContactName: "",
+    emergencyContactRelationship: "",
+    emergencyContactPhone: "",
+    insuranceProvider: "",
+    insurancePolicyNumber: "",
+
+    // Medical info
+    height: "",
+    weight: "",
+    bloodType: "",
+    allergies: "",
+    chronicDiseases: "",
+    medications: "",
+    disabilities: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const handleChange = (field: string, value: string) => {
     setFormData((p) => ({ ...p, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -56,14 +70,13 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.nom.trim()) newErrors.nom = "Le nom est requis";
-    if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est requis";
-    if (!formData.dateNaissance.trim())
-      newErrors.dateNaissance = "La date de naissance est requise";
-    if (!formData.sexe) newErrors.sexe = "Le sexe est requis";
-    if (!formData.telephone.trim())
-      newErrors.telephone = "Le téléphone est requis";
+    if (!formData.firstName.trim()) newErrors.firstName = "Le nom est requis";
+    if (!formData.lastName.trim()) newErrors.lastName = "Le prénom est requis";
+    if (!formData.dateOfBirth.trim())
+      newErrors.dateOfBirth = "La date de naissance est requise";
+    if (!formData.sex) newErrors.sex = "Le sexe est requis";
+    if (!formData.phone.trim())
+      newErrors.phone = "Le téléphone est requis";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -71,8 +84,10 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
 
   const handleSubmit = () => {
     if (validateForm()) {
-      console.log("Form submitted:", formData);
-      // Add your submit logic here
+      console.log("Patient data:", formData);
+      // TODO:
+      // 1️⃣ Insert patient info into `patients` table
+      // 2️⃣ Insert medical info into `patient_medical_info` table
       onClose();
     }
   };
@@ -87,34 +102,53 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
     modalContainer: {
       width: "90%",
       maxWidth: 900,
-      maxHeight: "90%",
+      height: 800, // FIXED height
       backgroundColor: theme.colors.background,
       borderRadius: 12,
+      overflow: "hidden",
+    },
+    formWrapper: {
+      flex: 1,
       overflow: "visible",
     },
+    form: {
+      padding: 24,
+      minHeight: 0, // prevents ScrollView from collapsing
+    },
+
     header: {
       backgroundColor: theme.colors.primary,
       padding: 20,
       flexDirection: "row",
       alignItems: "center",
-      borderTopRightRadius: 12,
-      borderTopLeftRadius: 12,
+      justifyContent: "space-between",
     },
     title: {
-      flex: 1,
-      textAlign: "center",
       color: "#fff",
       fontSize: 20,
       fontWeight: "700",
+      textAlign: "center",
+      flex: 1,
     },
-    formWrapper: {
-      maxHeight: 520,
-      overflow: "visible",
+    tabBar: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
     },
-    form: {
-      padding: 24,
-      overflow: "visible",
+    tabButton: {
+      flex: 1,
+      padding: 14,
+      alignItems: "center",
     },
+    tabActive: {
+      borderBottomWidth: 2,
+      borderBottomColor: theme.colors.primary,
+    },
+    tabText: {
+      fontSize: 16,
+      fontWeight: "600",
+    },
+
     row: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -162,6 +196,7 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
+          {/* Header */}
           <View style={styles.header}>
             <View style={{ width: 24 }} />
             <Text style={styles.title}>Ajouter un patient</Text>
@@ -170,139 +205,230 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
             </TouchableOpacity>
           </View>
 
+          {/* Tabs */}
+          <View style={styles.tabBar}>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === "patient" && styles.tabActive]}
+              onPress={() => setActiveTab("patient")}
+            >
+              <Text style={styles.tabText}>Patient Info</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === "medical" && styles.tabActive]}
+              onPress={() => setActiveTab("medical")}
+            >
+              <Text style={styles.tabText}>Medical Info</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Form */}
           <View style={styles.formWrapper}>
             <ScrollView
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.form}>
-                {/* Names */}
-                <View style={styles.row}>
-                  <TextField
-                    label="Nom"
-                    value={formData.nom}
-                    onChangeText={(value) => handleChange("nom", value)}
-                    placeholder="Entrez le nom"
-                    prefixIcon="person-outline"
-                    error={errors.nom}
-                    required
-                    containerStyle={styles.field}
-                  />
-                  <TextField
-                    label="Prénom"
-                    value={formData.prenom}
-                    onChangeText={(value) => handleChange("prenom", value)}
-                    placeholder="Entrez le prénom"
-                    prefixIcon="person-outline"
-                    error={errors.prenom}
-                    required
-                    containerStyle={styles.field}
-                  />
-                </View>
+                {activeTab === "patient" ? (
+                  <>
+                    {/* Names */}
+                    <View style={styles.row}>
+                      <TextField
+                        label="Nom"
+                        value={formData.firstName}
+                        onChangeText={(v) => handleChange("firstName", v)}
+                        containerStyle={styles.field}
+                        required
+                        error={errors.firstName}
+                      />
+                      <TextField
+                        label="Prénom"
+                        value={formData.lastName}
+                        onChangeText={(v) => handleChange("lastName", v)}
+                        containerStyle={styles.field}
+                        required
+                        error={errors.lastName}
+                      />
+                    </View>
 
+                    {/* Birth */}
+                    <View style={styles.row}>
+                      <DateField
+                        label="Date de naissance"
+                        value={formData.dateOfBirth}
+                        onChangeText={(v) => handleChange("dateOfBirth", v)}
+                        containerStyle={styles.field}
+                        required
+                        error={errors.dateOfBirth}
+                      />
+                      <TextField
+                        label="Lieu de naissance"
+                        value={formData.placeOfBirth}
+                        onChangeText={(v) => handleChange("placeOfBirth", v)}
+                        containerStyle={styles.field}
+                      />
+                    </View>
 
-                {/* Birth */}
-                <View style={styles.row}>
-                  <DateField
-                    label="Date de naissance"
-                    value={formData.dateNaissance}
-                    onChangeText={(value) =>
-                      handleChange("dateNaissance", value)
-                    }
-                    format="DD/MM/YYYY"
-                    error={errors.dateNaissance}
-                    required
-                    containerStyle={styles.field}
-                  />
-                  <TextField
-                    label="Lieu de naissance"
-                    value={formData.lieuNaissance}
-                    onChangeText={(value) =>
-                      handleChange("lieuNaissance", value)
-                    }
-                    placeholder="Entrez le lieu de naissance"
-                    prefixIcon="location-outline"
-                    containerStyle={styles.field}
-                  />
-                </View>
+                    {/* Sex */}
+                    <View style={styles.row}>
+                      <Dropdown
+                        label="Sexe"
+                        value={formData.sex}
+                        onChange={(v) => handleChange("sex", v)}
+                        options={["male", "female"]}
+                        containerStyle={styles.field}
+                        required
+                        error={errors.sex}
+                      />
+                    </View>
 
-                {/* Dropdown row */}
-                <View style={styles.row}>
-                  <Dropdown
-                    label="Sexe"
-                    value={formData.sexe}
-                    onChange={(value) => {
-                      handleChange("sexe", value);
-                    }}
-                    options={["Masculin", "Féminin"]}
-                    error={errors.sexe}
-                    required
-                    containerStyle={styles.field}
-                  />
-                  <Dropdown
-                    label="Situation familiale"
-                    value={formData.situation}
-                    onChange={(value) => {
-                      handleChange("situation", value);
-                    }}
-                    options={[
-                      "Célibataire",
-                      "Marié(e)",
-                      "Divorcé(e)",
-                      "Veuf(ve)",
-                    ]}
-                    containerStyle={styles.field}
-                  />
-                </View>
+                    {/* Contact */}
+                    <View style={styles.row}>
+                      <PhoneField
+                        label="Téléphone"
+                        value={formData.phone}
+                        onChangeText={(v) => handleChange("phone", v)}
+                        containerStyle={styles.field}
+                        required
+                        error={errors.phone}
+                      />
+                      <TextField
+                        label="Email"
+                        value={formData.email}
+                        onChangeText={(v) => handleChange("email", v)}
+                        containerStyle={styles.field}
+                      />
+                    </View>
 
-                {/* Assurance */}
-                <View style={styles.row}>
-                  <Dropdown
-                    label="Assurance"
-                    value={formData.assurance}
-                    onChange={(value) => {
-                      handleChange("assurance", value);
-                    }}
-                    options={["CNAS", "CASNOS", "Privée", "Aucune"]}
-                    prefixIcon="shield-checkmark-outline"
-                    containerStyle={styles.field}
-                  />
-                  <NumberField
-                    label="N° Assurance"
-                    value={formData.numeroAssurance}
-                    onChangeText={(value) =>
-                      handleChange("numeroAssurance", value)
-                    }
-                    placeholder="Entrez le numéro d'assurance"
-                    prefixIcon="card-outline"
-                    containerStyle={styles.field}
-                    maxLength={15}
-                  />
-                </View>
+                    {/* Address */}
+                    <View style={styles.row}>
+                      <TextField
+                        label="Rue"
+                        value={formData.addressStreet}
+                        onChangeText={(v) => handleChange("addressStreet", v)}
+                        containerStyle={styles.field}
+                      />
+                      <TextField
+                        label="Ville"
+                        value={formData.addressCity}
+                        onChangeText={(v) => handleChange("addressCity", v)}
+                        containerStyle={styles.field}
+                      />
+                      <TextField
+                        label="État"
+                        value={formData.addressState}
+                        onChangeText={(v) => handleChange("addressState", v)}
+                        containerStyle={styles.field}
+                      />
+                    </View>
 
-                {/* Contact */}
-                <View style={styles.row}>
-                  <PhoneField
-                    label="Téléphone"
-                    value={formData.telephone}
-                    onChangeText={(value) => handleChange("telephone", value)}
-                    error={errors.telephone}
-                    required
-                    containerStyle={styles.field}
-                  />
-                  <TextField
-                    label="Adresse"
-                    value={formData.adresse}
-                    onChangeText={(value) => handleChange("adresse", value)}
-                    placeholder="Entrez l'adresse"
-                    prefixIcon="home-outline"
-                    containerStyle={styles.field}
-                  />
-                </View>
+                    {/* Emergency Contact */}
+                    <View style={styles.row}>
+                      <TextField
+                        label="Nom contact urgence"
+                        value={formData.emergencyContactName}
+                        onChangeText={(v) =>
+                          handleChange("emergencyContactName", v)
+                        }
+                        containerStyle={styles.field}
+                      />
+                      <TextField
+                        label="Relation"
+                        value={formData.emergencyContactRelationship}
+                        onChangeText={(v) =>
+                          handleChange("emergencyContactRelationship", v)
+                        }
+                        containerStyle={styles.field}
+                      />
+                      <PhoneField
+                        label="Téléphone contact"
+                        value={formData.emergencyContactPhone}
+                        onChangeText={(v) =>
+                          handleChange("emergencyContactPhone", v)
+                        }
+                        containerStyle={styles.field}
+                      />
+                    </View>
+
+                    {/* Insurance */}
+                    <View style={styles.row}>
+                      <Dropdown
+                        label="Assurance"
+                        value={formData.insuranceProvider}
+                        onChange={(v) => handleChange("insuranceProvider", v)}
+                        options={["CNAS", "CASNOS", "Privée", "Aucune"]}
+                        containerStyle={styles.field}
+                      />
+                      <NumberField
+                        label="N° Assurance"
+                        value={formData.insurancePolicyNumber}
+                        onChangeText={(v) =>
+                          handleChange("insurancePolicyNumber", v)
+                        }
+                        containerStyle={styles.field}
+                      />
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    {/* Medical Info */}
+                    <View style={styles.row}>
+                      <NumberField
+                        label="Taille (cm)"
+                        value={formData.height}
+                        onChangeText={(v) => handleChange("height", v)}
+                        containerStyle={styles.field}
+                      />
+                      <NumberField
+                        label="Poids (kg)"
+                        value={formData.weight}
+                        onChangeText={(v) => handleChange("weight", v)}
+                        containerStyle={styles.field}
+                      />
+                      <Dropdown
+                        label="Groupe sanguin"
+                        value={formData.bloodType}
+                        onChange={(v) => handleChange("bloodType", v)}
+                        options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
+                        containerStyle={styles.field}
+                      />
+                    </View>
+
+                    <View style={styles.row}>
+                      <TextField
+                        label="Allergies (séparées par une virgule)"
+                        value={formData.allergies}
+                        onChangeText={(v) => handleChange("allergies", v)}
+                        containerStyle={styles.field}
+                      />
+                      <TextField
+                        label="Maladies chroniques"
+                        value={formData.chronicDiseases}
+                        onChangeText={(v) => handleChange("chronicDiseases", v)}
+                        containerStyle={styles.field}
+                      />
+                    </View>
+
+                    <View style={styles.row}>
+                      <TextField
+                        label="Médications"
+                        value={formData.medications}
+                        onChangeText={(v) => handleChange("medications", v)}
+                        containerStyle={styles.field}
+                      />
+                      <TextField
+                        label="Handicaps / Disabilities"
+                        value={formData.disabilities}
+                        onChangeText={(v) => handleChange("disabilities", v)}
+                        containerStyle={styles.field}
+                      />
+                    </View>
+                  </>
+                )}
               </View>
             </ScrollView>
           </View>
 
+          {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity
               style={[styles.button, styles.secondary]}
@@ -327,4 +453,4 @@ const PatientForm: React.FC<PatientFormProps> = ({ visible, onClose }) => {
   );
 };
 
-export default PatientForm;
+export default PatientFormWithMedical;
