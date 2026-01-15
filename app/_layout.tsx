@@ -10,14 +10,14 @@ function AuthGate() {
   const segments = useSegments();
 
   const rootSegment = segments[0];
+  const isAuthRoute =
+    rootSegment === "login" || rootSegment === "signup";
 
-  // 🔒 Not authenticated but trying to access drawer
   if (!user && rootSegment === "(drawer)") {
     return <Redirect href="/login" />;
   }
 
-  // ✅ Authenticated but still on login
-  if (user && rootSegment === "login") {
+  if (user && isAuthRoute) {
     return <Redirect href="/(drawer)" />;
   }
 
@@ -30,12 +30,11 @@ export default function RootLayout() {
       <ThemeProvider>
         <LocalizationProvider>
           <AuthProvider>
-            {/* ✅ Auth logic lives here */}
             <AuthGate />
 
-            {/* ✅ Navigator ALWAYS renders on first pass */}
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="login" />
+              <Stack.Screen name="signup" />
               <Stack.Screen name="(drawer)" />
             </Stack>
           </AuthProvider>

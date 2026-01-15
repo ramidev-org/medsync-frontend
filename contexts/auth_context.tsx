@@ -7,11 +7,22 @@ import React, { createContext, useEffect, useState } from "react";
 
 
 
+type SignupPayload = {
+  email: string;
+  password: string;
+  fullName: string;
+  licenseKey: string;
+};
+
 type AuthContextType = {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  signupWithLicense: (payload: SignupPayload) => Promise<void>;
   logout: () => Promise<void>;
 };
+
+
+
 
 const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: any) => {
@@ -86,6 +97,101 @@ export const AuthProvider = ({ children }: any) => {
     }
   };
 
+  const signupWithLicense = async ({
+    email,
+    password,
+    fullName,
+    licenseKey,
+  }: {
+    email: string;
+    password: string;
+    fullName: string;
+    licenseKey: string;
+  }) => {
+    /**
+     * 1. Validate license
+     */
+    const { data: license, error: licenseError } = await db
+      .from("licenses")
+      .select("id, roles, used_at")
+      .eq("key", licenseKey)
+      .single();
+
+    if (licenseError || !license) {
+      throw new Error("Invalid license key");
+    }
+
+    if (license.used_at) {
+      throw new Error("License already used");
+    }
+
+    /**
+     * 2. Create auth user
+     */
+    const { data: authData, error: authError } =
+      await db.auth.signUp({
+        email,
+        password,
+      });
+
+    if (authError || !authData.user) {
+      throw authError || new Error("Signup failed");
+    }
+
+    const userId = authData.user.id;
+
+    /**
+     * 3. Create profile
+     */
+    const { error: profileError } = await db
+      .from("profiles")
+      .insert({
+        id: userId,
+        full_name: fullName,
+        email,
+      });
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    /**
+     * 4. Assign roles
+     * roles column example: ['doctor', 'admin']
+     */
+    const roles: string[] = license.roles;
+
+    const roleRows = roles.map((role) => ({
+      user_id: userId,
+      role,
+    }));
+
+    const { error: roleError } = await db
+      .from("user_roles")
+      .insert(roleRows);
+
+    if (roleError) {
+      throw roleError;
+    }
+
+    /**
+     * 5. Mark license as used
+     */
+    await db
+      .from("licenses")
+      .update({
+        used_at: new Date().toISOString(),
+        used_by: userId,
+      })
+      .eq("id", license.id);
+
+    /**
+     * 6. Load user into context
+     */
+    await loadUser(userId);
+  };
+
+
   const login = async (email: string, password: string) => {
     const { data, error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw error;
@@ -107,7 +213,7 @@ export const AuthProvider = ({ children }: any) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout,signupWithLicense }}>
       {children}
     </AuthContext.Provider>
   );
