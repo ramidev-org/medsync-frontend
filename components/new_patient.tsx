@@ -5,27 +5,55 @@ import {
   PhoneField,
   TextField,
 } from "@/components/input_fields";
+import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
+
+// Database enum types
+type SexEnum = 'male' | 'female';
+type BloodTypeEnum = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+type MaritalStatusEnum = 'single' | 'married' | 'divorced';
+
+const SEX_OPTIONS: SexEnum[] = ['male', 'female'];
+const BLOOD_TYPE_OPTIONS: BloodTypeEnum[] = [
+  'A+', 'A-', 
+  'B+', 'B-', 
+  'AB+', 'AB-', 
+  'O+', 'O-'
+];
+const MARITAL_STATUS_OPTIONS: { value: MaritalStatusEnum; label: string }[] = [
+  { value: 'single', label: 'Célibataire' },
+  { value: 'married', label: 'Marié' },
+  { value: 'divorced', label: 'Divorcé' }
+];
 
 interface PatientFormProps {
   visible: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }) => {
+const PatientFormWithMedical: React.FC<PatientFormProps> = ({ 
+  visible, 
+  onClose,
+  onSuccess 
+}) => {
   const { theme } = useTheme();
+  const { session } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"patient" | "medical">("patient");
+  const [activeTab, setActiveTab] = useState<"patient" | "address" | "medical">("patient");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     // Patient info
@@ -33,7 +61,8 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
     lastName: "",
     dateOfBirth: "",
     placeOfBirth: "",
-    sex: "",
+    sex: "" as SexEnum | "",
+    maritalStatus: "" as MaritalStatusEnum | "",
     phone: "",
     email: "",
     addressStreet: "",
@@ -48,7 +77,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
     // Medical info
     height: "",
     weight: "",
-    bloodType: "",
+    bloodType: "" as BloodTypeEnum | "",
     allergies: "",
     chronicDiseases: "",
     medications: "",
@@ -74,6 +103,8 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
     if (!formData.lastName.trim()) newErrors.lastName = "Le prénom est requis";
     if (!formData.dateOfBirth.trim())
       newErrors.dateOfBirth = "La date de naissance est requise";
+    if (!formData.placeOfBirth.trim())
+      newErrors.placeOfBirth = "Le lieu de naissance est requis";
     if (!formData.sex) newErrors.sex = "Le sexe est requis";
     if (!formData.phone.trim())
       newErrors.phone = "Le téléphone est requis";
@@ -82,12 +113,135 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      console.log("Patient data:", formData);
-      // TODO:
-      // 1️⃣ Insert patient info into `patients` table
-      // 2️⃣ Insert medical info into `patient_medical_info` table
+  const resetForm = () => {
+    setFormData({
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      placeOfBirth: "",
+      sex: "" as SexEnum | "",
+      maritalStatus: "" as MaritalStatusEnum | "",
+      phone: "",
+      email: "",
+      addressStreet: "",
+      addressCity: "",
+      addressState: "",
+      emergencyContactName: "",
+      emergencyContactRelationship: "",
+      emergencyContactPhone: "",
+      insuranceProvider: "",
+      insurancePolicyNumber: "",
+      height: "",
+      weight: "",
+      bloodType: "" as BloodTypeEnum | "",
+      allergies: "",
+      chronicDiseases: "",
+      medications: "",
+      disabilities: "",
+    });
+    setErrors({});
+    setActiveTab("patient");
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      // Switch to patient tab if there are validation errors
+      setActiveTab("patient");
+      Alert.alert(
+        "Erreur de validation",
+        "Veuillez remplir tous les champs obligatoires."
+      );
+      return;
+    }
+
+    if (!session?.access_token) {
+      Alert.alert("Erreur", "Vous devez être connecté pour ajouter un patient.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "https://cxycroqsgmtasgibapen.functions.supabase.co/add-patient",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            ...formData,
+            allergies: formData.allergies
+              ? formData.allergies.split(",").map((s) => s.trim())
+              : [],
+            chronicDiseases: formData.chronicDiseases
+              ? formData.chronicDiseases.split(",").map((s) => s.trim())
+              : [],
+            medications: formData.medications
+              ? formData.medications.split(",").map((s) => s.trim())
+              : [],
+            disabilities: formData.disabilities
+              ? formData.disabilities.split(",").map((s) => s.trim())
+              : [],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle specific error cases
+        let errorMessage = "Échec de l'ajout du patient";
+        
+        if (data.error) {
+          // Check for duplicate email error
+          if (data.error.includes("patients_email_key") || 
+              data.error.includes("duplicate key")) {
+            errorMessage = "Cette adresse email est déjà utilisée par un autre patient.";
+            setErrors({ email: "Email déjà utilisé" });
+            setActiveTab("patient");
+          } 
+          // Check for duplicate phone error
+          else if (data.error.includes("patients_phone_key")) {
+            errorMessage = "Ce numéro de téléphone est déjà utilisé par un autre patient.";
+            setErrors({ phone: "Téléphone déjà utilisé" });
+            setActiveTab("patient");
+          }
+          // Generic error with the server message
+          else {
+            errorMessage = data.error;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Success
+      resetForm();
+      onClose();
+      onSuccess?.();
+      
+      Alert.alert(
+        "Succès",
+        "Le patient a été ajouté avec succès."
+      );
+    } catch (error) {
+      console.error("Error adding patient:", error);
+      Alert.alert(
+        "Erreur",
+        error instanceof Error 
+          ? error.message 
+          : "Une erreur s'est produite lors de l'ajout du patient. Veuillez réessayer."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      resetForm();
       onClose();
     }
   };
@@ -102,7 +256,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
     modalContainer: {
       width: "90%",
       maxWidth: 900,
-      height: 800, // FIXED height
+      height: 600,
       backgroundColor: theme.colors.background,
       borderRadius: 12,
       overflow: "hidden",
@@ -113,9 +267,8 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
     },
     form: {
       padding: 24,
-      minHeight: 0, // prevents ScrollView from collapsing
+      minHeight: 0,
     },
-
     header: {
       backgroundColor: theme.colors.primary,
       padding: 20,
@@ -148,7 +301,6 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
       fontSize: 16,
       fontWeight: "600",
     },
-
     row: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -172,13 +324,25 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
       padding: 14,
       borderRadius: 10,
       alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: 8,
     },
     primary: {
       backgroundColor: theme.colors.primary,
     },
+    primaryDisabled: {
+      backgroundColor: theme.colors.primary,
+      opacity: 0.6,
+    },
     secondary: {
       borderWidth: 2,
       borderColor: theme.colors.border,
+    },
+    secondaryDisabled: {
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      opacity: 0.5,
     },
     buttonText: {
       fontSize: 15,
@@ -188,6 +352,35 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
       color: "#fff",
     },
     buttonTextSecondary: {
+      color: theme.colors.text,
+    },
+    loadingOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.3)",
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 12,
+      zIndex: 999,
+    },
+    loadingContainer: {
+      backgroundColor: theme.colors.background,
+      padding: 24,
+      borderRadius: 12,
+      alignItems: "center",
+      gap: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    loadingText: {
+      fontSize: 16,
+      fontWeight: "600",
       color: theme.colors.text,
     },
   });
@@ -200,7 +393,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
           <View style={styles.header}>
             <View style={{ width: 24 }} />
             <Text style={styles.title}>Ajouter un patient</Text>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={handleClose} disabled={isSubmitting}>
               <Ionicons name="close" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -210,14 +403,23 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
             <TouchableOpacity
               style={[styles.tabButton, activeTab === "patient" && styles.tabActive]}
               onPress={() => setActiveTab("patient")}
+              disabled={isSubmitting}
             >
-              <Text style={styles.tabText}>Patient Info</Text>
+              <Text style={styles.tabText}>Identité</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === "address" && styles.tabActive]}
+              onPress={() => setActiveTab("address")}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.tabText}>Adresse & Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tabButton, activeTab === "medical" && styles.tabActive]}
               onPress={() => setActiveTab("medical")}
+              disabled={isSubmitting}
             >
-              <Text style={styles.tabText}>Medical Info</Text>
+              <Text style={styles.tabText}>Informations Médicales</Text>
             </TouchableOpacity>
           </View>
 
@@ -226,6 +428,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
             <ScrollView
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              scrollEnabled={!isSubmitting}
             >
               <View style={styles.form}>
                 {activeTab === "patient" ? (
@@ -239,6 +442,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                         containerStyle={styles.field}
                         required
                         error={errors.firstName}
+                        editable={!isSubmitting}
                       />
                       <TextField
                         label="Prénom"
@@ -247,6 +451,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                         containerStyle={styles.field}
                         required
                         error={errors.lastName}
+                        editable={!isSubmitting}
                       />
                     </View>
 
@@ -259,92 +464,35 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                         containerStyle={styles.field}
                         required
                         error={errors.dateOfBirth}
+                        editable={!isSubmitting}
                       />
                       <TextField
                         label="Lieu de naissance"
                         value={formData.placeOfBirth}
                         onChangeText={(v) => handleChange("placeOfBirth", v)}
                         containerStyle={styles.field}
+                        required
+                        error={errors.placeOfBirth}
+                        editable={!isSubmitting}
                       />
                     </View>
 
-                    {/* Sex */}
+                    {/* Sex & Marital Status */}
                     <View style={styles.row}>
                       <Dropdown
                         label="Sexe"
                         value={formData.sex}
                         onChange={(v) => handleChange("sex", v)}
-                        options={["male", "female"]}
+                        options={SEX_OPTIONS}
                         containerStyle={styles.field}
                         required
                         error={errors.sex}
                       />
-                    </View>
-
-                    {/* Contact */}
-                    <View style={styles.row}>
-                      <PhoneField
-                        label="Téléphone"
-                        value={formData.phone}
-                        onChangeText={(v) => handleChange("phone", v)}
-                        containerStyle={styles.field}
-                        required
-                        error={errors.phone}
-                      />
-                      <TextField
-                        label="Email"
-                        value={formData.email}
-                        onChangeText={(v) => handleChange("email", v)}
-                        containerStyle={styles.field}
-                      />
-                    </View>
-
-                    {/* Address */}
-                    <View style={styles.row}>
-                      <TextField
-                        label="Rue"
-                        value={formData.addressStreet}
-                        onChangeText={(v) => handleChange("addressStreet", v)}
-                        containerStyle={styles.field}
-                      />
-                      <TextField
-                        label="Ville"
-                        value={formData.addressCity}
-                        onChangeText={(v) => handleChange("addressCity", v)}
-                        containerStyle={styles.field}
-                      />
-                      <TextField
-                        label="État"
-                        value={formData.addressState}
-                        onChangeText={(v) => handleChange("addressState", v)}
-                        containerStyle={styles.field}
-                      />
-                    </View>
-
-                    {/* Emergency Contact */}
-                    <View style={styles.row}>
-                      <TextField
-                        label="Nom contact urgence"
-                        value={formData.emergencyContactName}
-                        onChangeText={(v) =>
-                          handleChange("emergencyContactName", v)
-                        }
-                        containerStyle={styles.field}
-                      />
-                      <TextField
-                        label="Relation"
-                        value={formData.emergencyContactRelationship}
-                        onChangeText={(v) =>
-                          handleChange("emergencyContactRelationship", v)
-                        }
-                        containerStyle={styles.field}
-                      />
-                      <PhoneField
-                        label="Téléphone contact"
-                        value={formData.emergencyContactPhone}
-                        onChangeText={(v) =>
-                          handleChange("emergencyContactPhone", v)
-                        }
+                      <Dropdown
+                        label="État civil"
+                        value={formData.maritalStatus}
+                        onChange={(v) => handleChange("maritalStatus", v)}
+                        options={MARITAL_STATUS_OPTIONS.map(o => o.value)}
                         containerStyle={styles.field}
                       />
                     </View>
@@ -365,6 +513,85 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                           handleChange("insurancePolicyNumber", v)
                         }
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                    </View>
+                  </>
+                ) : activeTab === "address" ? (
+                  <>
+                    {/* Contact */}
+                    <View style={styles.row}>
+                      <PhoneField
+                        label="Téléphone"
+                        value={formData.phone}
+                        onChangeText={(v) => handleChange("phone", v)}
+                        containerStyle={styles.field}
+                        required
+                        error={errors.phone}
+                        editable={!isSubmitting}
+                      />
+                      <TextField
+                        label="Email"
+                        value={formData.email}
+                        onChangeText={(v) => handleChange("email", v)}
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                    </View>
+
+                    {/* Address */}
+                    <View style={styles.row}>
+                      <TextField
+                        label="Rue"
+                        value={formData.addressStreet}
+                        onChangeText={(v) => handleChange("addressStreet", v)}
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                      <TextField
+                        label="Ville"
+                        value={formData.addressCity}
+                        onChangeText={(v) => handleChange("addressCity", v)}
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                      <TextField
+                        label="État"
+                        value={formData.addressState}
+                        onChangeText={(v) => handleChange("addressState", v)}
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                    </View>
+
+                    {/* Emergency Contact */}
+                    <View style={styles.row}>
+                      <TextField
+                        label="Nom contact urgence"
+                        value={formData.emergencyContactName}
+                        onChangeText={(v) =>
+                          handleChange("emergencyContactName", v)
+                        }
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                      <TextField
+                        label="Relation"
+                        value={formData.emergencyContactRelationship}
+                        onChangeText={(v) =>
+                          handleChange("emergencyContactRelationship", v)
+                        }
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
+                      />
+                      <PhoneField
+                        label="Téléphone contact"
+                        value={formData.emergencyContactPhone}
+                        onChangeText={(v) =>
+                          handleChange("emergencyContactPhone", v)
+                        }
+                        containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                     </View>
                   </>
@@ -377,18 +604,20 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                         value={formData.height}
                         onChangeText={(v) => handleChange("height", v)}
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                       <NumberField
                         label="Poids (kg)"
                         value={formData.weight}
                         onChangeText={(v) => handleChange("weight", v)}
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                       <Dropdown
                         label="Groupe sanguin"
                         value={formData.bloodType}
                         onChange={(v) => handleChange("bloodType", v)}
-                        options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]}
+                        options={BLOOD_TYPE_OPTIONS}
                         containerStyle={styles.field}
                       />
                     </View>
@@ -399,12 +628,14 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                         value={formData.allergies}
                         onChangeText={(v) => handleChange("allergies", v)}
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                       <TextField
                         label="Maladies chroniques"
                         value={formData.chronicDiseases}
                         onChangeText={(v) => handleChange("chronicDiseases", v)}
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                     </View>
 
@@ -414,12 +645,14 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
                         value={formData.medications}
                         onChangeText={(v) => handleChange("medications", v)}
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                       <TextField
                         label="Handicaps / Disabilities"
                         value={formData.disabilities}
                         onChangeText={(v) => handleChange("disabilities", v)}
                         containerStyle={styles.field}
+                        editable={!isSubmitting}
                       />
                     </View>
                   </>
@@ -431,22 +664,45 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({ visible, onClose }
           {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.button, styles.secondary]}
-              onPress={onClose}
+              style={[
+                styles.button,
+                isSubmitting ? styles.secondaryDisabled : styles.secondary,
+              ]}
+              onPress={handleClose}
+              disabled={isSubmitting}
             >
               <Text style={[styles.buttonText, styles.buttonTextSecondary]}>
                 Annuler
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.primary]}
+              style={[
+                styles.button,
+                isSubmitting ? styles.primaryDisabled : styles.primary,
+              ]}
               onPress={handleSubmit}
+              disabled={isSubmitting}
             >
+              {isSubmitting && (
+                <ActivityIndicator size="small" color="#fff" />
+              )}
               <Text style={[styles.buttonText, styles.buttonTextPrimary]}>
-                Enregistrer
+                {isSubmitting ? "Enregistrement..." : "Enregistrer"}
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Loading Overlay */}
+          {isSubmitting && (
+            <View style={styles.loadingOverlay}>
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles.loadingText}>
+                  Ajout du patient en cours...
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </View>
     </Modal>

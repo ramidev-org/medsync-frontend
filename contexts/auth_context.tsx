@@ -15,15 +15,19 @@ type SignupPayload = {
 
 type AuthContextType = {
   user: User | null;
+  session: any | null;
   login: (email: string, password: string) => Promise<void>;
   signupWithLicense: (payload: SignupPayload) => Promise<void>;
   logout: () => Promise<void>;
 };
 
+
 const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<any | null>(null);
+
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
@@ -47,6 +51,7 @@ export const AuthProvider = ({ children }: any) => {
         }
 
         if (session && mounted) {
+          setSession(session);
           await loadUser(session.user.id);
         }
       } catch (err) {
@@ -59,6 +64,8 @@ export const AuthProvider = ({ children }: any) => {
     initAuth();
 
     const { data: listener } = db.auth.onAuthStateChange((_event, session) => {
+      setSession(session ?? null);
+
       if (session?.user) {
         loadUser(session.user.id).finally(() => setLoading(false));
       } else {
@@ -66,6 +73,7 @@ export const AuthProvider = ({ children }: any) => {
         setLoading(false);
       }
     });
+
 
     return () => {
       mounted = false;
@@ -174,9 +182,10 @@ export const AuthProvider = ({ children }: any) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, signupWithLicense }}>
+    <AuthContext.Provider value={{ user, session, login, logout, signupWithLicense }}>
       {children}
     </AuthContext.Provider>
+
   );
 };
 

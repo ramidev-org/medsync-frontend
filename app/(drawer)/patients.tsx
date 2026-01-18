@@ -1,41 +1,154 @@
 // pages/PatientsPage.tsx
 import DatePickerField from "@/components/datepicker";
+import PatientFormWithMedical from "@/components/new_patient";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
-import { MOCK_PATIENTS } from "@/data/patients_data";
+import { useAuth } from "@/contexts/auth_context";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
+
+import { useRouter } from "expo-router";
+
+
+
+
+interface Patient {
+  id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  age: number;
+  sex: 'male' | 'female';
+  marital_status?: 'single' | 'married' | 'divorced';
+  phone: string;
+  email?: string;
+  address_street?: string;
+  address_city?: string;
+  address_state?: string;
+  insurance_provider?: string;
+  created_at: string;
+}
 
 export default function PatientsPage() {
+
+  const router = useRouter();
+  const [menuVisibleFor, setMenuVisibleFor] = useState<string | null>(null);
+
   const { theme } = useTheme();
+  const { session } = useAuth();
   const tableStyles = createTableStyles(theme);
 
-  const [fromDate, setFromDate] = useState(new Date("2024-01-01"));
-  const [toDate, setToDate] = useState(new Date("2024-12-31"));
+  const [fromDate, setFromDate] = useState(new Date("2025-01-01"));
+  const [toDate, setToDate] = useState(new Date("2027-12-31"));
   const [globalSearch, setGlobalSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const itemsPerPage = 10;
+
+  /* ================= FETCH PATIENTS ================= */
+  const fetchPatients = async (isRefresh = false) => {
+    if (!session?.access_token) {
+      console.log("No access token available");
+      return;
+    }
+
+    try {
+      if (isRefresh) setIsRefreshing(true);
+      else setIsLoading(true);
+
+      console.log("Fetching patients...");
+
+      const response = await fetch(
+        "https://cxycroqsgmtasgibapen.functions.supabase.co/get-patients",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log("Response data:", data);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch patients");
+      }
+
+      setPatients(data.patients || []);
+      console.log("Patients set:", data.patients?.length || 0);
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+      Alert.alert(
+        "Erreur",
+        "Impossible de charger les patients. Veuillez réessayer."
+      );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Session changed:", !!session);
+    if (session?.access_token) {
+      fetchPatients();
+    }
+  }, [session?.access_token]);
+
+  // Debug: log patients state changes
+  useEffect(() => {
+    console.log("Patients state updated:", patients.length, "patients");
+  }, [patients]);
 
   /* ================= FILTER LOGIC ================= */
   const filteredPatients = useMemo(() => {
-    return MOCK_PATIENTS.filter((p) => {
+    console.log("Filtering patients. Total:", patients.length);
+    console.log("Date range:", fromDate.toISOString(), "to", toDate.toISOString());
+    
+    const filtered = patients.filter((p) => {
       // date filter
-      const patientDate = new Date(p.createdAt);
-      if (patientDate < fromDate || patientDate > toDate) return false;
+      const patientDate = new Date(p.created_at);
+      if (patientDate < fromDate || patientDate > toDate) {
+        console.log("Patient filtered by date:", p.first_name, p.last_name, patientDate);
+        return false;
+      }
 
-      // global name/code/phone search
+      // global name/phone/email search
+      const searchLower = globalSearch.toLowerCase();
       const nameMatch =
-        p.nom.toLowerCase().includes(globalSearch.toLowerCase()) ||
-        p.prenom.toLowerCase().includes(globalSearch.toLowerCase()) ||
-        p.code.toLowerCase().includes(globalSearch.toLowerCase()) ||
-        p.telephone.includes(globalSearch);
+        p.first_name.toLowerCase().includes(searchLower) ||
+        p.last_name.toLowerCase().includes(searchLower) ||
+        p.phone.includes(globalSearch) ||
+        (p.email && p.email.toLowerCase().includes(searchLower));
+
+      if (!nameMatch && globalSearch) {
+        console.log("Patient filtered by search:", p.first_name, p.last_name);
+      }
 
       return nameMatch;
     });
-  }, [fromDate, toDate, globalSearch]);
+    
+    console.log("Filtered patients:", filtered.length);
+    return filtered;
+  }, [patients, fromDate, toDate, globalSearch]);
 
   /* ================= PAGINATION ================= */
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
@@ -47,25 +160,71 @@ export default function PatientsPage() {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  /* ================= HELPER FUNCTIONS ================= */
+  const getSexLabel = (sex: 'male' | 'female') => {
+    return sex === 'male' ? 'Masculin' : 'Féminin';
+  };
+
+  const getMaritalStatusLabel = (status?: 'single' | 'married' | 'divorced') => {
+    if (!status) return '-';
+    const labels = {
+      single: 'Célibataire',
+      married: 'Marié(e)',
+      divorced: 'Divorcé(e)'
+    };
+    return labels[status];
+  };
+
+  const getFullAddress = (patient: Patient) => {
+    const parts = [
+      patient.address_street,
+      patient.address_city,
+      patient.address_state
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : '-';
+  };
 
   const styles = createStyles(theme);
 
   /* ================= UI ================= */
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <TopBar theme={theme} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={{ color: theme.colors.text, marginTop: 16, fontSize: 16 }}>
+            Chargement des patients...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <TopBar theme={theme} />
 
       {/* ===== STICKY HEADER ===== */}
       <View style={styles.stickyHeader}>
-        {/* Title */}
+        {/* Title with Add Button */}
         <View style={styles.titleSection}>
-          <Text style={styles.pageTitle}>Gestion des Patients</Text>
-          <Text style={styles.subtitle}>
-            {filteredPatients.length} patient{filteredPatients.length > 1 ? "s" : ""} trouvé
-            {filteredPatients.length > 1 ? "s" : ""}
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={styles.pageTitle}>Gestion des Patients</Text>
+              <Text style={styles.subtitle}>
+                {filteredPatients.length} patient{filteredPatients.length > 1 ? "s" : ""} trouvé
+                {filteredPatients.length > 1 ? "s" : ""}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowAddForm(true)}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addButtonText}>Ajouter un patient</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Filters Row */}
@@ -74,7 +233,7 @@ export default function PatientsPage() {
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
             <TextInput
-              placeholder="Rechercher par nom, prénom, code ou téléphone..."
+              placeholder="Rechercher par nom, prénom, téléphone ou email..."
               placeholderTextColor={theme.colors.textSecondary}
               value={globalSearch}
               onChangeText={setGlobalSearch}
@@ -90,15 +249,15 @@ export default function PatientsPage() {
           {/* Date Pickers */}
           <DatePickerField label="Date de début" date={fromDate} setDate={setFromDate} />
           <Text style={[styles.dateLabel, { color: theme.colors.textSecondary }]}>à</Text>
-          <DatePickerField label="Date de fin" date={toDate} setDate={setToDate}  />
+          <DatePickerField label="Date de fin" date={toDate} setDate={setToDate} />
 
           {/* Reset Filters */}
           <TouchableOpacity
             style={styles.resetButton}
             onPress={() => {
               setGlobalSearch("");
-              setFromDate(new Date("2024-01-01"));
-              setToDate(new Date("2024-12-31"));
+              setFromDate(new Date("2025-01-01"));
+              setToDate(new Date("2027-12-31"));
               setCurrentPage(1);
             }}
           >
@@ -108,13 +267,21 @@ export default function PatientsPage() {
       </View>
 
       {/* ===== TABLE ===== */}
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => fetchPatients(true)}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         <View style={tableStyles.tableCard}>
           {/* Table Header */}
           <View style={tableStyles.tableHeader}>
             {[
               { key: "avatar", label: "Photo" },
-              { key: "code", label: "Code" },
               { key: "nom", label: "Nom" },
               { key: "prenom", label: "Prénom" },
               { key: "age", label: "Âge" },
@@ -136,29 +303,28 @@ export default function PatientsPage() {
               <Ionicons name="people-outline" size={48} color={theme.colors.textSecondary} />
               <Text style={tableStyles.emptyText}>Aucun patient trouvé</Text>
               <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                Essayez d'ajuster vos filtres
+                {patients.length === 0 
+                  ? "Commencez par ajouter votre premier patient"
+                  : "Essayez d'ajuster vos filtres"}
               </Text>
             </View>
           ) : (
             currentPatients.map((p, i) => (
               <View
-                key={i}
+                key={p.id}
                 style={[
                   tableStyles.tableRow,
                   { backgroundColor: i % 2 === 0 ? theme.colors.background : "transparent" },
                 ]}
               >
                 <View style={tableStyles.cell}>
-                  <Avatar firstName={p.prenom} lastName={p.nom} size={56} borderRadius={12} />
+                  <Avatar firstName={p.first_name} lastName={p.last_name} size={56} borderRadius={12} />
                 </View>
                 <View style={tableStyles.cell}>
-                  <Text style={{ color: theme.colors.primary, fontWeight: "600" }}>#{p.code}</Text>
+                  <Text style={{ color: theme.colors.text, fontWeight: "600" }}>{p.last_name}</Text>
                 </View>
                 <View style={tableStyles.cell}>
-                  <Text style={{ color: theme.colors.text, fontWeight: "600" }}>{p.nom}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={{ color: theme.colors.text }}>{p.prenom}</Text>
+                  <Text style={{ color: theme.colors.text }}>{p.first_name}</Text>
                 </View>
                 <View style={tableStyles.cell}>
                   <Text style={{ color: theme.colors.text }}>{p.age} ans</Text>
@@ -166,37 +332,76 @@ export default function PatientsPage() {
                 <View style={tableStyles.cell}>
                   <View
                     style={{
-                      backgroundColor: p.sexe === "Masculin" ? "#dbeafe" : "#fce7f3",
+                      backgroundColor: p.sex === "male" ? "#dbeafe" : "#fce7f3",
                       paddingHorizontal: 10,
                       paddingVertical: 4,
                       borderRadius: 12,
                       alignSelf: "flex-start",
                     }}
                   >
-                    <Text style={{ color: p.sexe === "Masculin" ? "#1e40af" : "#9f1239", fontWeight: "600" }}>
-                      {p.sexe}
+                    <Text style={{ 
+                      color: p.sex === "male" ? "#1e40af" : "#9f1239", 
+                      fontWeight: "600",
+                      fontSize: 12
+                    }}>
+                      {getSexLabel(p.sex)}
                     </Text>
                   </View>
                 </View>
                 <View style={tableStyles.cell}>
-                  <Text style={{ color: theme.colors.text }}>{p.situation}</Text>
+                  <Text style={{ color: theme.colors.text }}>{getMaritalStatusLabel(p.marital_status)}</Text>
                 </View>
                 <View style={tableStyles.cell}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <Ionicons name="call-outline" size={14} color={theme.colors.textSecondary} />
-                    <Text style={{ color: theme.colors.text }}>{p.telephone}</Text>
+                    <Text style={{ color: theme.colors.text }}>{p.phone}</Text>
                   </View>
                 </View>
                 <View style={tableStyles.cell}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <Ionicons name="location-outline" size={14} color={theme.colors.textSecondary} />
-                    <Text style={{ color: theme.colors.text }}>{p.adresse}</Text>
+                    <Text style={{ color: theme.colors.text, fontSize: 13 }}>
+                      {getFullAddress(p)}
+                    </Text>
                   </View>
                 </View>
                 <View style={tableStyles.cell}>
-                  <TouchableOpacity style={{ padding: 4 }}>
-                    <Ionicons name="ellipsis-vertical" size={18} color={theme.colors.textSecondary} />
-                  </TouchableOpacity>
+                  <View style={{ position: "relative" }}>
+                    <TouchableOpacity
+                      style={{ padding: 4 }}
+                      onPress={() =>
+                        setMenuVisibleFor(menuVisibleFor === p.id ? null : p.id)
+                      }
+                    >
+                      <Ionicons
+                        name="ellipsis-vertical"
+                        size={18}
+                        color={theme.colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+
+                    {menuVisibleFor === p.id && (
+                      <View style={styles.menu}>
+                        {/* Medical Document */}
+                        <TouchableOpacity
+                          style={styles.menuItem}
+                          onPress={() => {
+                            setMenuVisibleFor(null);
+                            router.push({
+                              pathname: "/patient_medical_info",
+                              params: { patientId: p.id },
+                            });
+                          }}>
+                          <Ionicons name="document-text-outline" size={16} color={theme.colors.text} />
+                          <Text style={styles.menuText}>Dossier médical</Text>
+                        </TouchableOpacity>
+
+
+                        {/* You can add more items later */}
+                      </View>
+                    )}
+                  </View>
+
                 </View>
               </View>
             ))
@@ -252,6 +457,13 @@ export default function PatientsPage() {
           </View>
         )}
       </ScrollView>
+
+      {/* ===== ADD PATIENT FORM ===== */}
+      <PatientFormWithMedical
+        visible={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSuccess={() => fetchPatients(true)}
+      />
     </View>
   );
 }
@@ -271,6 +483,25 @@ const createStyles = (theme: any) =>
     titleSection: { marginBottom: 16 },
     pageTitle: { fontSize: 28, fontWeight: "bold", color: theme.colors.text, marginBottom: 4 },
     subtitle: { fontSize: 14, color: theme.colors.textSecondary },
+    addButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 10,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    addButtonText: {
+      color: '#fff',
+      fontSize: 15,
+      fontWeight: '600',
+    },
     filterSection: { flexDirection: "row", alignItems: "center", gap: 12 },
     searchContainer: {
       flex: 1,
@@ -294,4 +525,39 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
     },
     container: { padding: 24 },
+
+    menu: {
+      position: "absolute",
+      top: 28,
+      right: 0,
+      backgroundColor: theme.colors.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      minWidth: 180,
+      paddingVertical: 6,
+      zIndex: 100,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+
+    menuText: {
+      fontSize: 14,
+      color: theme.colors.text,
+      fontWeight: "500",
+    },
+
+    
+
   });

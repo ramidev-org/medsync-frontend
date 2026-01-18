@@ -47,7 +47,7 @@ export default function Login() {
       <Animated.View style={[styles.content, { opacity: fade }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>ClinicFlow</Text>
+          <Text style={styles.logo}>MedSync</Text>
         </View>
 
         {/* Main Card */}

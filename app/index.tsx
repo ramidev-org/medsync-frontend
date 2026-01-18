@@ -153,7 +153,7 @@ export default function ClinicManagementLanding() {
             color: "#0D6EFD",
           }}
         >
-          ClinicFlow
+          MedSync
         </Text>
         <View style={{ flexDirection: "row", gap: 24, alignItems: "center" }}>
           {navItems.map((item) => (
@@ -810,7 +810,7 @@ export default function ClinicManagementLanding() {
                 marginBottom: 24,
               }}
             >
-              ✉️ contact@clinicflow.com
+              ✉️ contact@MedSync.com
             </Text>
             <Text
               style={{
@@ -856,7 +856,7 @@ export default function ClinicManagementLanding() {
               fontSize: 14,
             }}
           >
-            © Copyright 2026 ClinicFlow. All rights reserved.
+            © Copyright 2026 MedSync. All rights reserved.
           </Text>
         </View>
       </View>
