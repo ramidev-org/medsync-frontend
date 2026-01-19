@@ -53,7 +53,10 @@ export default function PatientsPage() {
 
   const [fromDate, setFromDate] = useState(new Date("2025-01-01"));
   const [toDate, setToDate] = useState(new Date("2027-12-31"));
-  const [globalSearch, setGlobalSearch] = useState("");
+
+  const [searchInput, setSearchInput] = useState("");   // typing only
+  const [globalSearch, setGlobalSearch] = useState(""); // confirmed search
+
   const [currentPage, setCurrentPage] = useState(1);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,55 +66,59 @@ export default function PatientsPage() {
 
   /* ================= FETCH PATIENTS ================= */
   const fetchPatients = async (isRefresh = false) => {
-    if (!session?.access_token) {
-      console.log("No access token available");
-      return;
-    }
+    if (!session?.access_token) return;
 
     try {
       if (isRefresh) setIsRefreshing(true);
       else setIsLoading(true);
 
-      console.log("Fetching patients...");
+      const params = new URLSearchParams();
+
+      if (fromDate)
+        params.append("start_date", fromDate.toISOString().split("T")[0]);
+
+      if (toDate)
+        params.append("end_date", toDate.toISOString().split("T")[0]);
+
+      if (globalSearch.trim() !== "")
+        params.append("search", globalSearch.trim());
 
       const response = await fetch(
-        "https://cxycroqsgmtasgibapen.functions.supabase.co/get-patients",
+        `https://cxycroqsgmtasgibapen.functions.supabase.co/get-patients?${params.toString()}`,
         {
-          method: "GET",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
         }
       );
 
       const data = await response.json();
-      console.log("Response data:", data);
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch patients");
-      }
+      if (!response.ok) throw new Error(data.error);
 
       setPatients(data.patients || []);
-      console.log("Patients set:", data.patients?.length || 0);
-    } catch (error) {
-      console.error("Error fetching patients:", error);
-      Alert.alert(
-        "Erreur",
-        "Impossible de charger les patients. Veuillez réessayer."
-      );
+    } catch (err) {
+      Alert.alert("Erreur", "Impossible de charger les patients");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
+  
+
+
   useEffect(() => {
-    console.log("Session changed:", !!session);
-    if (session?.access_token) {
-      fetchPatients();
-    }
-  }, [session?.access_token]);
+    if (!session?.access_token) return;
+
+    setCurrentPage(1);   // reset pagination on any filter change
+    fetchPatients();
+  }, [
+    session?.access_token,
+    fromDate,
+    toDate,
+  ]);
+
 
   // Debug: log patients state changes
   useEffect(() => {
@@ -217,13 +224,7 @@ export default function PatientsPage() {
                 {filteredPatients.length > 1 ? "s" : ""}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setShowAddForm(true)}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.addButtonText}>Ajouter un patient</Text>
-            </TouchableOpacity>
+
           </View>
         </View>
 
@@ -235,16 +236,28 @@ export default function PatientsPage() {
             <TextInput
               placeholder="Rechercher par nom, prénom, téléphone ou email..."
               placeholderTextColor={theme.colors.textSecondary}
-              value={globalSearch}
-              onChangeText={setGlobalSearch}
+              value={searchInput}
+              onChangeText={setSearchInput}
               style={[styles.searchInput, { color: theme.colors.text }]}
             />
-            {globalSearch !== "" && (
-              <TouchableOpacity onPress={() => setGlobalSearch("")}>
+            {searchInput !== "" && (
+              <TouchableOpacity onPress={() => setSearchInput("")}>
                 <Ionicons name="close-circle" size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             )}
+
           </View>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => {
+              setGlobalSearch(searchInput.trim());
+              setCurrentPage(1);
+              fetchPatients();
+            }}
+          >
+            <Ionicons name="search" size={18} color="#fff" />
+          </TouchableOpacity>
+
 
           {/* Date Pickers */}
           <DatePickerField label="Date de début" date={fromDate} setDate={setFromDate} />
@@ -255,6 +268,7 @@ export default function PatientsPage() {
           <TouchableOpacity
             style={styles.resetButton}
             onPress={() => {
+              setSearchInput("");
               setGlobalSearch("");
               setFromDate(new Date("2025-01-01"));
               setToDate(new Date("2027-12-31"));
@@ -516,6 +530,12 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
     },
     searchInput: { flex: 1, fontSize: 14, padding: 0 },
+    searchButton: {
+      padding: 12,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 10,
+    },
+
     dateLabel: { fontSize: 14, fontWeight: "500" },
     resetButton: {
       padding: 12,
