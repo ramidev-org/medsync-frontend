@@ -11,7 +11,15 @@ type SignupPayload = {
   password: string;
   fullName: string;
   licenseKey: string;
+  clinicName: string;
+  clinicCode?: string;
+  state?: string;
+  city?: string;
+  street?: string;
+  googleMapsAddress?: string;
 };
+
+
 
 type AuthContextType = {
   user: User | null;
@@ -106,6 +114,12 @@ export const AuthProvider = ({ children }: any) => {
     password,
     fullName,
     licenseKey,
+    clinicName,
+    clinicCode,
+    state,
+    city,
+    street,
+    googleMapsAddress,
   }: SignupPayload) => {
     const res = await fetch(
       "https://cxycroqsgmtasgibapen.functions.supabase.co/signup-with-license",
@@ -119,6 +133,12 @@ export const AuthProvider = ({ children }: any) => {
           password,
           fullName,
           license_key: licenseKey,
+          clinic_name: clinicName,
+          clinic_code: clinicCode,
+          state,
+          city,
+          street,
+          google_maps_address: googleMapsAddress,
         }),
       }
     );
@@ -137,18 +157,9 @@ export const AuthProvider = ({ children }: any) => {
      * - consumed license
      */
 
-    // Now just load session
-    const {
-      data: { session },
-      error,
-    } = await db.auth.getSession();
 
-    if (error || !session?.user) {
-      throw new Error("Failed to load session");
-    }
-
-    await loadUser(session.user.id);
   };
+
 
   const login = async (email: string, password: string) => {
     const { data, error } = await db.auth.signInWithPassword({

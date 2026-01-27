@@ -4,14 +4,16 @@ import { useAuth } from "@/contexts/auth_context";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
+
 
 export default function Signup() {
   const fade = useRef(new Animated.Value(0)).current;
@@ -19,58 +21,76 @@ export default function Signup() {
   const router = useRouter();
 
   const [license, setLicense] = useState("");
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [clinicName, setClinicName] = useState("");
+  const [clinicCode, setClinicCode] = useState("");
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
+  const [street, setStreet] = useState("");
+  const [googleMapsAddress, setGoogleMapsAddress] = useState("");
+
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     Animated.timing(fade, {
       toValue: 1,
-      duration: 800,
+      duration: 600,
       useNativeDriver: true,
     }).start();
   }, []);
 
   const handleSignup = async () => {
+    if (!fullName || !email || !password || !clinicName || !state || !city || !street) {
+      return setError("Please fill all required fields");
+    }
+
+    setError("");
+    setLoading(true);
+
     try {
       await signupWithLicense({
         licenseKey: license,
         fullName,
         email,
         password,
+        clinicName,
+        clinicCode,
+        state,
+        city,
+        street,
+        googleMapsAddress,
       });
-      router.push("/(drawer)");
+      router.replace("/login");
+
     } catch (err: any) {
       setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Animated.View style={[styles.content, { opacity: fade }]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logo}>MedSync</Text>
         </View>
 
-        {/* Main Card */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.title}>License Activation</Text>
-            <Text style={styles.subtitle}>
-              Clinic onboarding - Start your journey
-            </Text>
-          </View>
+          <Text style={styles.title}>Clinic Signup</Text>
+          <Text style={styles.subtitle}>Enter your details to get started</Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>License Key</Text>
+          {/* License Input */}
+          <View style={styles.licenseRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>License Key (optional)</Text>
               <TextInput
                 placeholder="XXXX-XXXX-XXXX-XXXX"
                 autoCapitalize="characters"
@@ -80,69 +100,78 @@ export default function Signup() {
                 placeholderTextColor="#94a3b8"
               />
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                placeholder="Dr. John Smith"
-                style={styles.input}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholderTextColor="#94a3b8"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
-              <TextInput
-                placeholder="doctor@clinic.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholderTextColor="#94a3b8"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                placeholder="••••••••"
-                secureTextEntry
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholderTextColor="#94a3b8"
-              />
-            </View>
-
-            <Pressable style={styles.button} onPress={handleSignup}>
-              <Text style={styles.buttonText}>Create Account</Text>
-            </Pressable>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <Pressable
-              onPress={() => router.push("/login")}
-              style={styles.secondaryButton}
-            >
-              <Text style={styles.secondaryButtonText}>
-                Already have access? Sign in
-              </Text>
-            </Pressable>
           </View>
-        </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            By signing up, you agree to our Terms of Service and Privacy Policy
-          </Text>
+          {/* Form Rows */}
+          <View style={styles.form}>
+            {/* Name, Email, Password */}
+            <View style={styles.row}>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+              </View>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
+              </View>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry />
+              </View>
+            </View>
+
+            {/* Clinic Name & Code */}
+            <View style={styles.row}>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>Clinic Name</Text>
+                <TextInput style={styles.input} value={clinicName} onChangeText={setClinicName} />
+              </View>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>Clinic Code (optional)</Text>
+                <TextInput style={styles.input} value={clinicCode} onChangeText={setClinicCode} />
+              </View>
+            </View>
+
+            {/* Location Row */}
+            <View style={styles.row}>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>State</Text>
+                <TextInput style={styles.input} value={state} onChangeText={setState} />
+              </View>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>City</Text>
+                <TextInput style={styles.input} value={city} onChangeText={setCity} />
+              </View>
+              <View style={styles.rowItem}>
+                <Text style={styles.label}>Street</Text>
+                <TextInput style={styles.input} value={street} onChangeText={setStreet} />
+              </View>
+            </View>
+
+            {/* Google Maps */}
+            <View>
+              <Text style={styles.label}>Google Maps Address (optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={googleMapsAddress}
+                onChangeText={setGoogleMapsAddress}
+              />
+            </View>
+
+            {/* Signup Button */}
+            <Pressable
+              style={[styles.button, loading && styles.buttonDisabled]}
+              disabled={loading}
+              onPress={handleSignup}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
+            </Pressable>
+
+          </View>
         </View>
       </Animated.View>
     </ScrollView>
@@ -150,131 +179,25 @@ export default function Signup() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  scrollContent: {
-    minHeight: "100%",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  content: {
-    maxWidth: 480,
-    width: "100%",
-    marginHorizontal: "auto",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  logo: {
-    fontSize: 32,
-    fontWeight: "600",
-    color: "#0D6EFD",
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 40,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  cardHeader: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "600",
-    color: "#212529",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#6c757d",
-    lineHeight: 22,
-  },
-  error: {
-    color: "#dc3545",
-    backgroundColor: "#f8d7da",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-    fontSize: 14,
-  },
-  form: {
-    gap: 20,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#212529",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 15,
-    color: "#212529",
-    backgroundColor: "#fff",
-  },
-  button: {
-    backgroundColor: "#0D6EFD",
-    padding: 16,
-    borderRadius: 10,
-    marginTop: 8,
-    shadowColor: "#0D6EFD",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    textAlign: "center",
-    fontSize: 16,
-  },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 8,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#e9ecef",
-  },
-  dividerText: {
-    paddingHorizontal: 16,
-    color: "#6c757d",
-    fontSize: 14,
-  },
-  secondaryButton: {
-    padding: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-  },
-  secondaryButtonText: {
-    color: "#0D6EFD",
-    fontWeight: "500",
-    textAlign: "center",
-    fontSize: 15,
-  },
-  footer: {
-    marginTop: 32,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 13,
-    color: "#6c757d",
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  container: { flex: 1, backgroundColor: "#f8f9fa" },
+  scrollContent: { minHeight: "100%", paddingVertical: 40, paddingHorizontal: 20 },
+  content: { maxWidth: 600, width: "100%", marginHorizontal: "auto" },
+  header: { alignItems: "center", marginBottom: 30 },
+  logo: { fontSize: 32, fontWeight: "600", color: "#0D6EFD" },
+  card: { backgroundColor: "#fff", borderRadius: 16, padding: 30, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 20, elevation: 5 },
+  title: { fontSize: 26, fontWeight: "600", color: "#212529", marginBottom: 5 },
+  subtitle: { fontSize: 15, color: "#6c757d", marginBottom: 20 },
+  error: { color: "#dc3545", backgroundColor: "#f8d7da", padding: 10, borderRadius: 8, marginBottom: 15, fontSize: 14 },
+  licenseRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
+  form: { gap: 15 },
+  row: { flexDirection: "row", gap: 10 },
+  rowItem: { flex: 1 },
+  label: { fontSize: 14, fontWeight: "600", marginBottom: 5, color: "#212529" },
+  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 10, padding: 12, fontSize: 15, color: "#212529", backgroundColor: "#fff" },
+  button: { backgroundColor: "#0D6EFD", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 10 },
+  buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  buttonDisabled: {
+  opacity: 0.7,
+},
+
 });
