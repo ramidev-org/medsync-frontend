@@ -155,7 +155,7 @@ export default function ClinicManagementLanding() {
         >
           MedSync
         </Text>
-        <View style={{ flexDirection: "row", gap: 24, alignItems: "center" }}>
+        <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
           {navItems.map((item) => (
             <Pressable key={item}>
               <Text
@@ -169,6 +169,30 @@ export default function ClinicManagementLanding() {
               </Text>
             </Pressable>
           ))}
+
+          {/* LOGIN / SIGN IN BUTTON */}
+          <Pressable
+            onPress={() => router.push("/login")}
+            style={{
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: "#0D6EFD",
+            }}
+          >
+            <Text
+              style={{
+                color: "#0D6EFD",
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 14,
+              }}
+            >
+              SIGN IN
+            </Text>
+          </Pressable>
+
+          {/* SIGN UP BUTTON */}
           <Pressable
             onPress={() => router.push("/signup")}
             style={{
@@ -189,6 +213,7 @@ export default function ClinicManagementLanding() {
             </Text>
           </Pressable>
         </View>
+
       </View>
 
       {/* HERO */}
