@@ -1,65 +1,61 @@
 // src/models/User.ts
-import { db } from "../database/database_conn";
+//import { db } from "../database/database_conn";
 
+export type DoctorProfile = {
+  speciality: string;
+  license_number: string;
+  years_of_experience: number;
+  consultation_fee: number;
+  bio: string;
+  active: boolean;
+};
 
+export type AssistantProfile = {
+  department: string;
+  shift_start: string;
+  shift_end: string;
+  active: boolean;
+};
 
 export class User {
-  id?: string;
+  id: string;
   email: string;
   username: string;
-  fullname: string; // Keep the property as `fullname` in the app
-  role: string;
+  fullname: string;
+  role: "admin" | "doctor" | "assistant" | "clinic";
 
-  constructor(
-    email: string,
-    username: string,
-    fullname: string,
-    role: string,
-    id?: string
-  ) {
-    this.email = email;
-    this.username = username;
-    this.fullname = fullname;
-    this.role = role;
-    if (id) this.id = id;
+  doctorProfile: DoctorProfile | null;
+  assistantProfile: AssistantProfile | null;
+
+  constructor(params: {
+    id: string;
+    email: string;
+    username: string;
+    fullname: string;
+    role: any;
+    doctorProfile?: DoctorProfile | null;
+    assistantProfile?: AssistantProfile | null;
+  }) {
+    this.id = params.id;
+    this.email = params.email;
+    this.username = params.username;
+    this.fullname = params.fullname;
+    this.role = params.role;
+    this.doctorProfile = params.doctorProfile ?? null;
+    this.assistantProfile = params.assistantProfile ?? null;
   }
 
-  async save() {
-    if (!this.id) {
-      throw new Error("Cannot save user without id");
-    }
+  static fromDb(data: any): User {
+    const role = data.user_roles?.[0]?.role;
 
-    const { error } = await db
-      .from("profiles")
-      .update({
-        email: this.email,
-        username: this.username,
-        full_name: this.fullname, // map to DB column
-        role: this.role,
-      })
-      .eq("id", this.id);
-
-    if (error) throw error;
-  }
-
-  static fromDb(data: any) {
-    return new User(
-      data.email,
-      data.username,
-      data.full_name, // map DB column to class property
-      data.role,
-      data.id
-    );
-  }
-
-  static async getById(id: string) {
-    const { data, error } = await db
-      .from("profiles")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    return User.fromDb(data);
+    return new User({
+      id: data.id,
+      email: data.email,
+      username: data.username,
+      fullname: data.full_name,
+      role,
+      doctorProfile: data.doctor_profiles ?? null,
+      assistantProfile: data.assistant_profiles ?? null,
+    });
   }
 }

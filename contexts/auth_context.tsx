@@ -3,8 +3,7 @@ import { db } from "@/database/database_conn";
 import { User } from "@/models/User";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
-import * as React from "react";
-import { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useRef, useState } from "react";
 
 type SignupPayload = {
   email: string;
@@ -19,184 +18,194 @@ type SignupPayload = {
   googleMapsAddress?: string;
 };
 
-
-
 type AuthContextType = {
   user: User | null;
   session: any | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signupWithLicense: (payload: SignupPayload) => Promise<void>;
   logout: () => Promise<void>;
 };
 
-
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// CRITICAL: Move these OUTSIDE the component to survive remounts
+let globalLoadedUserId: string | null = null;
+let globalAuthListener: any = null;
+
 export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Track if this instance has already initialized
+  const hasInitialized = useRef(false);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
-    redirectUri: makeRedirectUri(), // important for web + mobile
+    redirectUri: makeRedirectUri(),
     scopes: ["profile", "email"],
   });
 
-  // Load session on mount
-  useEffect(() => {
-    let mounted = true;
-
-    const initAuth = async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await db.auth.getSession();
-
-        if (error) {
-          console.error("Error getting session:", error);
-        }
-
-        if (session && mounted) {
-          setSession(session);
-          await loadUser(session.user.id);
-        }
-      } catch (err) {
-        console.error("Error checking session:", err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initAuth();
-
-    const { data: listener } = db.auth.onAuthStateChange((_event, session) => {
-      setSession(session ?? null);
-
-      if (session?.user) {
-        loadUser(session.user.id).finally(() => setLoading(false));
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
   const loadUser = async (id: string) => {
+    if (!id || globalLoadedUserId === id) {
+      console.log("⏭️ Skipping duplicate load for user:", id);
+      setLoading(false);
+      return;
+    }
+
+    console.log("🔄 Loading user profile:", id);
+    globalLoadedUserId = id;
+
     try {
       const { data, error } = await db
         .from("profiles")
-        .select("*")
+        .select(
+          `
+          *,
+          user_roles!user_id ( role ),
+          doctor_profiles!profile_id ( * ),
+          assistant_profiles!profile_id ( * )
+        `,
+        )
         .eq("id", id)
         .single();
 
       if (error || !data) {
-        await db.auth.signOut();
+        console.error("❌ Failed to load user:", error);
         setUser(null);
-      } else {
-        setUser(User.fromDb(data));
+        await db.auth.signOut();
+        globalLoadedUserId = null;
+        return;
       }
+
+      setUser(User.fromDb(data));
+      console.log("✅ User profile loaded successfully");
     } catch (err) {
-      console.error("Error loading user:", err);
+      console.error("❌ Error loading user:", err);
       setUser(null);
+      globalLoadedUserId = null;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const signupWithLicense = async ({
-    email,
-    password,
-    fullName,
-    licenseKey,
-    clinicName,
-    clinicCode,
-    state,
-    city,
-    street,
-    googleMapsAddress,
-  }: SignupPayload) => {
+  useEffect(() => {
+    // Prevent duplicate initialization
+    if (hasInitialized.current) {
+      console.log("⚠️ AuthProvider already initialized, skipping");
+      return;
+    }
+
+    console.log("🔐 Setting up auth listener");
+    hasInitialized.current = true;
+
+    // Clean up any existing listener
+    if (globalAuthListener) {
+      console.log("🧹 Cleaning up old listener");
+      globalAuthListener.subscription.unsubscribe();
+    }
+
+    const setupAuth = async () => {
+      // Get initial session
+      const {
+        data: { session: initialSession },
+      } = await db.auth.getSession();
+
+      if (initialSession?.user?.id) {
+        setSession(initialSession);
+        await loadUser(initialSession.user.id);
+      } else {
+        setLoading(false);
+      }
+
+      // Setup listener
+      const { data: listener } = db.auth.onAuthStateChange(
+        async (event, newSession) => {
+          console.log("🔔 Auth state changed:", event);
+          setSession(newSession ?? null);
+
+          if (newSession?.user?.id) {
+            await loadUser(newSession.user.id);
+          } else {
+            console.log("👋 No session, clearing user");
+            setUser(null);
+            globalLoadedUserId = null;
+            setLoading(false);
+          }
+        },
+      );
+
+      globalAuthListener = listener;
+    };
+
+    setupAuth();
+
+    // Only cleanup on actual unmount
+    return () => {
+      console.log("🧹 Cleaning up auth listener");
+      // DO NOT unsubscribe here - let the global listener persist
+    };
+  }, []); // Empty deps - only run once
+
+  const signupWithLicense = async (payload: SignupPayload) => {
     const res = await fetch(
       "https://cxycroqsgmtasgibapen.functions.supabase.co/signup-with-license",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          password,
-          fullName,
-          license_key: licenseKey,
-          clinic_name: clinicName,
-          clinic_code: clinicCode,
-          state,
-          city,
-          street,
-          google_maps_address: googleMapsAddress,
+          email: payload.email,
+          password: payload.password,
+          fullName: payload.fullName,
+          license_key: payload.licenseKey,
+          clinic_name: payload.clinicName,
+          clinic_code: payload.clinicCode,
+          state: payload.state,
+          city: payload.city,
+          street: payload.street,
+          google_maps_address: payload.googleMapsAddress,
         }),
-      }
+      },
     );
-
     const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "Signup failed");
-    }
-
-    /**
-     * Edge function already:
-     * - created auth user
-     * - created profile
-     * - assigned roles
-     * - consumed license
-     */
-
-
+    if (!res.ok) throw new Error(data.error || "Signup failed");
   };
 
-
   const login = async (email: string, password: string) => {
-    const { data, error } = await db.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    if (data?.user) await loadUser(data.user.id);
   };
 
   const logout = async () => {
     await db.auth.signOut();
     setUser(null);
+    globalLoadedUserId = null;
   };
 
-  if (loading) {
-    // show a minimal splash instead of white screen
-    return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  // ❌ REMOVE THIS LOADING SCREEN - let AuthGateWrapper handle it
+  // if (loading) {
+  //   return (
+  //     <div
+  //       style={{
+  //         width: "100vw",
+  //         height: "100vh",
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //       }}
+  //     >
+  //       <p>Loading...</p>
+  //     </div>
+  //   );
+  // }
 
   return (
-    <AuthContext.Provider value={{ user, session, login, logout, signupWithLicense }}>
+    <AuthContext.Provider
+      value={{ user, session, loading, login, logout, signupWithLicense }}
+    >
       {children}
     </AuthContext.Provider>
-
   );
 };
 

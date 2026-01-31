@@ -371,3 +371,13 @@ OpenClinic GA → https://sourceforge.net/projects/open-clinic/
 GNU Health → https://www.gnuhealth.org
 
 Bahmni → https://www.bahmni.org
+
+
+
+
+
+
+test website in production:
+npm install -g serve
+npx expo export --platform web
+serve -s dist

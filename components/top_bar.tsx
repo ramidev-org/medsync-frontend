@@ -15,10 +15,14 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const { logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    setMenuVisible(false);
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      await logout(); // wait for signOut
+      setMenuVisible(false);
+      router.replace("/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   const styles = createStyles(theme);
@@ -32,7 +36,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
         {/* Right side: date + button + icons */}
         <View style={styles.rightSection}>
           {/* Nouveau Patient button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => setPatientFormVisible(true)}
           >
@@ -45,15 +49,27 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
 
           {/* Icons */}
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="calendar-outline" size={22} color={theme.colors.text} />
+            <Ionicons
+              name="calendar-outline"
+              size={22}
+              color={theme.colors.text}
+            />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.text} />
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={22}
+              color={theme.colors.text}
+            />
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={theme.colors.text}
+            />
           </TouchableOpacity>
 
           {/* Avatar */}
@@ -67,24 +83,32 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
           {/* Dropdown Menu */}
           {menuVisible && (
             <View style={styles.avatarMenu}>
-              <TouchableOpacity 
-                style={styles.avatarMenuItem} 
+              <TouchableOpacity
+                style={styles.avatarMenuItem}
                 onPress={() => setMenuVisible(false)}
               >
-                <Ionicons name="person-outline" size={18} color={theme.colors.text} />
+                <Ionicons
+                  name="person-outline"
+                  size={18}
+                  color={theme.colors.text}
+                />
                 <Text style={styles.avatarMenuText}>Profile</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.avatarMenuItem} 
+
+              <TouchableOpacity
+                style={styles.avatarMenuItem}
                 onPress={() => setMenuVisible(false)}
               >
-                <Ionicons name="settings-outline" size={18} color={theme.colors.text} />
+                <Ionicons
+                  name="settings-outline"
+                  size={18}
+                  color={theme.colors.text}
+                />
                 <Text style={styles.avatarMenuText}>Settings</Text>
               </TouchableOpacity>
-              
+
               <View style={styles.menuDivider} />
-              
+
               <TouchableOpacity
                 style={styles.avatarMenuItem}
                 onPress={handleLogout}
@@ -100,7 +124,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
       </View>
 
       {/* Patient Form Dialog */}
-      <PatientForm 
+      <PatientForm
         visible={patientFormVisible}
         onClose={() => setPatientFormVisible(false)}
       />
@@ -112,89 +136,90 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
 
 /* ================= STYLES ================= */
 
-const createStyles = (theme: any) => StyleSheet.create({
-  container: {
-    height: 64,
-    backgroundColor: theme.colors.card,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    zIndex: 1,
-  },
-  rightSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  primaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  primaryBtnText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  dateText: {
-    fontSize: 14,
-    color: theme.colors.text,
-    fontWeight: "500",
-    marginLeft: 8,
-  },
-  iconButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.background,
-    marginLeft: 4,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    marginLeft: 8,
-  },
-  avatarMenu: {
-    position: "absolute",
-    top: 56,
-    right: 0,
-    minWidth: 180,
-    backgroundColor: theme.colors.background,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    zIndex: 20,
-    paddingVertical: 8,
-  },
-  avatarMenuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  avatarMenuText: {
-    fontSize: 14,
-    color: theme.colors.text,
-    fontWeight: "500",
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-    marginVertical: 8,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      height: 64,
+      backgroundColor: theme.colors.card,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 24,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      zIndex: 1,
+    },
+    rightSection: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    primaryBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    primaryBtnText: {
+      color: "#fff",
+      fontWeight: "600",
+      fontSize: 14,
+    },
+    dateText: {
+      fontSize: 14,
+      color: theme.colors.text,
+      fontWeight: "500",
+      marginLeft: 8,
+    },
+    iconButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+      marginLeft: 4,
+    },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      marginLeft: 8,
+    },
+    avatarMenu: {
+      position: "absolute",
+      top: 56,
+      right: 0,
+      minWidth: 180,
+      backgroundColor: theme.colors.background,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 5,
+      zIndex: 20,
+      paddingVertical: 8,
+    },
+    avatarMenuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    avatarMenuText: {
+      fontSize: 14,
+      color: theme.colors.text,
+      fontWeight: "500",
+    },
+    menuDivider: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      marginVertical: 8,
+    },
+  });
