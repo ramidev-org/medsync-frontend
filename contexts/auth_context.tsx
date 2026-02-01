@@ -64,8 +64,8 @@ export const AuthProvider = ({ children }: any) => {
           `
           *,
           user_roles!user_id ( role ),
-          doctor_profiles!profile_id ( * ),
-          assistant_profiles!profile_id ( * )
+          doctor_profiles!id ( * ),
+          assistant_profiles!id ( * )
         `,
         )
         .eq("id", id)

@@ -1,8 +1,10 @@
 // src/contexts/app_data_context.tsx
 import { db } from "@/database/database_conn";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./auth_context";
 
 type AppData = {
+  clinic: any | null;          // single clinic data for current admin
   specialities: any[];
   loading: boolean;
 };
@@ -10,17 +12,36 @@ type AppData = {
 const AppDataContext = createContext<AppData | null>(null);
 
 export const AppDataProvider = ({ children }: any) => {
+  const [clinic, setClinic] = useState<any | null>(null); // <-- added
   const [specialities, setSpecialities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { user } = useAuth();
+
+  const clinicId = user?.clinic_id ;
+
   useEffect(() => {
     const load = async () => {
-      const { data } = await db
+      setLoading(true);
+
+      // 1️⃣ Load specialities
+      const { data: specialitiesData } = await db
         .from("doctor_specialities")
         .select("*")
         .order("name");
+      setSpecialities(specialitiesData ?? []);
 
-      setSpecialities(data ?? []);
+      // 2️⃣ Load admin's clinic (assuming admin id is known or from auth)
+      // Replace `adminId` with the actual current admin id from auth
+     
+      const { data: clinicData } = await db
+        .from("clinics")
+        .select("*")
+        .eq("id", clinicId)
+        .single();
+
+      setClinic(clinicData ?? null);
+
       setLoading(false);
     };
 
@@ -28,7 +49,7 @@ export const AppDataProvider = ({ children }: any) => {
   }, []);
 
   return (
-    <AppDataContext.Provider value={{ specialities, loading }}>
+    <AppDataContext.Provider value={{ clinic, specialities, loading }}>
       {children}
     </AppDataContext.Provider>
   );

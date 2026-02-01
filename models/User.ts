@@ -23,6 +23,7 @@ export class User {
   username: string;
   fullname: string;
   role: "admin" | "doctor" | "assistant" | "clinic";
+  clinic_id:string;
 
   doctorProfile: DoctorProfile | null;
   assistantProfile: AssistantProfile | null;
@@ -33,6 +34,7 @@ export class User {
     username: string;
     fullname: string;
     role: any;
+    clinic_id:string;
     doctorProfile?: DoctorProfile | null;
     assistantProfile?: AssistantProfile | null;
   }) {
@@ -41,6 +43,7 @@ export class User {
     this.username = params.username;
     this.fullname = params.fullname;
     this.role = params.role;
+    this.clinic_id= params.clinic_id;
     this.doctorProfile = params.doctorProfile ?? null;
     this.assistantProfile = params.assistantProfile ?? null;
   }
@@ -54,6 +57,7 @@ export class User {
       username: data.username,
       fullname: data.full_name,
       role,
+      clinic_id: data.clinic_id,
       doctorProfile: data.doctor_profiles ?? null,
       assistantProfile: data.assistant_profiles ?? null,
     });
