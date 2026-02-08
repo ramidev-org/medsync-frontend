@@ -20,6 +20,7 @@ import {
   View
 } from "react-native";
 
+import mockData from "@/data/preview_data.json";
 import { useRouter } from "expo-router";
 
 
@@ -60,6 +61,16 @@ export default function PatientsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+   useEffect(() => {
+    // Simulate async fetch
+    setTimeout(() => {
+      setPatients(mockData.patients);
+      setIsLoading(false);
+    }, 500);
+  }, []);
+
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const itemsPerPage = 10;

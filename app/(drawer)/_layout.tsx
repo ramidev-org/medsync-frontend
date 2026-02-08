@@ -55,7 +55,6 @@ export default function Layout() {
       <Drawer.Screen name="payments" options={{ drawerLabel: "Payments" }} />
       <Drawer.Screen name="chats" options={{ drawerLabel: "Chats" }} />
       <Drawer.Screen name="users" options={{ drawerLabel: "Users" }} />
-      <Drawer.Screen name="settings" options={{ drawerLabel: "Settings" }} />
     </Drawer>
   );
 }

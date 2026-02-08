@@ -85,7 +85,10 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
             <View style={styles.avatarMenu}>
               <TouchableOpacity
                 style={styles.avatarMenuItem}
-                onPress={() => setMenuVisible(false)}
+                onPress={() => {
+                  setMenuVisible(false);       // close dropdown
+                  router.push("/profile"); // navigate to profile page
+                }}
               >
                 <Ionicons
                   name="person-outline"
@@ -94,6 +97,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                 />
                 <Text style={styles.avatarMenuText}>Profile</Text>
               </TouchableOpacity>
+
 
               <TouchableOpacity
                 style={styles.avatarMenuItem}

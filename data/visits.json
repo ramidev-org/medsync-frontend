@@ -1,0 +1,70 @@
+{
+  "appointments": [
+    {
+      "id": "1",
+      "patient": {
+        "id": "p1",
+        "prenom": "Test",
+        "nom": "TEST",
+        "phone": "0794638935"
+      },
+      "time": "2026-02-10T08:00:00",
+      "status": "treated"
+    },
+    {
+      "id": "2",
+      "patient": {
+        "id": "p2",
+        "prenom": "Ilyes",
+        "nom": "ILYES",
+        "phone": ""
+      },
+      "time": "2026-02-10T08:00:00",
+      "status": "pending"
+    },
+    {
+      "id": "3",
+      "patient": {
+        "id": "p3",
+        "prenom": "Nadhir",
+        "nom": "NADHIR",
+        "phone": ""
+      },
+      "time": "2026-02-10T09:00:00",
+      "status": "confirmed"
+    },
+    {
+      "id": "4",
+      "patient": {
+        "id": "p4",
+        "prenom": "Loubna",
+        "nom": "LOUBNA",
+        "phone": ""
+      },
+      "time": "2026-02-10T09:00:00",
+      "status": "canceled"
+    },
+    {
+      "id": "5",
+      "patient": {
+        "id": "p5",
+        "prenom": "Omar",
+        "nom": "OMAR",
+        "phone": ""
+      },
+      "time": "2026-02-10T11:00:00",
+      "status": "confirmed"
+    },
+    {
+      "id": "6",
+      "patient": {
+        "id": "p6",
+        "prenom": "Prenom",
+        "nom": "NOM",
+        "phone": ""
+      },
+      "time": "2026-02-10T11:30:00",
+      "status": "confirmed"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/top_bar";
-import { useAuth } from "@/contexts/auth_context";
 import { chartData } from "@/data/chart_data";
+import mockData from "@/data/preview_data.json";
 import { useTheme } from "@/theme/theme_provider";
 import {
   FontAwesome5,
@@ -43,7 +43,9 @@ export default function DashboardPage() {
 
   const [chartWidth, setChartWidth] = useState(500); // Default fallback width
 
-   const { user } = useAuth();
+  //const { user } = useAuth();
+  // 🔧 Use mock doctor data instead of session user
+  const user = mockData.doctor;
 
   const renderChart = () => {
 
