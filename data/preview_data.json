@@ -5,46 +5,229 @@
     "specialite": "Généraliste",
     "tarif_consultation": 50,
     "disponibilite": [
-      {"jour": "Lundi", "de": "08:00", "a": "16:00"},
-      {"jour": "Mardi", "de": "08:00", "a": "16:00"},
-      {"jour": "Mercredi", "de": "08:00", "a": "16:00"},
-      {"jour": "Jeudi", "de": "08:00", "a": "16:00"},
-      {"jour": "Vendredi", "de": "08:00", "a": "16:00"}
+      { "jour": "Lundi", "de": "08:00", "a": "16:00" },
+      { "jour": "Mardi", "de": "08:00", "a": "16:00" },
+      { "jour": "Mercredi", "de": "08:00", "a": "16:00" },
+      { "jour": "Jeudi", "de": "08:00", "a": "16:00" },
+      { "jour": "Vendredi", "de": "08:00", "a": "16:00" }
     ],
     "signature_numerique": "Dr Ahmed Bensaïd"
   },
+
   "patients": [
-    {"id": "p1","first_name": "Yasmine","last_name": "Benali","date_of_birth": "1990-03-12","age": 33,"sex": "female","phone": "0555123456","email": "yasmine@example.com","address": "12 Rue Didouche Mourad, Alger","created_at": "2025-01-05"},
-    {"id": "p2","first_name": "Karim","last_name": "Boumediene","date_of_birth": "1985-07-20","age": 38,"sex": "male","phone": "0555987654","email": "karim@example.com","address": "45 Avenue Hassiba Benbouali, Alger","created_at": "2025-02-10"},
-    {"id": "p3","first_name": "Leila","last_name": "Mokhtari","date_of_birth": "1992-11-05","age": 31,"sex": "female","phone": "0555234567","email": "leila@example.com","address": "78 Rue Didouche Mourad, Alger","created_at": "2025-03-01"},
-    {"id": "p4","first_name": "Rachid","last_name": "Amrani","date_of_birth": "1978-05-22","age": 45,"sex": "male","phone": "0555345678","email": "rachid@example.com","address": "32 Avenue de l'Indépendance, Oran","created_at": "2025-01-15"},
-    {"id": "p5","first_name": "Sabrina","last_name": "Djelloul","date_of_birth": "1988-09-14","age": 37,"sex": "female","phone": "0555456789","email": "sabrina@example.com","address": "65 Rue Didouche Mourad, Alger","created_at": "2025-04-12"},
-    {"id": "p6","first_name": "Amine","last_name": "Cherif","date_of_birth": "1995-02-28","age": 31,"sex": "male","phone": "0555567890","email": "amine@example.com","address": "98 Boulevard Zighout Youcef, Alger","created_at": "2025-05-03"},
-    {"id": "p7","first_name": "Nadia","last_name": "Fellahi","date_of_birth": "1991-08-10","age": 34,"sex": "female","phone": "0555678901","email": "nadia@example.com","address": "24 Rue Didouche Mourad, Alger","created_at": "2025-06-20"},
-    {"id": "p8","first_name": "Sofiane","last_name": "Haddad","date_of_birth": "1983-12-02","age": 42,"sex": "male","phone": "0555789012","email": "sofiane@example.com","address": "13 Rue Larbi Ben M'hidi, Constantine","created_at": "2025-07-14"},
-    {"id": "p9","first_name": "Imane","last_name": "Belkacem","date_of_birth": "1997-06-18","age": 28,"sex": "female","phone": "0555890123","email": "imane@example.com","address": "86 Avenue Didouche Mourad, Alger","created_at": "2025-08-05"},
-    {"id": "p10","first_name": "Noureddine","last_name": "Salah","date_of_birth": "1980-01-30","age": 46,"sex": "male","phone": "0555901234","email": "noureddine@example.com","address": "75 Boulevard Zighout Youcef, Alger","created_at": "2025-09-01"}
+    {
+      "id": "p1",
+      "first_name": "Yasmine",
+      "last_name": "Benali",
+      "date_of_birth": "1990-03-12",
+      "age": 33,
+      "sex": "female",
+      "phone": "0555123456",
+      "email": "yasmine@example.com",
+      "address": "12 Rue Didouche Mourad, Alger",
+      "created_at": "2025-01-05"
+    },
+    {
+      "id": "p2",
+      "first_name": "Karim",
+      "last_name": "Boumediene",
+      "date_of_birth": "1985-07-20",
+      "age": 38,
+      "sex": "male",
+      "phone": "0555987654",
+      "email": "karim@example.com",
+      "address": "45 Avenue Hassiba Benbouali, Alger",
+      "created_at": "2025-02-10"
+    },
+    {
+      "id": "p3",
+      "first_name": "Leila",
+      "last_name": "Mokhtari",
+      "date_of_birth": "1992-11-05",
+      "age": 31,
+      "sex": "female",
+      "phone": "0555234567",
+      "email": "leila@example.com",
+      "address": "78 Rue Didouche Mourad, Alger",
+      "created_at": "2025-03-01"
+    },
+    {
+      "id": "p4",
+      "first_name": "Rachid",
+      "last_name": "Amrani",
+      "date_of_birth": "1978-05-22",
+      "age": 45,
+      "sex": "male",
+      "phone": "0555345678",
+      "email": "rachid@example.com",
+      "address": "32 Avenue de l'Indépendance, Oran",
+      "created_at": "2025-01-15"
+    },
+    {
+      "id": "p5",
+      "first_name": "Sabrina",
+      "last_name": "Djelloul",
+      "date_of_birth": "1988-09-14",
+      "age": 37,
+      "sex": "female",
+      "phone": "0555456789",
+      "email": "sabrina@example.com",
+      "address": "65 Rue Didouche Mourad, Alger",
+      "created_at": "2025-04-12"
+    },
+    {
+      "id": "p6",
+      "first_name": "Amine",
+      "last_name": "Cherif",
+      "date_of_birth": "1995-02-28",
+      "age": 31,
+      "sex": "male",
+      "phone": "0555567890",
+      "email": "amine@example.com",
+      "address": "98 Boulevard Zighout Youcef, Alger",
+      "created_at": "2025-05-03"
+    },
+    {
+      "id": "p7",
+      "first_name": "Nadia",
+      "last_name": "Fellahi",
+      "date_of_birth": "1991-08-10",
+      "age": 34,
+      "sex": "female",
+      "phone": "0555678901",
+      "email": "nadia@example.com",
+      "address": "24 Rue Didouche Mourad, Alger",
+      "created_at": "2025-06-20"
+    },
+    {
+      "id": "p8",
+      "first_name": "Sofiane",
+      "last_name": "Haddad",
+      "date_of_birth": "1983-12-02",
+      "age": 42,
+      "sex": "male",
+      "phone": "0555789012",
+      "email": "sofiane@example.com",
+      "address": "13 Rue Larbi Ben M'hidi, Constantine",
+      "created_at": "2025-07-14"
+    },
+    {
+      "id": "p9",
+      "first_name": "Imane",
+      "last_name": "Belkacem",
+      "date_of_birth": "1997-06-18",
+      "age": 28,
+      "sex": "female",
+      "phone": "0555890123",
+      "email": "imane@example.com",
+      "address": "86 Avenue Didouche Mourad, Alger",
+      "created_at": "2025-08-05"
+    },
+    {
+      "id": "p10",
+      "first_name": "Noureddine",
+      "last_name": "Salah",
+      "date_of_birth": "1980-01-30",
+      "age": 46,
+      "sex": "male",
+      "phone": "0555901234",
+      "email": "noureddine@example.com",
+      "address": "75 Boulevard Zighout Youcef, Alger",
+      "created_at": "2025-09-01"
+    }
   ],
+
   "appointments": [
-    {"id": "a1","patient_id": "p1","time": "2026-02-10T08:00:00","status": "pending","type": "regular","notes": ""},
-    {"id": "a2","patient_id": "p2","time": "2026-02-10T09:30:00","status": "in_consultation","type": "emergency","notes": "Arrived without prior booking"},
-    {"id": "a3","patient_id": "p3","time": "2026-02-10T10:00:00","status": "completed","type": "regular","notes": ""},
-    {"id": "a4","patient_id": "p4","time": "2026-02-10T11:30:00","status": "cancelled","type": "regular","notes": ""},
-    {"id": "a5","patient_id": "p5","time": "2026-02-10T12:00:00","status": "pending","type": "regular","notes": ""},
-    {"id": "a6","patient_id": "p6","time": "2026-02-10T13:00:00","status": "pending","type": "emergency","notes": "Walk-in"},
-    {"id": "a7","patient_id": "p7","time": "2026-02-10T14:30:00","status": "cancelled","type": "regular","notes": ""},
-    {"id": "a8","patient_id": "p8","time": "2026-02-10T15:00:00","status": "completed","type": "regular","notes": ""},
-    {"id": "a9","patient_id": "p9","time": "2026-02-10T15:30:00","status": "pending","type": "regular","notes": ""},
-    {"id": "a10","patient_id": "p10","time": "2026-02-10T16:00:00","status": "completed","type": "emergency","notes": "Immediate attention required"}
+    { "id": "a1", "patient_id": "p1", "time": "2026-02-10T08:00:00", "status": "pending", "type": "regular", "notes": "" },
+    { "id": "a2", "patient_id": "p2", "time": "2026-02-10T09:30:00", "status": "in_consultation", "type": "emergency", "notes": "Arrived without prior booking" },
+    { "id": "a3", "patient_id": "p3", "time": "2026-02-10T10:00:00", "status": "completed", "type": "regular", "notes": "" },
+    { "id": "a4", "patient_id": "p4", "time": "2026-02-10T11:30:00", "status": "cancelled", "type": "regular", "notes": "" },
+    { "id": "a5", "patient_id": "p5", "time": "2026-02-10T12:00:00", "status": "pending", "type": "regular", "notes": "" },
+    { "id": "a6", "patient_id": "p6", "time": "2026-02-10T13:00:00", "status": "pending", "type": "emergency", "notes": "Walk-in" },
+    { "id": "a7", "patient_id": "p7", "time": "2026-02-10T14:30:00", "status": "cancelled", "type": "regular", "notes": "" },
+    { "id": "a8", "patient_id": "p8", "time": "2026-02-10T15:00:00", "status": "completed", "type": "regular", "notes": "" },
+    { "id": "a9", "patient_id": "p9", "time": "2026-02-10T15:30:00", "status": "pending", "type": "regular", "notes": "" },
+    { "id": "a10", "patient_id": "p10", "time": "2026-02-10T16:00:00", "status": "completed", "type": "emergency", "notes": "Immediate attention required" }
   ],
+
   "consultations": [
-    {"id": "c1","appointment_id": "a1","diagnosis": ["A00"],"observations": "Fièvre et toux.","treatment_plan": "Paracétamol 500mg 2x/jour","follow_up": "Dans 7 jours","status": "closed"},
-    {"id": "c2","appointment_id": "a3","diagnosis": ["B01"],"observations": "Maux de tête et vertiges.","treatment_plan": "Ibuprofen 400mg","follow_up": "Dans 3 jours","status": "closed"},
-    {"id": "c3","appointment_id": "a8","diagnosis": ["C02"],"observations": "Douleurs à l'estomac et nausées.","treatment_plan": "Antiacides","follow_up": "Dans 5 jours","status": "closed"}
+    {
+      "id": "c1",
+      "appointment_id": "a1",
+      "diagnosis": ["A00"],
+      "observations": "Fièvre et toux.",
+      "treatment_plan": "Paracétamol 500mg 2x/jour",
+      "follow_up": "Dans 7 jours",
+      "status": "closed",
+      "vitals": {
+        "temperature": 38.5,
+        "heart_rate": 92,
+        "blood_pressure": "120/80",
+        "respiratory_rate": 18
+      }
+    },
+    {
+      "id": "c2",
+      "appointment_id": "a3",
+      "diagnosis": ["B01"],
+      "observations": "Maux de tête et vertiges.",
+      "treatment_plan": "Ibuprofen 400mg",
+      "follow_up": "Dans 3 jours",
+      "status": "closed",
+      "vitals": {
+        "temperature": 37.2,
+        "heart_rate": 78,
+        "blood_pressure": "118/75",
+        "respiratory_rate": 16
+      }
+    },
+    {
+      "id": "c3",
+      "appointment_id": "a8",
+      "diagnosis": ["C02"],
+      "observations": "Douleurs à l'estomac et nausées.",
+      "treatment_plan": "Antiacides",
+      "follow_up": "Dans 5 jours",
+      "status": "closed",
+      "vitals": {
+        "temperature": 36.9,
+        "heart_rate": 80,
+        "blood_pressure": "122/78",
+        "respiratory_rate": 17
+      }
+    }
   ],
+
   "prescriptions": [
-    {"id": "rx1","consultation_id": "c1","patient_id": "p1","drugs":[{"name": "Paracétamol","dose": "500mg","frequency": "2x/jour","duration": "5 jours"}],"template_name": "Traitement fièvre","signed_by": "Dr Ahmed Bensaïd"},
-    {"id": "rx2","consultation_id": "c2","patient_id": "p3","drugs":[{"name": "Ibuprofen","dose": "400mg","frequency": "2x/jour","duration": "3 jours"}],"template_name": "Traitement maux de tête","signed_by": "Dr Ahmed Bensaïd"},
-    {"id": "rx3","consultation_id": "c3","patient_id": "p8","drugs":[{"name": "Antiacides","dose": "1 comprimé","frequency": "3x/jour","duration": "5 jours"}],"template_name": "Traitement estomac","signed_by": "Dr Ahmed Bensaïd"}
+    {
+      "id": "rx1",
+      "consultation_id": "c1",
+      "patient_id": "p1",
+      "drugs": [
+        { "name": "Paracétamol", "dose": "500mg", "frequency": "2x/jour", "duration": "5 jours" }
+      ],
+      "template_name": "Traitement fièvre",
+      "signed_by": "Dr Ahmed Bensaïd"
+    },
+    {
+      "id": "rx2",
+      "consultation_id": "c2",
+      "patient_id": "p3",
+      "drugs": [
+        { "name": "Ibuprofen", "dose": "400mg", "frequency": "2x/jour", "duration": "3 jours" }
+      ],
+      "template_name": "Traitement maux de tête",
+      "signed_by": "Dr Ahmed Bensaïd"
+    },
+    {
+      "id": "rx3",
+      "consultation_id": "c3",
+      "patient_id": "p8",
+      "drugs": [
+        { "name": "Antiacides", "dose": "1 comprimé", "frequency": "3x/jour", "duration": "5 jours" }
+      ],
+      "template_name": "Traitement estomac",
+      "signed_by": "Dr Ahmed Bensaïd"
+    }
   ]
 }
