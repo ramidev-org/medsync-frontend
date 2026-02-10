@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 /* ================= METRIC CARD ================= */
 
@@ -116,3 +116,71 @@ export function SimpleInput({
     </View>
   );
 }
+
+/* ================= SUB TAB BAR (VIDEO STYLE) ================= */
+
+/**
+ * A small horizontal sub-tab bar (pill buttons) used inside each main tab.
+ *
+ * - Code names are in English (keys)
+ * - Display labels can be French (like the MedSign+ video)
+ */
+export function SubTabBar<T extends string>({
+  theme,
+  tabs,
+  activeKey,
+  onChange,
+}: {
+  theme: any;
+  tabs: { key: T; label: string }[];
+  activeKey: T;
+  onChange: (key: T) => void;
+}) {
+  return (
+    <View style={subTabStyles.row}>
+      {tabs.map((t) => {
+        const isActive = t.key === activeKey;
+        return (
+          <TouchableOpacity
+            key={t.key}
+            onPress={() => onChange(t.key)}
+            style={[
+              subTabStyles.pill,
+              {
+                backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
+                borderColor: theme.colors.primary,
+              },
+            ]}
+          >
+            <Text
+              style={[subTabStyles.pillText, { color: isActive ? "#fff" : theme.colors.primary }]}
+              numberOfLines={1}
+            >
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+const subTabStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  pill: {
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    maxWidth: 260,
+  },
+  pillText: {
+    fontWeight: "900",
+    fontSize: 12,
+  },
+});

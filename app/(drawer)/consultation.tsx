@@ -8,16 +8,14 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 
 import data from "@/data/preview_data.json";
 
-// ✅ tab pages (separate files)
+// Tab pages (separate files)
 import BilansTab from "@/components/consultation_tabs/bilan";
 import DocumentsTab from "@/components/consultation_tabs/documents";
 import LettresTab from "@/components/consultation_tabs/lettres";
 import MaladiesTab from "@/components/consultation_tabs/maladies";
 import ObservationMedicalTab from "@/components/consultation_tabs/observation";
 import OrdonnancesTab from "@/components/consultation_tabs/ordonnance";
-import PlaceholderTab from "@/components/consultation_tabs/placeholder";
 import SymptomesTab from "@/components/consultation_tabs/symptomes";
-
 
 /* ================= TYPES ================= */
 
@@ -62,6 +60,7 @@ interface ConsultationVitals {
   tension?: string;
   temperature_c?: string;
 
+  // Legacy/alternate naming support
   blood_pressure?: string;
   temperature?: number | string;
   weight_kg?: number | string;
@@ -104,25 +103,26 @@ interface Prescription {
   signed_by: string;
 }
 
-type MainTab =
-  | "Observation médicale"
-  | "Ordonnances"
-  | "Bilans"
-  | "Lettres"
-  | "Maladies"
-  | "Symptômes"
-  | "Documents";
+// Main tab keys are English in code. Visible labels are French (matching the video UI).
+type MainTabKey =
+  | "observation"
+  | "prescriptions"
+  | "lab_tests"
+  | "letters"
+  | "diagnoses"
+  | "symptoms"
+  | "documents";
 
 /* ================= UI CONST ================= */
 
-const MAIN_TABS: MainTab[] = [
-  "Observation médicale",
-  "Ordonnances",
-  "Bilans",
-  "Lettres",
-  "Maladies",
-  "Symptômes",
-  "Documents",
+const MAIN_TABS: Array<{ key: MainTabKey; label: string }> = [
+  { key: "observation", label: "Observation médicale" },
+  { key: "prescriptions", label: "Ordonnances" },
+  { key: "lab_tests", label: "Bilans" },
+  { key: "letters", label: "Lettres" },
+  { key: "diagnoses", label: "Maladies" },
+  { key: "symptoms", label: "Symptômes" },
+  { key: "documents", label: "Documents" },
 ];
 
 const initialVitals = {
@@ -152,9 +152,11 @@ export default function ConsultationPage() {
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
-  const [activeMainTab, setActiveMainTab] = useState<MainTab>("Observation médicale");
 
-  // shared states for tabs
+  // Which main tab is open (code key). Labels shown to the user are in French.
+  const [activeMainTab, setActiveMainTab] = useState<MainTabKey>("observation");
+
+  // Shared states for tabs
   const [vitals, setVitals] = useState(initialVitals);
   const [parameters, setParameters] = useState(initialParams);
   const [observations, setObservations] = useState("");
@@ -250,9 +252,7 @@ export default function ConsultationPage() {
     }
 
     setPrescriptions((prev) =>
-      prev.map((p) =>
-        p.id === rx.id ? { ...p, drugs: [...p.drugs, { ...drug }] } : p
-      )
+      prev.map((p) => (p.id === rx.id ? { ...p, drugs: [...p.drugs, { ...drug }] } : p))
     );
   };
 
@@ -289,7 +289,7 @@ export default function ConsultationPage() {
 
   /* ================= UI ================= */
 
-  const TAB_BAR_HEIGHT = 60; // ✅ fixed height (no dynamic)
+  const TAB_BAR_HEIGHT = 60; // Fixed height like the video
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -309,7 +309,7 @@ export default function ConsultationPage() {
         </TouchableOpacity>
       </View>
 
-      {/* Main tabs (fixed height tiles) */}
+      {/* Main tabs */}
       <View style={{ height: TAB_BAR_HEIGHT }}>
         <ScrollView
           horizontal
@@ -319,16 +319,16 @@ export default function ConsultationPage() {
         >
           {MAIN_TABS.map((t) => (
             <TouchableOpacity
-              key={t}
-              onPress={() => setActiveMainTab(t)}
+              key={t.key}
+              onPress={() => setActiveMainTab(t.key)}
               style={[
                 styles.mainTab,
                 { height: TAB_BAR_HEIGHT - 10 },
-                activeMainTab === t && styles.mainTabActive,
+                activeMainTab === t.key && styles.mainTabActive,
               ]}
             >
-              <Text style={[styles.mainTabText, activeMainTab === t && styles.mainTabTextActive]}>
-                {t}
+              <Text style={[styles.mainTabText, activeMainTab === t.key && styles.mainTabTextActive]}>
+                {t.label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -337,7 +337,7 @@ export default function ConsultationPage() {
 
       {/* Content */}
       <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 30 }}>
-        {activeMainTab === "Observation médicale" && (
+        {activeMainTab === "observation" && (
           <ObservationMedicalTab
             theme={theme}
             vitals={vitals}
@@ -350,20 +350,22 @@ export default function ConsultationPage() {
           />
         )}
 
-        {activeMainTab === "Ordonnances" && (
+        {activeMainTab === "prescriptions" && (
           <OrdonnancesTab
             theme={theme}
-            currentPrescription={currentPrescription}
             signedBy={currentPrescription?.signed_by || doctor?.signature_numerique || "Médecin"}
-            onAddDrug={addDrug}
           />
         )}
 
-        {activeMainTab === "Bilans" && (
-          <BilansTab theme={theme} consultationId={consultation!.id} patientId={appointment!.patient!.id} />
+        {activeMainTab === "lab_tests" && (
+          <BilansTab
+            theme={theme}
+            consultationId={consultation!.id}
+            patientId={appointment!.patient!.id}
+          />
         )}
 
-        {activeMainTab === "Lettres" && (
+        {activeMainTab === "letters" && (
           <LettresTab
             theme={theme}
             patient={appointment!.patient}
@@ -375,26 +377,23 @@ export default function ConsultationPage() {
           />
         )}
 
-        {activeMainTab === "Maladies" && (
+        {activeMainTab === "diagnoses" && (
           <MaladiesTab theme={theme} initialDiagnosisCodes={consultation?.diagnosis || []} />
         )}
 
-        {activeMainTab === "Symptômes" && <SymptomesTab theme={theme} />}
+        {activeMainTab === "symptoms" && <SymptomesTab theme={theme} />}
 
-        {activeMainTab === "Documents" && (
-          <DocumentsTab theme={theme} consultationId={consultation!.id} patientId={appointment!.patient!.id} />
+        {activeMainTab === "documents" && (
+          <DocumentsTab
+            theme={theme}
+            consultationId={consultation!.id}
+            patientId={appointment!.patient!.id}
+          />
         )}
-
-
-        {activeMainTab === "Bilans" && <PlaceholderTab theme={theme} title="Bilans" />}
-        {activeMainTab === "Lettres" && <PlaceholderTab theme={theme} title="Lettres" />}
-        {activeMainTab === "Maladies" && <PlaceholderTab theme={theme} title="Maladies" />}
-        {activeMainTab === "Symptômes" && <PlaceholderTab theme={theme} title="Symptômes" />}
-        {activeMainTab === "Documents" && <PlaceholderTab theme={theme} title="Documents" />}
 
         <TouchableOpacity style={styles.backFooter} onPress={() => router.push("/visits")}>
           <Ionicons name="arrow-back-outline" size={18} color={theme.colors.primary} />
-          <Text style={[styles.backFooterText]}>Retour aux visites</Text>
+          <Text style={styles.backFooterText}>Retour aux visites</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -430,23 +429,36 @@ const createStyles = (theme: any) =>
     mainTab: {
       width: 200,
       backgroundColor: theme.colors.primary,
-      borderTopLeftRadius: 8,
-      borderTopRightRadius: 8,
+      borderRadius: 12,
       marginRight: 10,
-      padding: 8,
-      justifyContent: "flex-start",
-      opacity: 0.55,
+      alignItems: "center",
+      justifyContent: "center",
+      opacity: 0.7,
     },
-    mainTabActive: { opacity: 1 },
-    mainTabText: { color: "#fff", fontWeight: "900" },
-    mainTabTextActive: { color: "#fff" },
+    mainTabActive: {
+      opacity: 1,
+    },
+    mainTabText: {
+      color: "#fff",
+      fontWeight: "900",
+      textAlign: "center",
+      paddingHorizontal: 8,
+    },
+    mainTabTextActive: {
+      color: "#fff",
+    },
 
     backFooter: {
       marginTop: 14,
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      flexDirection: "row",
+      gap: 8,
       paddingVertical: 10,
     },
-    backFooterText: { color: theme.colors.primary, fontWeight: "900", marginLeft: 8 },
+    backFooterText: {
+      color: theme.colors.primary,
+      fontWeight: "900",
+    },
+    
   });
