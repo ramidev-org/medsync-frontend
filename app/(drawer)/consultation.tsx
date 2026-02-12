@@ -10,12 +10,15 @@ import data from "@/data/preview_data.json";
 
 // Tab pages (separate files)
 import BilansTab from "@/components/consultation_tabs/bilan";
+import ConsultationHeader from "@/components/consultation_tabs/consultation_header";
 import DocumentsTab from "@/components/consultation_tabs/documents";
 import LettresTab from "@/components/consultation_tabs/lettres";
 import MaladiesTab from "@/components/consultation_tabs/maladies";
 import ObservationMedicalTab from "@/components/consultation_tabs/observation";
 import OrdonnancesTab from "@/components/consultation_tabs/ordonnance";
 import SymptomesTab from "@/components/consultation_tabs/symptomes";
+
+
 
 /* ================= TYPES ================= */
 
@@ -296,18 +299,21 @@ export default function ConsultationPage() {
       <TopBar theme={theme} />
 
       {/* Title row */}
-      <View style={styles.titleRow}>
-        <View style={styles.titleLeft}>
-          <Text style={styles.titleText}>CONSULTATION</Text>
-          <View style={styles.titlePill}>
-            <Text style={styles.titlePillText}>1/4</Text>
-          </View>
-        </View>
+      <ConsultationHeader
+        theme={theme}
+        title="CONSULTATION"
+        stepText="1/4"
+        onBack={() => router.push("/visits")}
+        onLastVisit={() => Alert.alert("Dernière visite", "Prototype")}
+        onSave={save}
+        onClose={() => Alert.alert("Clôturer", "Prototype")}
+        onPrint={() => Alert.alert("Imprimer", "Prototype")}
+        status={appointment?.status === "completed" ? "closed" : "in_consultation"}
+        patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
+        patientMeta={`${appointment?.patient?.age ?? "-"} ans • ${appointment?.patient?.sex === "female" ? "F" : "M"} • ID: ${appointment?.patient?.id ?? "-"}`}
+        visitMeta={`Visite #${appointment?.id ?? "-"} • ${appointment?.time ?? ""}`}
+      />
 
-        <TouchableOpacity onPress={() => Alert.alert("Dernière visite", "Prototype")}>
-          <Text style={styles.lastVisitText}>Dernière visite</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Main tabs */}
       <View style={{ height: TAB_BAR_HEIGHT }}>
@@ -425,7 +431,7 @@ const createStyles = (theme: any) =>
     titlePillText: { color: "#fff", fontWeight: "900" },
     lastVisitText: { color: theme.colors.text, opacity: 0.7, fontWeight: "800" },
 
-    tabsContainer: { paddingHorizontal: 12, alignItems: "stretch" },
+    tabsContainer: { paddingHorizontal: 10, paddingTop: 10,alignItems: "stretch" },
     mainTab: {
       width: 200,
       backgroundColor: theme.colors.primary,

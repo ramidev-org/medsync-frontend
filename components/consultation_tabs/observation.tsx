@@ -12,6 +12,12 @@ import {
   View,
 } from "react-native";
 
+import { CardiologyState, CardiologyTab } from "@/components/consultation_tabs/observation_specialities/cardiologie";
+import { DermatologyState, DermatologyTab } from "@/components/consultation_tabs/observation_specialities/dermatologie";
+import { GynecologyState, GynecologyTab } from "@/components/consultation_tabs/observation_specialities/gynecologie";
+
+
+
 /**
  * Observation tab updated to match the screenshots/video:
  * - Flat sub-tabs (left + right)
@@ -30,15 +36,26 @@ import {
    Sub-tab definitions
 ========================== */
 
-type LeftTabKey = "label" | "gynecology" | "history_comment" | "previous_labels";
+type LeftTabKey =
+  | "label"
+  | "gynecology"
+  | "cardiology"
+  | "dermatology"
+  | "history_comment"
+  | "previous_labels";
+
 type RightTabKey = "current_parameters" | "previous_parameters";
 
 const LEFT_TABS: Array<{ key: LeftTabKey; label: string }> = [
   { key: "label", label: "Étiquette" },
-  { key: "gynecology", label: "Gynécologie" },
+
   { key: "history_comment", label: "Antécédents et Commentaire" },
   { key: "previous_labels", label: "Étiquettes précédentes" },
+    { key: "gynecology", label: "Gynécologie" },
+  { key: "cardiology", label: "Cardiologie" },
+  { key: "dermatology", label: "Dermatologie" },
 ];
+
 
 const RIGHT_TABS: Array<{ key: RightTabKey; label: string }> = [
   { key: "current_parameters", label: "Paramètres de consultation" },
@@ -199,6 +216,20 @@ export default function ObservationMedicalTab({
 
   const openAntecedentsModal = () => setAntecedentsModalOpen(true);
 
+
+  type SpecialitiesState = {
+    gynecology: GynecologyState;
+    cardiology: CardiologyState;
+    dermatology: DermatologyState;
+  };
+
+  const [specialities, setSpecialities] = React.useState<SpecialitiesState>({
+    gynecology: {},
+    cardiology: {},
+    dermatology: {},
+  });
+
+
   return (
     
     <View style={styles.twoColWrap}>
@@ -261,53 +292,6 @@ export default function ObservationMedicalTab({
           <Text style={styles.noteText}>
             (Prototype) Add more label/summary fields from your backend here.
           </Text>
-        </View>
-      </View>
-    )}
-
-    {/* Gynécologie (2nd tab) — now shows the pregnancy card + timeline UI */}
-    {leftTab === "gynecology" && (
-      <View style={{ gap: 12 }}>
-
-                {/* Header info row */}
-            <View style={styles.metaRow}>
-
-                <View style={{ flex: 1 }}/>
-            
-                <TouchableOpacity style={styles.yellowBtn} onPress={openLabelModal}>
-                  <Text style={styles.yellowBtnText}>MODIFIER ÉTIQUETTE</Text>
-                </TouchableOpacity>
-              
-            </View>
-        <View style={styles.labelBanner}>
-          <Text style={styles.labelBannerTitle}>Bébé arrive le</Text>
-          <View style={styles.labelBannerDateRow}>
-            <View style={styles.labelBannerDateBox}>
-              <Text style={styles.labelBannerDateText}>19</Text>
-            </View>
-            <View style={styles.labelBannerDateBox}>
-              <Text style={styles.labelBannerDateText}>11</Text>
-            </View>
-            <View style={styles.labelBannerDateBox}>
-              <Text style={styles.labelBannerDateText}>22</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.labelInfoRow}>
-          <InfoPair theme={theme} label="Date des dernières règles:" value="12.02.2022" />
-          <InfoPair theme={theme} label="Cycle Menstruel:" value="28 Jours" />
-          <InfoPair theme={theme} label="Age de grossesse:" value="15 Semaines Et 3 Jours" />
-        </View>
-
-        <View style={styles.timelineWrap}>
-          <Text style={styles.sectionTitle}>Mes échographies</Text>
-          <View style={styles.timelineLine} />
-          <View style={styles.timelinePoints}>
-            <TimelinePoint theme={theme} label="Début de la grossesse" date="26-Feb-2022" active />
-            <TimelinePoint theme={theme} label="2ème échographie" date="16-Jul → 30-Jul.2022" />
-            <TimelinePoint theme={theme} label="Naissance" date="19.Nov.2022" />
-          </View>
         </View>
       </View>
     )}
@@ -422,6 +406,36 @@ export default function ObservationMedicalTab({
             </View>
           </View>
         )}
+
+
+              {/* Gynécologie */}
+      {leftTab === "gynecology" && (
+      <GynecologyTab
+        theme={theme}
+        onModifyLabel={openLabelModal}
+        value={specialities.gynecology}
+        onChange={(next) => setSpecialities((s) => ({ ...s, gynecology: next }))}
+        />
+      )}
+
+
+      {leftTab === "cardiology" && (
+      <CardiologyTab
+        theme={theme}
+        value={specialities.cardiology}
+        onChange={(next) => setSpecialities((s) => ({ ...s, cardiology: next }))}
+        />
+      )}
+
+    {leftTab === "dermatology" && (
+      <DermatologyTab
+        theme={theme}
+        value={specialities.dermatology}
+        onChange={(next) => setSpecialities((s) => ({ ...s, dermatology: next }))}
+        />
+      )}
+
+
       </ThemedCard>
       </View>
 
