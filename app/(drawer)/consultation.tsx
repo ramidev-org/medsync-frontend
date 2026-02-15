@@ -6,7 +6,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import data from "@/data/preview_data.json";
+import { MOCK } from "@/data/mock";
+import { useAuth } from "@/contexts/auth_context";
 
 // Tab pages (separate files)
 import BilansTab from "@/components/consultation_tabs/bilan";
@@ -151,7 +152,18 @@ export default function ConsultationPage() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const doctor: Doctor | null = (data as any).doctor ?? null;
+  const { user } = useAuth();
+
+  // Consultation is only for doctors.
+  useEffect(() => {
+    if (user && user.role !== "doctor") {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
+
+  const doctor: Doctor | null = (MOCK as any).doctor ?? null;
+  const doctorSpeciality =
+    (user as any)?.doctorProfile?.speciality ?? (doctor as any)?.specialite;
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
@@ -165,24 +177,24 @@ export default function ConsultationPage() {
   const [observations, setObservations] = useState("");
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(
-    () => ((data as any).prescriptions as Prescription[]) || []
+    () => ((MOCK as any).prescriptions as Prescription[]) || []
   );
 
   /* ================= LOAD ================= */
 
   useEffect(() => {
-    const appt = (data as any).appointments?.find((a: Appointment) => a.id === id) as
+    const appt = (MOCK as any).appointments?.find((a: Appointment) => a.id === id) as
       | Appointment
       | undefined;
     if (!appt) return;
 
-    const patient = (data as any).patients?.find((p: Patient) => p.id === appt.patient_id) as
+    const patient = (MOCK as any).patients?.find((p: Patient) => p.id === appt.patient_id) as
       | Patient
       | undefined;
 
     setAppointment({ ...appt, patient });
 
-    const found = (data as any).consultations?.find(
+    const found = (MOCK as any).consultations?.find(
       (c: Consultation) => c.appointment_id === appt.id
     ) as Consultation | undefined;
 
@@ -346,6 +358,7 @@ export default function ConsultationPage() {
         {activeMainTab === "observation" && (
           <ObservationMedicalTab
             theme={theme}
+            doctorSpeciality={doctorSpeciality}
             vitals={vitals}
             setVitals={setVitals}
             parameters={parameters}

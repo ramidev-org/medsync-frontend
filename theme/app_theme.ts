@@ -1,26 +1,34 @@
 import { colors } from "./colors";
 import { fonts } from "./fonts";
 
-export const darkTheme = {
-  dark: true,
+// Single light theme for the whole app (dark mode removed).
+export const appTheme = {
+  dark: false,
   colors: {
     primary: colors.primary,
     secondary: colors.secondary,
     accent: colors.accent,
+
     success: colors.success,
     warning: colors.warning,
     error: colors.error,
     info: colors.info,
 
-    background: colors.dark.background,
-    surface: colors.dark.surface,
-    surfaceVariant: colors.dark.surfaceVariant,
-    text: colors.dark.text,
-    textSecondary: colors.dark.textSecondary,
-    border: colors.dark.border,
-    muted: colors.dark.muted,
-    disabled: colors.dark.disabled,
-    overlay: colors.dark.overlay,
+    background: colors.light.background,
+    surface: colors.light.surface,
+    surfaceVariant: colors.light.surfaceVariant,
+    card: colors.light.card,
+    text: colors.light.text,
+    textSecondary: colors.light.textSecondary,
+    border: colors.light.border,
+    muted: colors.light.muted,
+    disabled: colors.light.disabled,
+    overlay: colors.light.overlay,
+
+    // UI helpers
+    primarySoft: colors.accent,
+    chipBg: colors.light.surfaceVariant,
+    chipText: colors.primary,
 
     // Status colors
     statusActive: colors.status.active,

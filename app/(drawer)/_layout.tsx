@@ -1,23 +1,37 @@
+import { APP_ROLE, AppRole } from "@/config/runtime";
+import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
-import { Fontisto, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import {
+  Fontisto,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { Drawer } from "expo-router/drawer";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
+type NavItem = {
+  key: string;
+  label: string;
+  icon: (opts: { active: boolean; color: string; size: number }) => JSX.Element;
+  route: string;
+  roles?: AppRole[];
+};
+
 export default function Layout() {
-
-
-
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const { user } = useAuth();
+  const styles = useMemo(() => getStyles(theme), [theme]);
 
-  const [expanded, setExpanded] = useState(false);
-  const drawerWidth = expanded ? 200 : 100;
+  // Prefer authenticated user's role (demo or real). Fallback to env role.
+  const role: AppRole = (user?.role as AppRole) || APP_ROLE;
 
-  // Configurable icon and label sizes
-  const iconSize = 26;
-  const labelSize = 16;
+  const [expanded, setExpanded] = useState(true);
+  const drawerWidth = expanded ? 240 : 86;
+
+  const iconSize = 22;
 
   return (
     <Drawer
@@ -28,13 +42,14 @@ export default function Layout() {
         drawerStyle: {
           backgroundColor: theme.colors.surface,
           width: drawerWidth,
+          borderRightWidth: 1,
+          borderRightColor: theme.colors.border,
         },
         drawerActiveTintColor: theme.colors.primary,
-        drawerInactiveTintColor: "#94a3b8",
+        drawerInactiveTintColor: theme.colors.textSecondary,
         drawerLabelStyle: {
           ...styles.label,
           display: expanded ? "flex" : "none",
-          fontSize: labelSize,
         },
       }}
       drawerContent={(props) => (
@@ -44,20 +59,106 @@ export default function Layout() {
           setExpanded={setExpanded}
           theme={theme}
           iconSize={iconSize}
-          labelSize={labelSize}
+          role={role}
         />
       )}
     >
-      <Drawer.Screen name="index" options={{ drawerLabel: "Home" }} />
+      {/* Keep screens declared for routing, but only show nav items in custom drawer */}
       <Drawer.Screen name="dashboard" options={{ drawerLabel: "Dashboard" }} />
-      <Drawer.Screen name="visits" options={{ drawerLabel: "Visits" }} />
+      <Drawer.Screen name="visits" options={{ drawerLabel: "Visites" }} />
       <Drawer.Screen name="patients" options={{ drawerLabel: "Patients" }} />
-      <Drawer.Screen name="payments" options={{ drawerLabel: "Payments" }} />
+      <Drawer.Screen name="payments" options={{ drawerLabel: "Paiements" }} />
       <Drawer.Screen name="chats" options={{ drawerLabel: "Chats" }} />
-      <Drawer.Screen name="users" options={{ drawerLabel: "Users" }} />
+      <Drawer.Screen name="users" options={{ drawerLabel: "Utilisateurs" }} />
+      <Drawer.Screen name="profile" options={{ drawerLabel: "Profil" }} />
     </Drawer>
   );
 }
+
+const NAV: NavItem[] = [
+  {
+    key: "dashboard",
+    label: "Accueil",
+    route: "dashboard",
+    icon: ({ color, size }) => (
+      <MaterialIcons
+        name="space-dashboard"
+        size={size}
+        color={color}
+      />
+    ),
+  },
+  {
+    key: "visits",
+    label: "Visites",
+    route: "visits",
+    icon: ({ color, size }) => (
+      <Ionicons
+        name="calendar-outline"
+        size={size}
+        color={color}
+      />
+    ),
+  },
+  {
+    key: "patients",
+    label: "Patients",
+    route: "patients",
+    icon: ({ color, size }) => (
+      <MaterialIcons
+        name="personal-injury"
+        size={size}
+        color={color}
+      />
+    ),
+  },
+  {
+    key: "payments",
+    label: "Paiements",
+    route: "payments",
+    roles: ["admin", "assistant"],
+    icon: ({ color, size }) => (
+      <Ionicons
+        name="card-outline"
+        size={size}
+        color={color}
+      />
+    ),
+  },
+  {
+    key: "chats",
+    label: "Chats",
+    route: "chats",
+    icon: ({ color, size }) => (
+      <Ionicons
+        name="chatbubble-ellipses-outline"
+        size={size}
+        color={color}
+      />
+    ),
+  },
+  {
+    key: "users",
+    label: "Utilisateurs",
+    route: "users",
+    roles: ["admin"],
+    icon: ({ color, size }) => (
+      <Fontisto name="persons" size={size} color={color} />
+    ),
+  },
+  {
+    key: "settings",
+    label: "Paramètres",
+    route: "profile",
+    icon: ({ color, size }) => (
+      <MaterialCommunityIcons
+        name="cog-outline"
+        size={size}
+        color={color}
+      />
+    ),
+  },
+];
 
 function CustomDrawerContent({
   expanded,
@@ -66,124 +167,76 @@ function CustomDrawerContent({
   navigation,
   state,
   iconSize,
-  labelSize,
+  role,
 }: any) {
+  const styles = getStyles(theme);
   const currentRoute = state.routes[state.index].name;
+  const items = NAV.filter(
+    (i) => !i.roles || i.roles.includes(role),
+  );
 
   return (
-    <DrawerContentScrollView contentContainerStyle={{ flex: 1 }}>
-      {/* Burger icon at the top */}
-      <View style={{ padding: 16 }}>
-        <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-          <Ionicons name="menu" size={iconSize} color={"#94a3b8"} />
+    <DrawerContentScrollView
+      contentContainerStyle={{
+        flex: 1,
+        paddingTop: 14,
+        paddingHorizontal: 10,
+      }}
+    >
+      <View style={{ paddingHorizontal: expanded ? 10 : 6, marginBottom: 10 }}>
+        <TouchableOpacity
+          onPress={() => setExpanded(!expanded)}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: theme.colors.background,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+          }}
+        >
+          <Ionicons name="menu" size={22} color={theme.colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
-      {/* Drawer items */}
-      <DrawerItem
-        label="Home"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <Ionicons
-            name="home-outline"
-            size={iconSize}
-            color={currentRoute === "index" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("index")}
-      />
-
-      <DrawerItem
-        label="Dashboard"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <MaterialIcons
-            name="space-dashboard"
-            size={iconSize}
-            color={currentRoute === "dashboard" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("dashboard")}
-      />
-      <DrawerItem
-        label="Visits"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <Ionicons
-            name="calendar-outline"
-            size={iconSize}
-            color={currentRoute === "visits" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("visits")}
-      />
-      <DrawerItem
-        label="Patients"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <MaterialIcons
-            name="personal-injury"
-            size={iconSize}
-            color={currentRoute === "patients" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("patients")}
-      />
-      <DrawerItem
-        label="Payments"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <Ionicons
-            name="card-outline"
-            size={iconSize}
-            color={currentRoute === "payments" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("payments")}
-      />
-      <DrawerItem
-        label="Chats"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <Ionicons
-            name="chatbox-ellipses-outline"
-            size={iconSize}
-            color={currentRoute === "chats" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("chats")}
-      />
-      <DrawerItem
-        label="Users"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <Fontisto
-            name="persons"
-            size={iconSize}
-            color={currentRoute === "users" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("users")}
-      />
-      <DrawerItem
-        label="Settings"
-        labelStyle={{ fontSize: labelSize }}
-        icon={({ color }) => (
-          <Ionicons
-            name="settings-outline"
-            size={iconSize}
-            color={currentRoute === "settings" ? theme.colors.primary : color}
-          />
-        )}
-        onPress={() => navigation.navigate("settings")}
-      />
+      {items.map((item) => {
+        const active = currentRoute === item.route;
+        return (
+          <View
+            key={item.key}
+            style={{
+              borderRadius: 14,
+              overflow: "hidden",
+              marginBottom: 6,
+              backgroundColor: active ? "#EFF6FF" : "transparent",
+            }}
+          >
+            <DrawerItem
+              label={item.label}
+              labelStyle={{
+                fontSize: 14,
+                fontWeight: active ? "700" : "500",
+                color: active ? theme.colors.primary : theme.colors.textSecondary,
+              }}
+              icon={({ color }) => item.icon({ active, color, size: iconSize })}
+              onPress={() => navigation.navigate(item.route)}
+              style={styles.drawerItem}
+            />
+          </View>
+        );
+      })}
     </DrawerContentScrollView>
   );
 }
 
-const getStyles = (theme: any) =>
+const getStyles = (_theme: any) =>
   StyleSheet.create({
     label: {
-      marginLeft: -8,
+      marginLeft: -10,
+    },
+    drawerItem: {
+      borderRadius: 14,
     },
   });

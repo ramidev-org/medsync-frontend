@@ -1,5 +1,6 @@
 // app/home_clinic.tsx   (or app/(drawer)/home_clinic.tsx)
 import { db } from "@/database/database_conn";
+import { IS_DEMO } from "@/config/runtime";
 import { useTheme } from "@/theme/theme_provider";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -23,6 +24,18 @@ export default function HomeClinic() {
 
     const loadClinic = async () => {
       setLoading(true);
+
+      if (IS_DEMO) {
+        setClinic({
+          id: clinicId,
+          active: true,
+          speciality: { name: "Médecine générale" },
+          clinic: { name: "Cabinet Démo", city: "Alger", state: "Alger" },
+          doctor: { full_name: "Dr Karim Boumediene" },
+        });
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await db
         .from("virtual_clinics")

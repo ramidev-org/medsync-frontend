@@ -1,6 +1,8 @@
 // app/(drawer)/UsersPage.tsx
 import { TopBar } from "@/components/top_bar";
+import { IS_DEMO } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
+import { MOCK_USERS } from "@/data/mock/admin_users";
 import { db } from "@/database/database_conn";
 import { createUser } from "@/services/admin.services";
 import { useTheme } from "@/theme/theme_provider";
@@ -24,6 +26,8 @@ export default function UsersPage() {
   const styles = getStyles(theme);
 
   const [users, setUsers] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [assistants, setAssistants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -37,6 +41,14 @@ export default function UsersPage() {
   useEffect(() => {
     const loadUsers = async () => {
       setLoading(true);
+
+      if (IS_DEMO) {
+        setDoctors(MOCK_USERS.doctors);
+        setAssistants(MOCK_USERS.assistants);
+        setUsers([...MOCK_USERS.doctors, ...MOCK_USERS.assistants]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await db
         .from("profiles")
@@ -65,6 +77,8 @@ export default function UsersPage() {
         }));
 
         setUsers(formatted);
+        setDoctors(formatted.filter((u: any) => u.role === "doctor"));
+        setAssistants(formatted.filter((u: any) => u.role === "assistant"));
       }
 
       setLoading(false);
@@ -129,34 +143,111 @@ export default function UsersPage() {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} />
       ) : (
-        <ScrollView contentContainerStyle={styles.grid}>
-          {users.map((u) => (
-            <View key={u.id} style={styles.card}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {u.email[0].toUpperCase()}
-                </Text>
-              </View>
+        <ScrollView contentContainerStyle={styles.page}>
+          {/* Doctors */}
+          <Text style={styles.sectionTitle}>Médecins</Text>
+          <View style={styles.grid}>
+            {(IS_DEMO ? doctors : users.filter((u) => u.role === "doctor")).map((u: any) => (
+              <View key={u.id} style={styles.userCard}>
+                <View style={styles.cardTop}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{(u.full_name || u.email)[0]?.toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.name}>{u.full_name || "Docteur"}</Text>
+                    {!!u.speciality && (
+                      <View style={styles.pill}>
+                        <Text style={styles.pillText}>{u.speciality}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
 
-              <Text style={styles.email}>{u.email}</Text>
+                {/* stats rows (demo only) */}
+                {IS_DEMO && (
+                  <View style={{ gap: 10, marginTop: 12 }}>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Patients</Text>
+                      <Text style={styles.rowValue}>{u.patients}</Text>
+                    </View>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Rating</Text>
+                      <Text style={styles.rowValue}>{u.rating}/5.0</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.rowLabel}>Availability</Text>
+                      <Text style={styles.rowSub}>{u.availability}</Text>
+                    </View>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Téléphone</Text>
+                      <Text style={styles.rowValue}>{u.phone}</Text>
+                    </View>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Email</Text>
+                      <Text style={styles.rowValue}>{u.email}</Text>
+                    </View>
+                  </View>
+                )}
 
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor:
-                      u.role === "doctor"
-                        ? theme.colors.primary + "22"
-                        : theme.colors.success + "22",
-                  },
-                ]}
-              >
-                <Text style={{ fontWeight: "600", textTransform: "capitalize" }}>
-                  {u.role}
-                </Text>
+                <View style={styles.cardActions}>
+                  <TouchableOpacity style={styles.secondaryBtn}>
+                    <Text style={styles.secondaryBtnText}>View Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.primaryBtn}>
+                    <Text style={styles.primaryBtnText}>Schedule</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
+          </View>
+
+          {/* Assistants */}
+          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>Assistants</Text>
+          <View style={styles.grid}>
+            {(IS_DEMO ? assistants : users.filter((u) => u.role === "assistant")).map((u: any) => (
+              <View key={u.id} style={styles.userCard}>
+                <View style={styles.cardTop}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{(u.full_name || u.email)[0]?.toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.name}>{u.full_name || "Assistant"}</Text>
+                    {IS_DEMO && (
+                      <View style={styles.pill}>
+                        <Text style={styles.pillText}>{u.department || "Accueil"}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {IS_DEMO && (
+                  <View style={{ gap: 10, marginTop: 12 }}>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Shift</Text>
+                      <Text style={styles.rowValue}>{u.shift}</Text>
+                    </View>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Téléphone</Text>
+                      <Text style={styles.rowValue}>{u.phone}</Text>
+                    </View>
+                    <View style={styles.rowLine}>
+                      <Text style={styles.rowLabel}>Email</Text>
+                      <Text style={styles.rowValue}>{u.email}</Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.cardActions}>
+                  <TouchableOpacity style={styles.secondaryBtn}>
+                    <Text style={styles.secondaryBtnText}>View Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.primaryBtn}>
+                    <Text style={styles.primaryBtnText}>Schedule</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       )}
 
@@ -242,39 +333,105 @@ const getStyles = (theme: any) =>
       borderRadius: 12,
     },
 
+    page: {
+      paddingHorizontal: 16,
+      paddingBottom: 28,
+    },
+
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: "800",
+      color: theme.colors.text,
+      paddingHorizontal: 2,
+      marginTop: 6,
+      marginBottom: 10,
+    },
+
     grid: {
-      padding: 16,
+      paddingBottom: 8,
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 16,
     },
 
-    card: {
-      width: "47%",
+    userCard: {
+      width: "31.5%",
+      minWidth: 280,
       backgroundColor: theme.colors.surface,
       borderRadius: 16,
-      padding: 16,
-      alignItems: "center",
-      gap: 8,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
     },
 
-    avatar: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      backgroundColor: theme.colors.primary + "33",
+    cardTop: {
+      flexDirection: "row",
+      gap: 12,
+      alignItems: "center",
+    },
+
+    avatarCircle: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor: theme.colors.primary + "22",
     },
-    avatarText: { fontSize: 20, fontWeight: "700" },
+    avatarText: { fontSize: 20, fontWeight: "800", color: theme.colors.primary },
 
-    email: { fontSize: 14, fontWeight: "600", textAlign: "center" },
+    name: { fontSize: 16, fontWeight: "800", color: theme.colors.text },
 
-    badge: {
-      paddingHorizontal: 12,
-      paddingVertical: 4,
+    pill: {
+      alignSelf: "flex-start",
+      marginTop: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
       borderRadius: 999,
+      backgroundColor: theme.colors.primary + "18",
     },
+    pillText: { fontSize: 12, fontWeight: "700", color: theme.colors.primary },
+
+    rowLine: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    rowLabel: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
+    rowValue: { color: theme.colors.text, fontWeight: "700", fontSize: 12 },
+    rowSub: { color: theme.colors.text, fontWeight: "600", marginTop: 4, fontSize: 12 },
+
+    cardActions: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 16,
+    },
+    secondaryBtn: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+    },
+    secondaryBtnText: { fontWeight: "800", color: theme.colors.text, fontSize: 13 },
+    primaryBtn: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 12,
+      alignItems: "center",
+      backgroundColor: theme.colors.primary,
+    },
+    primaryBtnText: { fontWeight: "800", color: theme.colors.surface, fontSize: 13 },
 
     modalOverlay: {
       flex: 1,

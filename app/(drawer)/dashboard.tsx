@@ -1,6 +1,8 @@
 import { TopBar } from "@/components/top_bar";
-import { chartData } from "@/data/chart_data";
-import mockData from "@/data/preview_data.json";
+import { chartData } from "@/data/mock/chart_data";
+import { MOCK } from "@/data/mock";
+import { useAuth } from "@/contexts/auth_context";
+import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useTheme } from "@/theme/theme_provider";
 import {
   FontAwesome5,
@@ -38,14 +40,18 @@ export default function DashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getStyles(theme), [theme]);
 
+  const { user } = useAuth();
+  const role = (user?.role as any) ?? "assistant";
+
   // 🔧 FIX: selectedTab is now a valid chartData key
   const [selectedTab, setSelectedTab] = useState<ChartKey>("RDV - CONS");
 
   const [chartWidth, setChartWidth] = useState(500); // Default fallback width
 
-  //const { user } = useAuth();
-  // 🔧 Use mock doctor data instead of session user
-  const user = mockData.doctor;
+  const doctorSpecialityKey = useMemo(
+    () => normalizeSpeciality((user as any)?.doctorProfile?.speciality),
+    [user],
+  );
 
   const renderChart = () => {
 
@@ -154,6 +160,14 @@ export default function DashboardPage() {
       );
     }
   };
+
+  // Role-based dashboards
+  if (role === "admin") {
+    return <AdminDashboard theme={theme} styles={styles} />;
+  }
+  if (role === "assistant") {
+    return <AssistantDashboard theme={theme} styles={styles} />;
+  }
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -287,7 +301,7 @@ export default function DashboardPage() {
                   <Text
                     style={[styles.doctorRole, { color: theme.colors.muted }]}
                   >
-                    Médecin Généraliste
+                    {specialityLabelFr(doctorSpecialityKey)}
                   </Text>
                 </View>
               </View>
@@ -307,37 +321,19 @@ export default function DashboardPage() {
                 theme={theme}
                 progress={50}
               />
+            </View>
 
-              <View
-                style={[
-                  styles.divider,
-                  { backgroundColor: theme.colors.border },
-                ]}
-              />
-
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Activité Récente
-              </Text>
-
+            <View
+              style={[
+                styles.doctorCard,
+                { backgroundColor: theme.colors.surface, marginTop: 16 },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Activité Récente</Text>
               <View style={styles.activityList}>
-                <ActivityItem
-                  title="Consultation"
-                  time="Il y a 30 min"
-                  icon="checkmark-circle"
-                  theme={theme}
-                />
-                <ActivityItem
-                  title="RDV Annulé"
-                  time="Il y a 2h"
-                  icon="close-circle"
-                  theme={theme}
-                />
-                <ActivityItem
-                  title="Nouveau Patient"
-                  time="Il y a 4h"
-                  icon="person-add"
-                  theme={theme}
-                />
+                <ActivityItem title="Consultation" time="Il y a 32 min" icon="eye" theme={theme} />
+                <ActivityItem title="RDV Annulé" time="Il y a 1 h" icon="checkmark-circle" theme={theme} />
+                <ActivityItem title="Nouveau Patient" time="Il y a 6 h" icon="calendar" theme={theme} />
               </View>
             </View>
           </View>
@@ -555,6 +551,333 @@ const ActivityItem = ({ title, time, icon, theme }: any) => {
     </View>
   );
 };
+
+/* ================= ROLE DASHBOARDS ================= */
+
+function AdminDashboard({ theme, styles }: any) {
+  const [clinics, setClinics] = useState((MOCK as any).adminClinics ?? []);
+  const doctors = (MOCK as any).adminUsers?.doctors ?? [];
+
+  const assignDoctor = (clinicId: string, doctorId: string | null) => {
+    setClinics((prev: any[]) =>
+      prev.map((c) =>
+        c.id === clinicId ? { ...c, assignedDoctorId: doctorId } : c,
+      ),
+    );
+  };
+
+  return (
+    <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
+      <TopBar theme={theme} />
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.row}>
+          <View style={styles.leftColumn}>
+            <View style={styles.welcomeCard}>
+              <Text style={styles.welcomeTitle}>Bonjour, Admin 👋</Text>
+              <Text style={styles.welcomeSubtitle}>
+                Gérez vos cliniques et assignez les médecins
+              </Text>
+            </View>
+
+            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Mes cliniques</Text>
+              <View style={{ gap: 12 }}>
+                {clinics.map((c: any) => {
+                  const assigned = doctors.find((d: any) => d.id === c.assignedDoctorId);
+                  return (
+                    <View
+                      key={c.id}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: theme.colors.border,
+                        borderRadius: 16,
+                        padding: 16,
+                        backgroundColor: theme.colors.surface,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: "800",
+                              color: theme.colors.text,
+                            }}
+                          >
+                            {c.name}
+                          </Text>
+                          <Text
+                            style={{
+                              marginTop: 4,
+                              color: theme.colors.muted,
+                            }}
+                          >
+                            {c.address}, {c.city} • {c.code}
+                          </Text>
+                          {assigned && (
+                            <Text
+                              style={{
+                                marginTop: 6,
+                                color: theme.colors.text,
+                                fontWeight: "700",
+                              }}
+                            >
+                              Médecin: {assigned.full_name} ({assigned.speciality})
+                            </Text>
+                          )}
+                        </View>
+
+                        <View
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 999,
+                            backgroundColor: theme.colors.chipBg,
+                            borderWidth: 1,
+                            borderColor: theme.colors.border,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: theme.colors.chipText,
+                              fontWeight: "800",
+                            }}
+                          >
+                            {assigned ? "Assigné" : "Non assigné"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={{ marginTop: 14 }}>
+                        <Text
+                          style={{
+                            color: theme.colors.muted,
+                            fontWeight: "800",
+                            marginBottom: 8,
+                          }}
+                        >
+                          Assigner un médecin
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            flexWrap: "wrap",
+                            gap: 8,
+                          }}
+                        >
+                          <Pill
+                            label="Aucun"
+                            active={!c.assignedDoctorId}
+                            onPress={() => assignDoctor(c.id, null)}
+                            theme={theme}
+                          />
+                          {doctors.map((d: any) => (
+                            <Pill
+                              key={d.id}
+                              label={d.full_name}
+                              active={c.assignedDoctorId === d.id}
+                              onPress={() => assignDoctor(c.id, d.id)}
+                              theme={theme}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.rightColumn}>
+            <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Résumé</Text>
+              <DoctorStat label="Cliniques" value={String(clinics.length)} theme={theme} />
+              <DoctorStat
+                label="Cliniques avec médecin"
+                value={String(clinics.filter((c: any) => !!c.assignedDoctorId).length)}
+                theme={theme}
+                progress={Math.round(
+                  (clinics.filter((c: any) => !!c.assignedDoctorId).length /
+                    Math.max(1, clinics.length)) *
+                    100,
+                )}
+              />
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function AssistantDashboard({ theme, styles }: any) {
+  const visits = ((MOCK as any).appointments ?? []) as any[];
+  const waiting = visits.filter(
+    (v: any) => v.status === "pending" || v.status === "in_consultation",
+  );
+
+  return (
+    <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
+      <TopBar theme={theme} />
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.row}>
+          <View style={styles.leftColumn}>
+            <View style={styles.welcomeCard}>
+              <Text style={styles.welcomeTitle}>Bonjour 👋</Text>
+              <Text style={styles.welcomeSubtitle}>Vue d'accueil (assistant)</Text>
+            </View>
+
+            <View style={styles.statsRow}>
+              <StatCard
+                title="En attente"
+                value={waiting.filter((w: any) => w.status === "pending").length}
+                percentage=""
+                icon="time-outline"
+                iconFamily="ion"
+                color={theme.colors.info}
+                theme={theme}
+              />
+              <StatCard
+                title="En consultation"
+                value={waiting.filter((w: any) => w.status === "in_consultation").length}
+                percentage=""
+                icon="stethoscope"
+                iconFamily="fontAwesome5"
+                color={theme.colors.primary}
+                theme={theme}
+              />
+              <StatCard
+                title="Terminés"
+                value={visits.filter((w: any) => w.status === "completed").length}
+                percentage=""
+                icon="check-circle"
+                iconFamily="fontAwesome5"
+                color={theme.colors.success}
+                theme={theme}
+              />
+              <StatCard
+                title="Annulés"
+                value={visits.filter((w: any) => w.status === "cancelled").length}
+                percentage=""
+                icon="close-circle"
+                iconFamily="ion"
+                color={theme.colors.error}
+                theme={theme}
+              />
+            </View>
+
+            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Salle d'attente</Text>
+              <View style={{ gap: 10 }}>
+                {waiting.slice(0, 6).map((a: any) => (
+                  <View
+                    key={a.id}
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: 14,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      borderRadius: 14,
+                      backgroundColor: theme.colors.surface,
+                    }}
+                  >
+                    <View>
+                      <Text style={{ fontWeight: "900", color: theme.colors.text }}>
+                        {a.patient?.first_name} {a.patient?.last_name}
+                      </Text>
+                      <Text style={{ color: theme.colors.muted, marginTop: 2 }}>{a.time}</Text>
+                    </View>
+                    <View
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                        backgroundColor: theme.colors.chipBg,
+                        borderWidth: 1,
+                        borderColor: theme.colors.border,
+                      }}
+                    >
+                      <Text style={{ color: theme.colors.chipText, fontWeight: "800" }}>
+                        {a.status === "pending" ? "En attente" : "En consultation"}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.rightColumn}>
+            <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Actions rapides</Text>
+              <View style={{ gap: 10 }}>
+                <QuickAction label="Nouveau patient" icon="person-add" theme={theme} />
+                <QuickAction label="Créer RDV" icon="calendar" theme={theme} />
+                <QuickAction label="Encaissement" icon="cash" theme={theme} />
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function Pill({ label, active, onPress, theme }: any) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: active ? theme.colors.primary : theme.colors.border,
+        backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
+      }}
+    >
+      <Text
+        style={{
+          fontWeight: "900",
+          color: active ? theme.colors.primary : theme.colors.text,
+          fontSize: 12,
+        }}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function QuickAction({ label, icon, theme }: any) {
+  return (
+    <TouchableOpacity
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        padding: 12,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+      }}
+    >
+      <Ionicons name={icon} size={18} color={theme.colors.primary} />
+      <Text style={{ fontWeight: "900", color: theme.colors.text }}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
 
 /* ================= STYLES ================= */
 const getStyles = (theme: any) =>

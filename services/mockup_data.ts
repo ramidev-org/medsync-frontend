@@ -1,4 +1,4 @@
-import dataJson from "@/data/preview_data.json";
+import dataJson from "@/data/mock/preview_data.json";
 
 type Doctor = typeof dataJson.doctor;
 type Patient = typeof dataJson.patients[0];

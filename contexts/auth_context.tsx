@@ -1,4 +1,9 @@
 // app/contexts/auth_context.tsx
+import {
+  getAppRole,
+  getDoctorSpeciality,
+  IS_DEMO,
+} from "@/config/runtime";
 import { db } from "@/database/database_conn";
 import { User } from "@/models/User";
 import { makeRedirectUri } from "expo-auth-session";
@@ -33,6 +38,44 @@ const AuthContext = createContext<AuthContextType | null>(null);
 let globalLoadedUserId: string | null = null;
 let globalAuthListener: any = null;
 
+const buildDemoUser = () => {
+  const role = getAppRole();
+  const speciality = getDoctorSpeciality();
+  return new User({
+    id: "demo-user",
+    email: "demo@mydoctor.local",
+    username: "demo",
+    fullname:
+      role === "doctor"
+        ? "Yasmine Benali"
+        : role === "admin"
+          ? "Admin Demo"
+          : "Assistant Demo",
+    role,
+    clinic_id: "demo-clinic",
+    doctorProfile:
+      role === "doctor"
+        ? {
+            speciality,
+            license_number: "DEMO-0001",
+            years_of_experience: 6,
+            consultation_fee: 2000,
+            bio: "Mode démo",
+            active: true,
+          }
+        : null,
+    assistantProfile:
+      role === "assistant"
+        ? {
+            department: "Accueil",
+            shift_start: "08:00",
+            shift_end: "16:00",
+            active: true,
+          }
+        : null,
+  });
+};
+
 export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any | null>(null);
@@ -41,7 +84,8 @@ export const AuthProvider = ({ children }: any) => {
   // Track if this instance has already initialized
   const hasInitialized = useRef(false);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  // Google login (kept for real mode)
+  Google.useAuthRequest({
     clientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
     redirectUri: makeRedirectUri(),
     scopes: ["profile", "email"],
@@ -49,12 +93,9 @@ export const AuthProvider = ({ children }: any) => {
 
   const loadUser = async (id: string) => {
     if (!id || globalLoadedUserId === id) {
-      console.log("⏭️ Skipping duplicate load for user:", id);
       setLoading(false);
       return;
     }
-
-    console.log("🔄 Loading user profile:", id);
     globalLoadedUserId = id;
 
     try {
@@ -72,7 +113,6 @@ export const AuthProvider = ({ children }: any) => {
         .single();
 
       if (error || !data) {
-        console.error("❌ Failed to load user:", error);
         setUser(null);
         await db.auth.signOut();
         globalLoadedUserId = null;
@@ -80,9 +120,7 @@ export const AuthProvider = ({ children }: any) => {
       }
 
       setUser(User.fromDb(data));
-      console.log("✅ User profile loaded successfully");
-    } catch (err) {
-      console.error("❌ Error loading user:", err);
+    } catch {
       setUser(null);
       globalLoadedUserId = null;
     } finally {
@@ -91,18 +129,35 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   useEffect(() => {
-    // Prevent duplicate initialization
-    if (hasInitialized.current) {
-      console.log("⚠️ AuthProvider already initialized, skipping");
-      return;
+    // Demo mode: bypass Supabase completely.
+    if (IS_DEMO) {
+      setUser(buildDemoUser());
+      setSession(null);
+      setLoading(false);
+
+      // In some dev setups, changing .env + hot reload can keep module state.
+      // Poll lightly to pick up role/speciality changes after refresh.
+      const t = setInterval(() => {
+        setUser((prev) => {
+          const next = buildDemoUser();
+          if (!prev) return next;
+          if (prev.role !== next.role) return next;
+          const prevSpec = (prev as any)?.doctorProfile?.speciality;
+          const nextSpec = (next as any)?.doctorProfile?.speciality;
+          if (prevSpec !== nextSpec) return next;
+          return prev;
+        });
+      }, 1000);
+
+      return () => clearInterval(t);
     }
 
-    console.log("🔐 Setting up auth listener");
+    // Prevent duplicate initialization
+    if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     // Clean up any existing listener
     if (globalAuthListener) {
-      console.log("🧹 Cleaning up old listener");
       globalAuthListener.subscription.unsubscribe();
     }
 
@@ -121,14 +176,12 @@ export const AuthProvider = ({ children }: any) => {
 
       // Setup listener
       const { data: listener } = db.auth.onAuthStateChange(
-        async (event, newSession) => {
-          console.log("🔔 Auth state changed:", event);
+        async (_event, newSession) => {
           setSession(newSession ?? null);
 
           if (newSession?.user?.id) {
             await loadUser(newSession.user.id);
           } else {
-            console.log("👋 No session, clearing user");
             setUser(null);
             globalLoadedUserId = null;
             setLoading(false);
@@ -143,12 +196,12 @@ export const AuthProvider = ({ children }: any) => {
 
     // Only cleanup on actual unmount
     return () => {
-      console.log("🧹 Cleaning up auth listener");
-      // DO NOT unsubscribe here - let the global listener persist
+      // Intentionally do not unsubscribe global listener.
     };
-  }, []); // Empty deps - only run once
+  }, []);
 
   const signupWithLicense = async (payload: SignupPayload) => {
+    if (IS_DEMO) return;
     const res = await fetch(
       "https://cxycroqsgmtasgibapen.functions.supabase.co/signup-with-license",
       {
@@ -173,32 +226,21 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const login = async (email: string, password: string) => {
+    if (IS_DEMO) return;
     const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   const logout = async () => {
+    if (IS_DEMO) {
+      setUser(null);
+      globalLoadedUserId = null;
+      return;
+    }
     await db.auth.signOut();
     setUser(null);
     globalLoadedUserId = null;
   };
-
-  // ❌ REMOVE THIS LOADING SCREEN - let AuthGateWrapper handle it
-  // if (loading) {
-  //   return (
-  //     <div
-  //       style={{
-  //         width: "100vw",
-  //         height: "100vh",
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //       }}
-  //     >
-  //       <p>Loading...</p>
-  //     </div>
-  //   );
-  // }
 
   return (
     <AuthContext.Provider

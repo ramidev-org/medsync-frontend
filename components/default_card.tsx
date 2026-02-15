@@ -20,8 +20,8 @@ export const ThemedCard: React.FC<ThemedCardProps> = ({ children, style, ...prop
           position: "relative",
           overflow: "hidden",
 
-          // shadow for web
-          boxShadow: "0px 2px 8px rgba(0,0,0,0.08)",
+          // subtle shadow for web (washed/light theme)
+          boxShadow: "0px 2px 10px rgba(17,24,39,0.06)",
         },
         style,
       ]}

@@ -1,26 +1,26 @@
-import React, { createContext, useContext, useState } from "react";
-import { darkTheme } from "./dark";
-import { lightTheme } from "./light";
+import React, { createContext, useContext } from "react";
+import { appTheme } from "./app_theme";
 
-type Theme = typeof lightTheme;
+type Theme = typeof appTheme;
 
 const ThemeContext = createContext<{
   theme: Theme;
+  // Dark mode removed; keep for backward compatibility (no-op).
   toggleTheme: () => void;
 }>({
-  theme: lightTheme,
+  theme: appTheme,
   toggleTheme: () => {},
 });
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isDark, setIsDark] = useState(false);
-
-  const toggleTheme = () => setIsDark((v) => !v);
+export const ThemeProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const toggleTheme = () => {};
 
   return (
-    <ThemeContext.Provider
-      value={{ theme: isDark ? darkTheme : lightTheme, toggleTheme }}
-    >
+    <ThemeContext.Provider value={{ theme: appTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

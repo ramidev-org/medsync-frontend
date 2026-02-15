@@ -16,8 +16,8 @@ import {
   ViewStyle
 } from "react-native";
 
-// JSON mock data
-import data from "@/data/preview_data.json";
+// Mock data (single source)
+import { MOCK } from "@/data/mock";
 import { router } from "expo-router";
 
 /* ================= STATUS LABELS ================= */
@@ -71,8 +71,8 @@ export default function VisitsPage() {
 
   /* ================= LOAD APPOINTMENTS WITH PATIENT ================= */
   useEffect(() => {
-    const merged: Appointment[] = data.appointments.map(a => {
-      const patient = data.patients.find(p => p.id === a.patient_id);
+    const merged: Appointment[] = MOCK.appointments.map((a: any) => {
+      const patient = MOCK.patients.find((p: any) => p.id === a.patient_id);
       return { ...a, patient };
     });
     setAppointments(merged);
@@ -183,6 +183,27 @@ export default function VisitsPage() {
               ))}
             </View>
 
+            {/* Progress Card (matches screenshot placement) */}
+            <ThemedCard style={{ marginBottom: 16 }}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>État d'avancement</Text>
+                <Text style={[styles.progressValue, { color: theme.colors.primary }]}>
+                  {progress}%
+                </Text>
+              </View>
+              <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${progress}%`, backgroundColor: theme.colors.primary },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {appointments.filter(a => a.status === "completed").length} sur {appointments.length} patients traités
+              </Text>
+            </ThemedCard>
+
             {/* ================= TABLE ================= */}
             <View style={styles.tableContainer}>
               <View style={[styles.tableRow, styles.header]}>
@@ -242,20 +263,6 @@ export default function VisitsPage() {
         {/* ================= RIGHT ================= */}
         <View style={styles.right}>
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            {/* Progress Card */}
-            <ThemedCard style={{ marginBottom: 16 }}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>Etat d'avancement</Text>
-                <Text style={[styles.progressValue, { color: theme.colors.primary }]}>{progress}%</Text>
-              </View>
-              <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}>
-                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary }]} />
-              </View>
-              <Text style={styles.progressText}>
-                {appointments.filter(a => a.status === "completed").length} sur {appointments.length} patients traités
-              </Text>
-            </ThemedCard>
-
             {/* Waiting Room */}
             <ThemedCard>
               <Text style={styles.waitingTitle}>Salle d'attente</Text>

@@ -27,13 +27,22 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
 
   const styles = createStyles(theme);
 
+  const dateLabel = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .format(new Date())
+    .replace(/^./, (c) => c.toUpperCase());
+
   return (
     <>
       <View style={styles.container}>
-        {/* Left side: Logo or brand */}
-        <View style={{ width: 100 }} />
+        {/* Left side: Date */}
+        <Text style={styles.dateText}>{dateLabel}</Text>
 
-        {/* Right side: date + button + icons */}
+        {/* Right side: actions */}
         <View style={styles.rightSection}>
           {/* Nouveau Patient button */}
           <TouchableOpacity
@@ -43,9 +52,6 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={styles.primaryBtnText}>Nouveau Patient</Text>
           </TouchableOpacity>
-
-          {/* Date */}
-          <Text style={styles.dateText}>Mardi 31/05/2022</Text>
 
           {/* Icons */}
           <TouchableOpacity style={styles.iconButton}>
@@ -176,7 +182,6 @@ const createStyles = (theme: any) =>
       fontSize: 14,
       color: theme.colors.text,
       fontWeight: "500",
-      marginLeft: 8,
     },
     iconButton: {
       padding: 8,

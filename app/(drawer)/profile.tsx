@@ -1,198 +1,267 @@
 import { ThemedCard } from "@/components/default_card";
 import { TopBar } from "@/components/top_bar";
+import { useAuth } from "@/contexts/auth_context";
+import { MOCK } from "@/data/mock";
+import { specialityLabelFr, normalizeSpeciality } from "@/config/speciality";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useMemo, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-// Mock JSON import
-import doctorData from "@/data/preview_data.json";
+// NOTE: This route is kept as "profile" for backward compatibility,
+// but it behaves as a role-based Settings page.
 
-interface Availability {
-  jour: string;
-  de: string;
-  a: string;
-}
-
-interface Doctor {
-  id: string;
-  nom_complet: string;
-  specialite: string;
-  tarif_consultation: number;
-  disponibilite: Availability[];
-  signature_numerique: string;
-  avatar?: string;
-}
-
-export default function DoctorProfilePage() {
+export default function SettingsPage() {
   const { theme } = useTheme();
-  const [doctor, setDoctor] = useState<Doctor | null>(null);
-
-  useEffect(() => {
-    setDoctor(doctorData.doctor);
-  }, []);
-
-  const handleChange = (field: keyof Doctor, value: any) => {
-    if (!doctor) return;
-    setDoctor({ ...doctor, [field]: value });
-  };
-
-  const handleSave = () => {
-    console.log("Saving doctor profile:", doctor);
-    alert("Profil sauvegardé (mockup)");
-  };
-
-  if (!doctor) return null;
-
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { user } = useAuth();
+  const role = (user?.role as any) ?? "assistant";
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
       <TopBar theme={theme} />
-
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-        <View style={styles.container}>
-          {/* Left Column: Avatar + Save */}
-          <ThemedCard style={styles.leftCard}>
-            <Image
-              source={{ uri: doctor.avatar || "https://i.pravatar.cc/100" }}
-              style={styles.avatar}
-            />
-            <Text style={styles.doctorName}>{doctor.nom_complet}</Text>
-            <Text style={styles.doctorSpecialty}>{doctor.specialite}</Text>
-            <Text style={styles.signature}>Signature: {doctor.signature_numerique}</Text>
-
-            {/* Save Button */}
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Ionicons name="save-outline" size={18} color="#fff" />
-              <Text style={styles.saveText}>Enregistrer</Text>
-            </TouchableOpacity>
-          </ThemedCard>
-
-          {/* Right Column: Info + Availability */}
-          <View style={styles.rightColumn}>
-            {/* Profile Info */}
-            <ThemedCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Informations</Text>
-
-              <Text style={styles.label}>Nom complet</Text>
-              <TextInput
-                style={styles.input}
-                value={doctor.nom_complet}
-                onChangeText={(text) => handleChange("nom_complet", text)}
-              />
-
-              <Text style={styles.label}>Spécialité</Text>
-              <TextInput
-                style={styles.input}
-                value={doctor.specialite}
-                onChangeText={(text) => handleChange("specialite", text)}
-              />
-
-              <Text style={styles.label}>Tarif consultation</Text>
-              <TextInput
-                style={styles.input}
-                value={doctor.tarif_consultation.toString()}
-                keyboardType="numeric"
-                onChangeText={(text) => handleChange("tarif_consultation", Number(text))}
-              />
-
-              <Text style={styles.label}>Signature numérique</Text>
-              <TextInput
-                style={styles.input}
-                value={doctor.signature_numerique}
-                onChangeText={(text) => handleChange("signature_numerique", text)}
-              />
-            </ThemedCard>
-
-            {/* Availability */}
-            <ThemedCard style={styles.card}>
-              <Text style={styles.sectionTitle}>Disponibilités</Text>
-              {doctor.disponibilite.map((d, idx) => (
-                <View key={idx} style={styles.availabilityRow}>
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    value={d.jour}
-                    onChangeText={(text) => {
-                      const dispo = [...doctor.disponibilite];
-                      dispo[idx].jour = text;
-                      handleChange("disponibilite", dispo);
-                    }}
-                  />
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    value={d.de}
-                    onChangeText={(text) => {
-                      const dispo = [...doctor.disponibilite];
-                      dispo[idx].de = text;
-                      handleChange("disponibilite", dispo);
-                    }}
-                  />
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    value={d.a}
-                    onChangeText={(text) => {
-                      const dispo = [...doctor.disponibilite];
-                      dispo[idx].a = text;
-                      handleChange("disponibilite", dispo);
-                    }}
-                  />
-                </View>
-              ))}
-            </ThemedCard>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Paramètres</Text>
+          <View style={styles.rolePill}>
+            <Text style={styles.rolePillText}>{role.toUpperCase()}</Text>
           </View>
         </View>
+
+        {role === "doctor" && <DoctorSettings theme={theme} />}
+        {role === "assistant" && <AssistantSettings theme={theme} />}
+        {role === "admin" && <AdminSettings theme={theme} />}
       </ScrollView>
     </View>
+  );
+}
+
+function DoctorSettings({ theme }: any) {
+  const { user } = useAuth();
+  const current = (user as any)?.doctorProfile?.speciality ?? "Médecine générale";
+
+  const [fullname, setFullname] = useState(user?.fullname ?? "");
+  const [speciality, setSpeciality] = useState(String(current));
+  const [fee, setFee] = useState(String((user as any)?.doctorProfile?.consultation_fee ?? 2000));
+
+  const key = normalizeSpeciality(speciality);
+
+  return (
+    <View style={{ gap: 16 }}>
+      <ThemedCard style={{ padding: 18 }}>
+        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
+          Profil médecin
+        </Text>
+        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
+          Ces champs sont en mode prototype (démo)
+        </Text>
+
+        <Field label="Nom complet" value={fullname} onChangeText={setFullname} theme={theme} />
+        <Field label="Spécialité" value={speciality} onChangeText={setSpeciality} theme={theme} />
+        <Text style={{ marginTop: 6, color: theme.colors.muted, fontWeight: "700" }}>
+          Détectée: {specialityLabelFr(key)}
+        </Text>
+        <Field label="Tarif consultation" value={fee} onChangeText={setFee} theme={theme} keyboardType="numeric" />
+
+        <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />
+      </ThemedCard>
+
+      <ThemedCard style={{ padding: 18 }}>
+        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
+          Préférences
+        </Text>
+        <View style={{ marginTop: 12, gap: 10 }}>
+          <SettingRow label="Notifications" value="Activées" theme={theme} />
+          <SettingRow label="Langue" value="Français" theme={theme} />
+        </View>
+      </ThemedCard>
+    </View>
+  );
+}
+
+function AssistantSettings({ theme }: any) {
+  const { user } = useAuth();
+  const [department, setDepartment] = useState(String((user as any)?.assistantProfile?.department ?? "Accueil"));
+  const [shiftStart, setShiftStart] = useState(String((user as any)?.assistantProfile?.shift_start ?? "08:00"));
+  const [shiftEnd, setShiftEnd] = useState(String((user as any)?.assistantProfile?.shift_end ?? "16:00"));
+
+  return (
+    <View style={{ gap: 16 }}>
+      <ThemedCard style={{ padding: 18 }}>
+        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
+          Profil assistant
+        </Text>
+        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
+          Ces champs sont en mode prototype (démo)
+        </Text>
+
+        <Field label="Département" value={department} onChangeText={setDepartment} theme={theme} />
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Field label="Début" value={shiftStart} onChangeText={setShiftStart} theme={theme} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field label="Fin" value={shiftEnd} onChangeText={setShiftEnd} theme={theme} />
+          </View>
+        </View>
+        <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />
+      </ThemedCard>
+
+      <ThemedCard style={{ padding: 18 }}>
+        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
+          Préférences
+        </Text>
+        <View style={{ marginTop: 12, gap: 10 }}>
+          <SettingRow label="Notifications" value="Activées" theme={theme} />
+          <SettingRow label="Langue" value="Français" theme={theme} />
+        </View>
+      </ThemedCard>
+    </View>
+  );
+}
+
+function AdminSettings({ theme }: any) {
+  const clinics = (MOCK as any).adminClinics ?? [];
+  const [orgName, setOrgName] = useState("Mon Organisation");
+
+  return (
+    <View style={{ gap: 16 }}>
+      <ThemedCard style={{ padding: 18 }}>
+        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
+          Organisation
+        </Text>
+        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
+          Paramètres administrateur (prototype)
+        </Text>
+        <Field label="Nom" value={orgName} onChangeText={setOrgName} theme={theme} />
+        <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />
+      </ThemedCard>
+
+      <ThemedCard style={{ padding: 18 }}>
+        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
+          Cliniques
+        </Text>
+        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
+          {clinics.length} clinique(s)
+        </Text>
+        <View style={{ marginTop: 12, gap: 10 }}>
+          {clinics.slice(0, 4).map((c: any) => (
+            <View
+              key={c.id}
+              style={{
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                borderRadius: 14,
+                padding: 14,
+                backgroundColor: theme.colors.surface,
+              }}
+            >
+              <Text style={{ fontWeight: "900", color: theme.colors.text }}>{c.name}</Text>
+              <Text style={{ marginTop: 3, color: theme.colors.muted }}>{c.address}, {c.city}</Text>
+            </View>
+          ))}
+        </View>
+      </ThemedCard>
+    </View>
+  );
+}
+
+function Field({ label, value, onChangeText, theme, keyboardType }: any) {
+  return (
+    <View style={{ marginTop: 14 }}>
+      <Text style={{ fontWeight: "800", color: theme.colors.text, marginBottom: 6 }}>
+        {label}
+      </Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        style={{
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          color: theme.colors.text,
+        }}
+      />
+    </View>
+  );
+}
+
+function SettingRow({ label, value, theme }: any) {
+  return (
+    <View style={{
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    }}>
+      <Text style={{ fontWeight: "800", color: theme.colors.text }}>{label}</Text>
+      <Text style={{ color: theme.colors.muted, fontWeight: "700" }}>{value}</Text>
+    </View>
+  );
+}
+
+function PrimaryButton({ label, icon, onPress, theme }: any) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        marginTop: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        backgroundColor: theme.colors.primary,
+        paddingVertical: 12,
+        borderRadius: 14,
+      }}
+    >
+      <Ionicons name={icon} size={18} color="#fff" />
+      <Text style={{ color: "#fff", fontWeight: "900" }}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
-    container: { flexDirection: "row", gap: 16 },
-
-    leftCard: {
-      padding: 20,
-      width: 300,
-      alignItems: "center",
+    container: {
+      padding: 24,
+      gap: 16,
     },
-    avatar: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      marginBottom: 12,
-    },
-    doctorName: { fontSize: 20, fontWeight: "700", marginBottom: 4, textAlign: "center" },
-    doctorSpecialty: { fontSize: 16, color: theme.colors.primary, marginBottom: 4, textAlign: "center" },
-    signature: { fontSize: 16, color: "#6b7280", marginBottom: 16, textAlign: "center" },
-
-    rightColumn: { flex: 1, flexDirection: "column", gap: 16 },
-
-    card: { padding: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
-    label: { fontSize: 14, fontWeight: "500", marginTop: 12, marginBottom: 4 },
-    input: {
-      backgroundColor: theme.colors.card,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      fontSize: 14,
-      marginBottom: 8,
-    },
-    availabilityRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-    saveBtn: {
+    headerRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: theme.colors.primary,
-      padding: 12,
-      borderRadius: 12,
-      gap: 8,
+      justifyContent: "space-between",
     },
-    saveText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+    title: {
+      fontSize: 22,
+      fontWeight: "900",
+      color: theme.colors.text,
+    },
+    rolePill: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: theme.colors.primarySoft,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    rolePillText: {
+      fontWeight: "900",
+      color: theme.colors.primary,
+      fontSize: 12,
+    },
   });

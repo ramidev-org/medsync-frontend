@@ -1,7 +1,7 @@
 import DatePickerField from "@/components/datepicker";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
-import { MOCK_PAYMENTS } from "@/data/payments_data";
+import { MOCK_PAYMENTS } from "@/data/mock/payments_data";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";

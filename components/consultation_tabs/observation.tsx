@@ -2,6 +2,7 @@ import { BlueField, MetricCard } from "@/components/consultation_tabs/ui";
 import { ThemedCard } from "@/components/default_card";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { normalizeSpeciality } from "@/config/speciality";
 import {
   Modal,
   ScrollView,
@@ -36,22 +37,28 @@ import { GynecologyState, GynecologyTab } from "@/components/consultation_tabs/o
    Sub-tab definitions
 ========================== */
 
+type SpecialtyKey = "gynecology" | "cardiology" | "dermatology";
+
 type LeftTabKey =
   | "label"
-  | "gynecology"
-  | "cardiology"
-  | "dermatology"
   | "history_comment"
-  | "previous_labels";
+  | "previous_labels"
+  | SpecialtyKey;
 
 type RightTabKey = "current_parameters" | "previous_parameters";
 
-const LEFT_TABS: Array<{ key: LeftTabKey; label: string }> = [
+// Dynamic: specialty subtabs depend on the doctor's speciality.
+const BASE_LEFT_TABS: Array<{ key: Exclude<LeftTabKey, SpecialtyKey>; label: string }> = [
   { key: "label", label: "Étiquette" },
-
   { key: "history_comment", label: "Antécédents et Commentaire" },
   { key: "previous_labels", label: "Étiquettes précédentes" },
-    { key: "gynecology", label: "Gynécologie" },
+];
+
+const SPECIALTY_TABS: Array<{
+  key: SpecialtyKey;
+  label: string;
+}> = [
+  { key: "gynecology", label: "Gynécologie" },
   { key: "cardiology", label: "Cardiologie" },
   { key: "dermatology", label: "Dermatologie" },
 ];
@@ -150,6 +157,7 @@ const PROTO_PREVIOUS_PARAMS: PreviousParamsRow[] = [
 
 export default function ObservationMedicalTab({
   theme,
+  doctorSpeciality,
   vitals,
   setVitals,
   parameters,
@@ -160,8 +168,33 @@ export default function ObservationMedicalTab({
 }: any) {
   const styles = createStyles(theme);
 
+  const enabledSpecialties = React.useMemo(() => {
+    const key = normalizeSpeciality(doctorSpeciality);
+    const found = SPECIALTY_TABS.find((t) => t.key === key);
+    // If no match, show none (general practice has no specialty sub-tab).
+    return found ? [found] : [];
+  }, [doctorSpeciality]);
+
+  const leftTabs = React.useMemo(() => {
+    return [
+      ...BASE_LEFT_TABS,
+      ...enabledSpecialties.map((x) => ({ key: x.key as LeftTabKey, label: x.label })),
+    ];
+  }, [enabledSpecialties]);
+
   const [leftTab, setLeftTab] = React.useState<LeftTabKey>("label");
   const [rightTab, setRightTab] = React.useState<RightTabKey>("current_parameters");
+
+  // If current tab is a specialty tab but doctor doesn't have it, fallback.
+  React.useEffect(() => {
+    const specialtyKeys = new Set(enabledSpecialties.map((s) => s.key));
+    if (
+      (leftTab === "gynecology" || leftTab === "cardiology" || leftTab === "dermatology") &&
+      !specialtyKeys.has(leftTab)
+    ) {
+      setLeftTab("label");
+    }
+  }, [enabledSpecialties, leftTab]);
 
   // Modals
   const [labelModalOpen, setLabelModalOpen] = React.useState(false);
@@ -239,7 +272,7 @@ export default function ObservationMedicalTab({
         {/* Flat sub-tabs like the screenshots */}
         <FlatTabs
           theme={theme}
-          tabs={LEFT_TABS}
+          tabs={leftTabs}
           activeKey={leftTab}
           onChange={setLeftTab}
         />

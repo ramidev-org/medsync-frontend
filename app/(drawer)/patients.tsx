@@ -20,7 +20,7 @@ import {
   View
 } from "react-native";
 
-import mockData from "@/data/preview_data.json";
+import { MOCK } from "@/data/mock";
 import { useRouter } from "expo-router";
 
 
@@ -65,7 +65,7 @@ export default function PatientsPage() {
    useEffect(() => {
     // Simulate async fetch
     setTimeout(() => {
-      setPatients(mockData.patients);
+      setPatients(MOCK.patients as any);
       setIsLoading(false);
     }, 500);
   }, []);
