@@ -693,6 +693,9 @@ export default function Index() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold });
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
+
+  
+
   // Smooth scroll support
   const scrollRef = useRef<ScrollView>(null);
   const sectionY = useRef<Record<string, number>>({

@@ -1,8 +1,9 @@
-import PatientForm from "@/components/new_patient"; // Import the patient form
+import PatientForm from "@/components/new_patient";
+import { getCurrentRoleImage } from "@/config/runtime";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../contexts/auth_context";
 
 interface TopBarProps {
@@ -12,20 +13,23 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [patientFormVisible, setPatientFormVisible] = useState(false);
-  const { logout } = useAuth();
+
+  const { logout, user } = useAuth();
   const router = useRouter();
+
+  const role = (user?.role ?? "doctor") as "admin" | "assistant" | "doctor";
+
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleLogout = async () => {
     try {
-      await logout(); // wait for signOut
+      await logout();
       setMenuVisible(false);
       router.replace("/login");
     } catch (err) {
       console.error("Logout failed:", err);
     }
   };
-
-  const styles = createStyles(theme);
 
   const dateLabel = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
@@ -36,104 +40,127 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
     .format(new Date())
     .replace(/^./, (c) => c.toUpperCase());
 
+  // --- Role-based primary action ---
+  const showPrimary = role !== "admin";
+  const primaryLabel = role === "assistant" ? "Nouvelle Visite" : "Nouveau Patient";
+
+  const onPrimaryPress = () => {
+    if (role === "assistant") {
+      // choose what you want for assistant:
+      router.push("/visits"); // or open a Visit form modal
+      return;
+    }
+    // doctor
+    setPatientFormVisible(true);
+  };
+
   return (
     <>
       <View style={styles.container}>
-        {/* Left side: Date */}
         <Text style={styles.dateText}>{dateLabel}</Text>
 
-        {/* Right side: actions */}
         <View style={styles.rightSection}>
-          {/* Nouveau Patient button */}
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            onPress={() => setPatientFormVisible(true)}
+          {/* Primary button (role-based) */}
+          {showPrimary && (
+            <Pressable
+              onPress={onPrimaryPress}
+              style={({ hovered, pressed }) => [
+                styles.primaryBtn,
+                hovered && Platform.OS === "web" ? styles.hover : null,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <Ionicons name="add" size={18} color="#fff" />
+              <Text style={styles.primaryBtnText}>{primaryLabel}</Text>
+            </Pressable>
+          )}
+
+          {/* ✅ Calendar button removed */}
+
+          {/* Chat */}
+          <Pressable
+            onPress={() => router.push("/chats")}
+            style={({ hovered, pressed }) => [
+              styles.iconButton,
+              hovered && Platform.OS === "web" ? styles.hover : null,
+              pressed ? styles.pressed : null,
+            ]}
           >
-            <Ionicons name="add" size={18} color="#fff" />
-            <Text style={styles.primaryBtnText}>Nouveau Patient</Text>
-          </TouchableOpacity>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.text} />
+          </Pressable>
 
-          {/* Icons */}
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons
-              name="calendar-outline"
-              size={22}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={22}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
+          {/* Notifications */}
+          <Pressable
+            onPress={() => {}}
+            style={({ hovered, pressed }) => [
+              styles.iconButton,
+              hovered && Platform.OS === "web" ? styles.hover : null,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
+          </Pressable>
 
           {/* Avatar */}
-          <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)}>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/40" }}
-              style={styles.avatar}
-            />
-          </TouchableOpacity>
+          <Pressable
+            onPress={() => setMenuVisible(!menuVisible)}
+            style={({ hovered, pressed }) => [
+              hovered && Platform.OS === "web" ? styles.hover : null,
+              pressed ? styles.pressed : null,
+            ]}
+          >
+            <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
+          </Pressable>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown */}
           {menuVisible && (
             <View style={styles.avatarMenu}>
-              <TouchableOpacity
-                style={styles.avatarMenuItem}
+              <Pressable
+                style={({ hovered, pressed }) => [
+                  styles.avatarMenuItem,
+                  hovered && Platform.OS === "web" ? styles.menuHover : null,
+                  pressed ? styles.menuPressed : null,
+                ]}
                 onPress={() => {
-                  setMenuVisible(false);       // close dropdown
-                  router.push("/profile"); // navigate to profile page
+                  setMenuVisible(false);
+                  router.push("/profile");
                 }}
               >
-                <Ionicons
-                  name="person-outline"
-                  size={18}
-                  color={theme.colors.text}
-                />
+                <Ionicons name="person-outline" size={18} color={theme.colors.text} />
                 <Text style={styles.avatarMenuText}>Profile</Text>
-              </TouchableOpacity>
+              </Pressable>
 
-
-              <TouchableOpacity
-                style={styles.avatarMenuItem}
+              <Pressable
+                style={({ hovered, pressed }) => [
+                  styles.avatarMenuItem,
+                  hovered && Platform.OS === "web" ? styles.menuHover : null,
+                  pressed ? styles.menuPressed : null,
+                ]}
                 onPress={() => setMenuVisible(false)}
               >
-                <Ionicons
-                  name="settings-outline"
-                  size={18}
-                  color={theme.colors.text}
-                />
+                <Ionicons name="settings-outline" size={18} color={theme.colors.text} />
                 <Text style={styles.avatarMenuText}>Settings</Text>
-              </TouchableOpacity>
+              </Pressable>
 
               <View style={styles.menuDivider} />
 
-              <TouchableOpacity
-                style={styles.avatarMenuItem}
+              <Pressable
+                style={({ hovered, pressed }) => [
+                  styles.avatarMenuItem,
+                  hovered && Platform.OS === "web" ? styles.menuHover : null,
+                  pressed ? styles.menuPressed : null,
+                ]}
                 onPress={handleLogout}
               >
                 <Ionicons name="log-out-outline" size={18} color="#ef4444" />
-                <Text style={[styles.avatarMenuText, { color: "#ef4444" }]}>
-                  Logout
-                </Text>
-              </TouchableOpacity>
+                <Text style={[styles.avatarMenuText, { color: "#ef4444" }]}>Logout</Text>
+              </Pressable>
             </View>
           )}
         </View>
       </View>
 
-      {/* Patient Form Dialog */}
+      {/* Patient Form only for doctor */}
       <PatientForm
         visible={patientFormVisible}
         onClose={() => setPatientFormVisible(false)}
@@ -141,10 +168,6 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
     </>
   );
 };
-
-// ... rest of your styles
-
-/* ================= STYLES ================= */
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
@@ -183,20 +206,31 @@ const createStyles = (theme: any) =>
       color: theme.colors.text,
       fontWeight: "500",
     },
+
+    // ✅ no background now
     iconButton: {
-      padding: 8,
-      borderRadius: 8,
-      backgroundColor: theme.colors.background,
-      marginLeft: 4,
+      padding: 6,
+      borderRadius: 10,
+      backgroundColor: "transparent",
     },
+
     avatar: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 45,
+      height: 45,
+      borderRadius: 22,
       borderWidth: 2,
       borderColor: theme.colors.border,
-      marginLeft: 8,
     },
+
+    // global-ish button feedback (uses theme tokens)
+    hover: {
+      backgroundColor: theme.colors.hoverBg,
+    },
+    pressed: {
+      backgroundColor: theme.colors.pressedBg,
+      transform: [{ scale: 0.98 }],
+    },
+
     avatarMenu: {
       position: "absolute",
       top: 56,
@@ -220,6 +254,14 @@ const createStyles = (theme: any) =>
       gap: 12,
       paddingVertical: 12,
       paddingHorizontal: 16,
+      borderRadius: 10,
+      marginHorizontal: 6,
+    },
+    menuHover: {
+      backgroundColor: theme.colors.hoverBg,
+    },
+    menuPressed: {
+      backgroundColor: theme.colors.pressedBg,
     },
     avatarMenuText: {
       fontSize: 14,

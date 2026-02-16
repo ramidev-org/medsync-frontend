@@ -1,3 +1,4 @@
+import { getIsDemo } from "@/config/runtime";
 import { AppDataProvider } from "@/contexts/appData_context";
 import { AuthProvider, useAuth } from "@/contexts/auth_context";
 import { LocalizationProvider } from "@/localization/localization_provider";
@@ -12,22 +13,33 @@ function AuthGateWrapper() {
   const router = useRouter();
 
   useEffect(() => {
-    // Don't navigate while auth is still loading
     if (loading) return;
 
-    const inAuthGroup = segments[0] === "(drawer)";
+    const isDemo = getIsDemo();
+    const inDrawerGroup = segments[0] === "(drawer)";
+    const inAuthScreen = segments[0] === "login" || segments[0] === "signup";
 
-    if (!user && inAuthGroup) {
-      // User is not authenticated but trying to access protected route
+    // ✅ If not signed in (and not demo), block protected drawer screens
+    if (!user && !isDemo && inDrawerGroup) {
       router.replace("/login");
-    } else if (user && !inAuthGroup) {
-      // User is authenticated but NOT in the drawer group
-      // This includes: root index, login, signup
-      router.replace("/(drawer)");
+      return;
+    }
+
+    // ✅ If signed in OR demo, keep user inside drawer routes
+    // IMPORTANT: redirect to a REAL URL, not "/(drawer)"
+    if ((user || isDemo) && (!inDrawerGroup && !inAuthScreen)) {
+      router.replace("/dashboard");
+      return;
+    }
+
+    // ✅ If signed in OR demo and they are on login/signup, send them to dashboard
+    if ((user || isDemo) && inAuthScreen) {
+      router.replace("/dashboard");
+      return;
     }
   }, [user, segments, loading]);
 
-  // Show loading screen while auth is initializing
+  // Simple loading UI (web-friendly)
   if (loading) {
     return (
       <div
@@ -53,8 +65,9 @@ function AuthGateWrapper() {
     </Stack>
   );
 
-  // Mount AppDataProvider ONLY when user exists
-  return user ? <AppDataProvider>{stack}</AppDataProvider> : stack;
+  // Keep AppDataProvider only when you have a "session"
+  // Demo counts as session
+  return user || getIsDemo() ? <AppDataProvider>{stack}</AppDataProvider> : stack;
 }
 
 export default function RootLayout() {

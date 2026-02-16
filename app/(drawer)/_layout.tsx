@@ -8,6 +8,7 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { useMemo, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
@@ -16,7 +17,7 @@ type NavItem = {
   key: string;
   label: string;
   icon: (opts: { active: boolean; color: string; size: number }) => JSX.Element;
-  route: string;
+  route: string; // without leading slash, e.g. "dashboard"
   roles?: AppRole[];
 };
 
@@ -45,6 +46,7 @@ export default function Layout() {
           borderRightWidth: 1,
           borderRightColor: theme.colors.border,
         },
+        // We will control icon + label colors ourselves
         drawerActiveTintColor: theme.colors.primary,
         drawerInactiveTintColor: theme.colors.textSecondary,
         drawerLabelStyle: {
@@ -63,7 +65,7 @@ export default function Layout() {
         />
       )}
     >
-      {/* Keep screens declared for routing, but only show nav items in custom drawer */}
+      {/* Screens must exist for routing */}
       <Drawer.Screen name="dashboard" options={{ drawerLabel: "Dashboard" }} />
       <Drawer.Screen name="visits" options={{ drawerLabel: "Visites" }} />
       <Drawer.Screen name="patients" options={{ drawerLabel: "Patients" }} />
@@ -81,11 +83,7 @@ const NAV: NavItem[] = [
     label: "Accueil",
     route: "dashboard",
     icon: ({ color, size }) => (
-      <MaterialIcons
-        name="space-dashboard"
-        size={size}
-        color={color}
-      />
+      <MaterialIcons name="space-dashboard" size={size} color={color} />
     ),
   },
   {
@@ -93,11 +91,7 @@ const NAV: NavItem[] = [
     label: "Visites",
     route: "visits",
     icon: ({ color, size }) => (
-      <Ionicons
-        name="calendar-outline"
-        size={size}
-        color={color}
-      />
+      <Ionicons name="calendar-outline" size={size} color={color} />
     ),
   },
   {
@@ -105,11 +99,7 @@ const NAV: NavItem[] = [
     label: "Patients",
     route: "patients",
     icon: ({ color, size }) => (
-      <MaterialIcons
-        name="personal-injury"
-        size={size}
-        color={color}
-      />
+      <MaterialIcons name="personal-injury" size={size} color={color} />
     ),
   },
   {
@@ -118,11 +108,7 @@ const NAV: NavItem[] = [
     route: "payments",
     roles: ["admin", "assistant"],
     icon: ({ color, size }) => (
-      <Ionicons
-        name="card-outline"
-        size={size}
-        color={color}
-      />
+      <Ionicons name="card-outline" size={size} color={color} />
     ),
   },
   {
@@ -142,20 +128,14 @@ const NAV: NavItem[] = [
     label: "Utilisateurs",
     route: "users",
     roles: ["admin"],
-    icon: ({ color, size }) => (
-      <Fontisto name="persons" size={size} color={color} />
-    ),
+    icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} />,
   },
   {
     key: "settings",
     label: "Paramètres",
     route: "profile",
     icon: ({ color, size }) => (
-      <MaterialCommunityIcons
-        name="cog-outline"
-        size={size}
-        color={color}
-      />
+      <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
     ),
   },
 ];
@@ -164,16 +144,22 @@ function CustomDrawerContent({
   expanded,
   setExpanded,
   theme,
-  navigation,
   state,
   iconSize,
   role,
 }: any) {
+  const router = useRouter();
   const styles = getStyles(theme);
-  const currentRoute = state.routes[state.index].name;
-  const items = NAV.filter(
-    (i) => !i.roles || i.roles.includes(role),
-  );
+
+  // React Navigation route name may be "dashboard" or "dashboard/index" or "dashboard/something"
+  const currentRoute: string = state?.routes?.[state?.index]?.name ?? "";
+
+  const items = NAV.filter((i) => !i.roles || i.roles.includes(role));
+
+  const isActiveRoute = (route: string) => {
+    // keep dashboard highlighted for nested routes
+    return currentRoute === route || currentRoute.startsWith(route + "/");
+  };
 
   return (
     <DrawerContentScrollView
@@ -202,7 +188,10 @@ function CustomDrawerContent({
       </View>
 
       {items.map((item) => {
-        const active = currentRoute === item.route;
+        const active = isActiveRoute(item.route);
+
+        const tint = active ? theme.colors.primary : theme.colors.textSecondary;
+
         return (
           <View
             key={item.key}
@@ -218,10 +207,12 @@ function CustomDrawerContent({
               labelStyle={{
                 fontSize: 14,
                 fontWeight: active ? "700" : "500",
-                color: active ? theme.colors.primary : theme.colors.textSecondary,
+                color: tint,
               }}
-              icon={({ color }) => item.icon({ active, color, size: iconSize })}
-              onPress={() => navigation.navigate(item.route)}
+              // ✅ Force icon color to match label tint
+              icon={() => item.icon({ active, color: tint, size: iconSize })}
+              // ✅ Always push absolute URL; fixes "Dashboard not clickable"
+              onPress={() => router.push(`/${item.route}`)}
               style={styles.drawerItem}
             />
           </View>
