@@ -8,7 +8,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "export:web": "expo export --platform web && node ./scripts/patch-export-assets.cjs",
+    "vercel-build": "npm run export:web",
+    "deploy:prod": "node ./scripts/deploy-vercel-prod.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -25,7 +28,7 @@
     "expo-app-loading": "^2.1.1",
     "expo-auth-session": "^7.0.10",
     "expo-constants": "~18.0.12",
-    "expo-font": "~14.0.10",
+    "expo-font": "~14.0.11",
     "expo-google-fonts": "^0.0.0",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",

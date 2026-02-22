@@ -7,6 +7,18 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+// ✅ ADD THESE
+import {
+  FontAwesome5,
+  FontAwesome6,
+  Fontisto,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
+import { useFonts } from "expo-font";
+import { ActivityIndicator, View } from "react-native";
+
 function AuthGateWrapper() {
   const { user, loading } = useAuth();
   const segments = useSegments();
@@ -39,7 +51,7 @@ function AuthGateWrapper() {
     }
   }, [user, segments, loading]);
 
-  // Simple loading UI (web-friendly)
+  // Web-friendly loading UI
   if (loading) {
     return (
       <div
@@ -65,12 +77,30 @@ function AuthGateWrapper() {
     </Stack>
   );
 
-  // Keep AppDataProvider only when you have a "session"
   // Demo counts as session
   return user || getIsDemo() ? <AppDataProvider>{stack}</AppDataProvider> : stack;
 }
 
 export default function RootLayout() {
+  // ✅ LOAD ICON FONTS HERE (fixes □ icons on Vercel)
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+    ...MaterialIcons.font,
+    ...MaterialCommunityIcons.font,
+    ...FontAwesome5.font,
+    ...FontAwesome6.font,
+    ...Fontisto.font,
+  });
+
+  // ✅ block rendering until fonts loaded
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
