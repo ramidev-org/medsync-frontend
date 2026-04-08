@@ -37,9 +37,9 @@ export const MOCK_USERS = {
   assistants: [
     {
       id: "u2",
-      email: "assistant@demo.local",
+      email: "reception@demo.local",
       full_name: "Sabrina Djellouli",
-      role: "assistant",
+      role: "reception",
       department: "Accueil",
       phone: "(555) 444-5555",
       shift: "08:00 - 16:00",
@@ -48,7 +48,7 @@ export const MOCK_USERS = {
       id: "u5",
       email: "assistant2@demo.local",
       full_name: "Imane Belkacem",
-      role: "assistant",
+      role: "reception",
       department: "Accueil",
       phone: "(555) 888-9999",
       shift: "09:00 - 17:00",

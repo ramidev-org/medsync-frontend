@@ -1,9 +1,38 @@
-// src/database/database.ts
+import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
+import { getIsDemo } from "@/config/runtime";
 
-// Get these from your Supabase project
-const DEV_SUPABASE_URL = "https://cxycroqsgmtasgibapen.supabase.co";
-const DEV_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4eWNyb3FzZ210YXNnaWJhcGVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MTg5MzIsImV4cCI6MjA4MDQ5NDkzMn0.AstEUFHIzbWLdBBjjQogR_QkeWKWi4qS3fE_Cq4BMhE";
+const extra =
+  (Constants.expoConfig as any)?.extra ??
+  (Constants as any).manifest2?.extra ??
+  (Constants as any).manifest?.extra ??
+  {};
 
-export const db = createClient(DEV_SUPABASE_URL, DEV_SUPABASE_ANON_KEY);
+const SUPABASE_URL =
+  (process.env as any)?.EXPO_PUBLIC_SUPABASE_URL ??
+  (extra as any)?.EXPO_PUBLIC_SUPABASE_URL ??
+  (extra as any)?.SUPABASE_URL;
+
+const SUPABASE_ANON_KEY =
+  (process.env as any)?.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+  (extra as any)?.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+  (extra as any)?.SUPABASE_ANON_KEY;
+
+const isDemo = (() => {
+  try {
+    return getIsDemo();
+  } catch {
+    return false;
+  }
+})();
+
+const finalUrl = SUPABASE_URL || (isDemo ? "https://example.supabase.co" : "");
+const finalAnonKey = SUPABASE_ANON_KEY || (isDemo ? "public-anon-key" : "");
+
+if (!finalUrl || !finalAnonKey) {
+  throw new Error(
+    "Missing Supabase env vars. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
+  );
+}
+
+export const db = createClient(finalUrl, finalAnonKey);

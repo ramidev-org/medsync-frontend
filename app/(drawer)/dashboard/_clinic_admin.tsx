@@ -1,10 +1,12 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
+import { useAppData } from "@/contexts/appData_context";
 import { MOCK } from "@/data/mock";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   Image,
   Modal,
@@ -45,10 +47,19 @@ function buildClinicName(inputName: string, doctors: any[], assignedDoctorId: st
   return "Clinique";
 }
 
-export default function AdminDashboardPage() {
+export default function ClinicAdminDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
+  const { isClinicAdmin } = useAppData();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "doctor" || !isClinicAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [user, isClinicAdmin, router]);
 
   const doctors = (MOCK as any).adminUsers?.doctors ?? [];
 

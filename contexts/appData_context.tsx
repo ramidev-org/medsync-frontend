@@ -1,4 +1,4 @@
-import { APP_ROLE, IS_DEMO } from "@/config/runtime";
+import { IS_CLINIC_ADMIN, IS_DEMO } from "@/config/runtime";
 import { db } from "@/database/database_conn";
 import preview from "@/data/mock/preview_data.json";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -7,6 +7,7 @@ import { useAuth } from "./auth_context";
 type AppData = {
   clinic: any | null;
   specialities: any[];
+  isClinicAdmin: boolean;
   loading: boolean;
 };
 
@@ -15,6 +16,7 @@ const AppDataContext = createContext<AppData | null>(null);
 export const AppDataProvider = ({ children }: any) => {
   const [clinic, setClinic] = useState<any | null>(null);
   const [specialities, setSpecialities] = useState<any[]>([]);
+  const [isClinicAdmin, setIsClinicAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const { user } = useAuth();
@@ -41,6 +43,7 @@ export const AppDataProvider = ({ children }: any) => {
             city: "Alger",
           },
         );
+        setIsClinicAdmin(IS_CLINIC_ADMIN && user?.role === "doctor");
         setLoading(false);
         return;
       }
@@ -52,13 +55,14 @@ export const AppDataProvider = ({ children }: any) => {
         .order("name");
       setSpecialities(specialitiesData ?? []);
 
-      if (APP_ROLE === "admin" && clinicId) {
+      if (clinicId) {
         const { data: clinicData } = await db
           .from("clinics")
           .select("*")
           .eq("id", clinicId)
           .single();
         setClinic(clinicData ?? null);
+        setIsClinicAdmin(!!clinicData?.admin_id && clinicData.admin_id === user?.id);
       }
 
       setLoading(false);
@@ -69,7 +73,7 @@ export const AppDataProvider = ({ children }: any) => {
   }, []);
 
   return (
-    <AppDataContext.Provider value={{ clinic, specialities, loading }}>
+    <AppDataContext.Provider value={{ clinic, specialities, isClinicAdmin, loading }}>
       {children}
     </AppDataContext.Provider>
   );

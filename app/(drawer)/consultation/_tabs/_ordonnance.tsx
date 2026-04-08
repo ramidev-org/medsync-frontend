@@ -1,4 +1,5 @@
 import { ThemedCard } from "@/components/default_card";
+import { DrugSuggestion, searchDrugsByName } from "@/services/drugs.services";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
@@ -22,20 +23,16 @@ import {
  * - Comments are in English
  */
 
-/* ==========================
-   Prototype medication catalog
-========================== */
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = React.useState(value);
 
-const MEDICATION_CATALOG: string[] = [
-  "GRIPEX ALLERGIE CETIRIZINE DICHLORHYDRATE COMP. PELLI.SEC. 10MG",
-  "GRIPEX GLES. A MICROGRAN. 50MG/4MG",
-  "GRIPEX ALLERGIE COMP. PELLI.SEC. 10MG",
-  "GRIPEX PLUS COMP. PELLI 200MG/30MG",
-  "GRIPEX TOUX GRASSE SOL BUV 5%",
-  "AUGMENTIN COMP. 500MG/125MG",
-  "DOLIPRANE 1000MG",
-  "SPASFON 80MG",
-];
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+
+  return debounced;
+}
 
 /* ==========================
    Left “types” list (prototype)
@@ -106,6 +103,9 @@ const RX_TYPE_TEMPLATES: Record<
 type Drug = {
   id: string;
   name: string;
+  code?: string;
+  form?: string | null;
+  dosage?: string | null;
   validated: boolean;
 
   qty?: string;
@@ -162,6 +162,9 @@ export default function OrdonnancesTab({
 
   // Search (dropdown only when typing)
   const [medQuery, setMedQuery] = React.useState("");
+  const debouncedMedQuery = useDebouncedValue(medQuery, 200);
+  const [suggestions, setSuggestions] = React.useState<DrugSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = React.useState(false);
 
   // Multiple ordonnances
   const [prescriptions, setPrescriptions] = React.useState<Prescription[]>([
@@ -187,12 +190,35 @@ export default function OrdonnancesTab({
   // Expand editor for a drug line
   const [expandedDrugId, setExpandedDrugId] = React.useState<string | null>(null);
 
-  // Suggestions: show ONLY if user typed something
-  const suggestions = React.useMemo(() => {
-    const q = medQuery.trim().toLowerCase();
-    if (!q) return [];
-    return MEDICATION_CATALOG.filter((m) => m.toLowerCase().includes(q)).slice(0, 7);
-  }, [medQuery]);
+  React.useEffect(() => {
+    const q = debouncedMedQuery.trim();
+    if (!q) {
+      setSuggestions([]);
+      return;
+    }
+
+    let alive = true;
+    setSuggestionsLoading(true);
+
+    searchDrugsByName(q, 7)
+      .then((items) => {
+        if (!alive) return;
+        setSuggestions(items);
+      })
+      .catch((e) => {
+        console.error("Drug search failed:", e);
+        if (!alive) return;
+        setSuggestions([]);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setSuggestionsLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [debouncedMedQuery]);
 
   function addPrescription() {
     const nextRef = String(
@@ -219,10 +245,19 @@ export default function OrdonnancesTab({
     return created;
   }
 
-  function addDrugFromCatalog(name: string) {
+  function addDrugFromCatalog(drug: DrugSuggestion) {
     const rx = ensureSelectedRx();
 
-    const newDrug: Drug = { id: uid("drug"), name, validated: false, qty: "", instructions: "" };
+    const newDrug: Drug = {
+      id: uid("drug"),
+      name: drug.brandName,
+      code: drug.code,
+      form: drug.form ?? null,
+      dosage: drug.dosage ?? null,
+      validated: false,
+      qty: "",
+      instructions: "",
+    };
 
     setPrescriptions((prev) =>
       prev.map((p) => (p.id === rx.id ? { ...p, drugs: [newDrug, ...p.drugs] } : p))
@@ -332,16 +367,26 @@ export default function OrdonnancesTab({
           </View>
 
           {/* Suggestions dropdown only when typing */}
-          {!!suggestions.length && (
+          {!!medQuery.trim() && (suggestionsLoading || !!suggestions.length) && (
             <View style={styles.suggestDropdown}>
+              {suggestionsLoading && !suggestions.length ? (
+                <Text
+                  style={[
+                    styles.suggestText,
+                    { paddingVertical: 10, paddingHorizontal: 12 },
+                  ]}
+                >
+                  Recherche...
+                </Text>
+              ) : null}
               {suggestions.map((s) => (
                 <TouchableOpacity
-                  key={s}
+                  key={s.id || s.code}
                   onPress={() => addDrugFromCatalog(s)}
                   style={styles.suggestItem}
                 >
                   <Text style={styles.suggestText} numberOfLines={1}>
-                    {s}
+                    {s.label}
                   </Text>
                 </TouchableOpacity>
               ))}

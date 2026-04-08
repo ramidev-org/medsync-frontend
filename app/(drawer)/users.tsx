@@ -2,10 +2,12 @@
 import { TopBar } from "@/components/top_bar";
 import { IS_DEMO } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
+import { useAppData } from "@/contexts/appData_context";
 import { MOCK_USERS } from "@/data/mock/admin_users";
 import { db } from "@/database/database_conn";
 import { createUser } from "@/services/admin.services";
 import { useTheme } from "@/theme/theme_provider";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,16 +20,18 @@ import {
   View,
 } from "react-native";
 
-type UserRole = "doctor" | "assistant";
+type UserRole = "doctor" | "reception";
 
 export default function UsersPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { isClinicAdmin } = useAppData();
+  const router = useRouter();
   const styles = getStyles(theme);
 
   const [users, setUsers] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
-  const [assistants, setAssistants] = useState<any[]>([]);
+  const [receptions, setReceptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -37,6 +41,15 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Only clinic-admin doctors can manage users
+  useEffect(() => {
+    if (IS_DEMO) return;
+    if (!user) return;
+    if (user.role !== "doctor" || !isClinicAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [user, isClinicAdmin, router]);
+
   /* ===== LOAD USERS ===== */
   useEffect(() => {
     const loadUsers = async () => {
@@ -44,7 +57,7 @@ export default function UsersPage() {
 
       if (IS_DEMO) {
         setDoctors(MOCK_USERS.doctors);
-        setAssistants(MOCK_USERS.assistants);
+        setReceptions(MOCK_USERS.assistants);
         setUsers([...MOCK_USERS.doctors, ...MOCK_USERS.assistants]);
         setLoading(false);
         return;
@@ -61,7 +74,7 @@ export default function UsersPage() {
             role
           )
         `)
-        .in("user_roles.role", ["doctor", "assistant"])
+        .in("user_roles.role", ["doctor", "reception"])
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -78,7 +91,7 @@ export default function UsersPage() {
 
         setUsers(formatted);
         setDoctors(formatted.filter((u: any) => u.role === "doctor"));
-        setAssistants(formatted.filter((u: any) => u.role === "assistant"));
+        setReceptions(formatted.filter((u: any) => u.role === "reception"));
       }
 
       setLoading(false);
@@ -201,17 +214,17 @@ export default function UsersPage() {
             ))}
           </View>
 
-          {/* Assistants */}
-          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>Assistants</Text>
+          {/* Reception */}
+          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>RÃ©ception</Text>
           <View style={styles.grid}>
-            {(IS_DEMO ? assistants : users.filter((u) => u.role === "assistant")).map((u: any) => (
+            {(IS_DEMO ? receptions : users.filter((u) => u.role === "reception")).map((u: any) => (
               <View key={u.id} style={styles.userCard}>
                 <View style={styles.cardTop}>
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>{(u.full_name || u.email)[0]?.toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.name}>{u.full_name || "Assistant"}</Text>
+                    <Text style={styles.name}>{u.full_name || "RÃ©ception"}</Text>
                     {IS_DEMO && (
                       <View style={styles.pill}>
                         <Text style={styles.pillText}>{u.department || "Accueil"}</Text>
@@ -274,7 +287,7 @@ export default function UsersPage() {
             />
 
             <View style={styles.roleSelector}>
-              {["doctor", "assistant"].map((r) => (
+              {["doctor", "reception"].map((r) => (
                 <TouchableOpacity
                   key={r}
                   style={[

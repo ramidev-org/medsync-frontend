@@ -1,22 +1,24 @@
 import { AppRole, getAppRole } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
+import { useAppData } from "@/contexts/appData_context";
 import { useMemo } from "react";
-import AdminDashboardPage from "./_admin";
-import AssistanteDashboardPage from "./_assistant";
+import ClinicAdminDashboardPage from "./_clinic_admin";
+import ReceptionDashboardPage from "./_reception";
 import DoctorDashboardPage from "./_doctor";
 
 export default function DashboardIndex() {
   const { user } = useAuth();
+  const { isClinicAdmin } = useAppData();
 
   const role: AppRole = useMemo(() => {
     const raw = (user?.role as any) ?? getAppRole();
-    // normalize if your backend uses "assistant"
-    return (raw === "assistant" ? "assistant" : raw) as AppRole;
+    // normalize if your backend uses older naming
+    return (raw === "assistant" ? "reception" : raw) as AppRole;
   }, [user]);
 
-  if (role === "admin") return <AdminDashboardPage />;
-  if (role === "doctor") return <DoctorDashboardPage />;
+  if (role === "doctor") {
+    return isClinicAdmin ? <ClinicAdminDashboardPage /> : <DoctorDashboardPage />;
+  }
 
-  // default assistant
-  return <AssistanteDashboardPage />;
+  return <ReceptionDashboardPage />;
 }

@@ -10,7 +10,7 @@ import { getDashboardStyles } from "./_styles";
 
 type VisitStatus = "pending" | "in_consultation" | "completed" | "cancelled";
 
-export default function AssistanteDashboardPage() {
+export default function ReceptionDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
@@ -24,7 +24,7 @@ export default function AssistanteDashboardPage() {
   const completedCount = visits.filter((v: any) => v.status === "completed").length;
   const cancelledCount = visits.filter((v: any) => v.status === "cancelled").length;
 
-  // Assistant-focused “work queue”
+  // Reception-focused “work queue”
   const toConfirm = visits.filter((v: any) => v.status === "pending").length;
   const toBill = visits.filter((v: any) => v.status === "completed" && !v.payment_status).length;
   const toReschedule = visits.filter((v: any) => v.status === "cancelled").length;
@@ -42,7 +42,7 @@ export default function AssistanteDashboardPage() {
           <View style={styles.leftColumn}>
             {/* Welcome */}
             <View style={styles.welcomeCard}>
-              <Text style={styles.welcomeTitle}>Bonjour, {user?.fullname ?? "Assistante"} 👋</Text>
+              <Text style={styles.welcomeTitle}>Bonjour, {user?.fullname ?? "RÃ©ception"} 👋</Text>
               <Text style={styles.welcomeSubtitle}>
                 Suivez les rendez-vous, enregistrez les patients et gardez la journée fluide.
               </Text>
@@ -211,10 +211,10 @@ export default function AssistanteDashboardPage() {
                 <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
                 <View style={styles.doctorInfo}>
                   <Text style={[styles.doctorName, { color: theme.colors.text }]}>
-                    {user?.fullname ?? "Assistante"}
+                    {user?.fullname ?? "RÃ©ception"}
                   </Text>
                   <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>
-                    Assistante • Gestion quotidienne
+                    RÃ©ception • Gestion quotidienne
                   </Text>
                 </View>
               </View>

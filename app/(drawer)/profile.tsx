@@ -1,6 +1,7 @@
 import { ThemedCard } from "@/components/default_card";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
+import { useAppData } from "@/contexts/appData_context";
 import { MOCK } from "@/data/mock";
 import { specialityLabelFr, normalizeSpeciality } from "@/config/speciality";
 import { useTheme } from "@/theme/theme_provider";
@@ -22,7 +23,8 @@ export default function SettingsPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { user } = useAuth();
-  const role = (user?.role as any) ?? "assistant";
+  const { isClinicAdmin } = useAppData();
+  const role = (user?.role as any) ?? "reception";
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -35,9 +37,13 @@ export default function SettingsPage() {
           </View>
         </View>
 
-        {role === "doctor" && <DoctorSettings theme={theme} />}
-        {role === "assistant" && <AssistantSettings theme={theme} />}
-        {role === "admin" && <AdminSettings theme={theme} />}
+        {role === "doctor" && (
+          <>
+            <DoctorSettings theme={theme} />
+            {isClinicAdmin && <ClinicAdminSettings theme={theme} />}
+          </>
+        )}
+        {role === "reception" && <ReceptionSettings theme={theme} />}
       </ScrollView>
     </View>
   );
@@ -86,17 +92,23 @@ function DoctorSettings({ theme }: any) {
   );
 }
 
-function AssistantSettings({ theme }: any) {
+function ReceptionSettings({ theme }: any) {
   const { user } = useAuth();
-  const [department, setDepartment] = useState(String((user as any)?.assistantProfile?.department ?? "Accueil"));
-  const [shiftStart, setShiftStart] = useState(String((user as any)?.assistantProfile?.shift_start ?? "08:00"));
-  const [shiftEnd, setShiftEnd] = useState(String((user as any)?.assistantProfile?.shift_end ?? "16:00"));
+  const [department, setDepartment] = useState(
+    String((user as any)?.receptionProfile?.department ?? "Accueil"),
+  );
+  const [shiftStart, setShiftStart] = useState(
+    String((user as any)?.receptionProfile?.shift_start ?? "08:00"),
+  );
+  const [shiftEnd, setShiftEnd] = useState(
+    String((user as any)?.receptionProfile?.shift_end ?? "16:00"),
+  );
 
   return (
     <View style={{ gap: 16 }}>
       <ThemedCard style={{ padding: 18 }}>
         <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Profil assistant
+          Profil rÃ©ception
         </Text>
         <Text style={{ marginTop: 4, color: theme.colors.muted }}>
           Ces champs sont en mode prototype (démo)
@@ -127,7 +139,7 @@ function AssistantSettings({ theme }: any) {
   );
 }
 
-function AdminSettings({ theme }: any) {
+function ClinicAdminSettings({ theme }: any) {
   const clinics = (MOCK as any).adminClinics ?? [];
   const [orgName, setOrgName] = useState("Mon Organisation");
 
@@ -138,7 +150,7 @@ function AdminSettings({ theme }: any) {
           Organisation
         </Text>
         <Text style={{ marginTop: 4, color: theme.colors.muted }}>
-          Paramètres administrateur (prototype)
+          Paramètres admin clinique (prototype)
         </Text>
         <Field label="Nom" value={orgName} onChangeText={setOrgName} theme={theme} />
         <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />

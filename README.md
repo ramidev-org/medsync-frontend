@@ -16,6 +16,27 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+## Local testing (Web)
+
+Start:
+
+```bash
+npm run web
+```
+
+Demo mode (no backend):
+- `/?demo=true&role=doctor`
+- `/?demo=true&role=reception`
+- Clinic admin demo doctor: `/?demo=true&role=doctor&clinic_admin=true`
+
+Real mode (Supabase):
+1) Set env vars in `.env`:
+   - `EXPO_PUBLIC_DEMO=false`
+   - `EXPO_PUBLIC_SUPABASE_URL=...`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY=...`
+2) Run SQL in Supabase:
+   - `database/sql/000_all_changes.sql`
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

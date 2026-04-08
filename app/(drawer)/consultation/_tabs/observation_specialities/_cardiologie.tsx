@@ -1,4 +1,4 @@
-import { BlueField } from "@/components/consultation_tabs/ui";
+import { BlueField } from "../_ui";
 import { StyleSheet, Text, View } from "react-native";
 
 export type CardiologyState = {

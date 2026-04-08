@@ -17,7 +17,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const { logout, user } = useAuth();
   const router = useRouter();
 
-  const role = (user?.role ?? "doctor") as "admin" | "assistant" | "doctor";
+  const role = (user?.role ?? "doctor") as "doctor" | "reception";
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -41,12 +41,11 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
     .replace(/^./, (c) => c.toUpperCase());
 
   // --- Role-based primary action ---
-  const showPrimary = role !== "admin";
-  const primaryLabel = role === "assistant" ? "Nouvelle Visite" : "Nouveau Patient";
+  const showPrimary = true;
+  const primaryLabel = role === "reception" ? "Nouvelle Visite" : "Nouveau Patient";
 
   const onPrimaryPress = () => {
-    if (role === "assistant") {
-      // choose what you want for assistant:
+    if (role === "reception") {
       router.push("/visits"); // or open a Visit form modal
       return;
     }

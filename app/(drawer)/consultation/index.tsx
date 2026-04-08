@@ -1,4 +1,4 @@
-// app/(whatever)/consultation/[id].tsx
+// app/(drawer)/consultation/index.tsx
 import { TopBar } from "@/components/top_bar";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,14 +10,14 @@ import { MOCK } from "@/data/mock";
 import { useAuth } from "@/contexts/auth_context";
 
 // Tab pages (separate files)
-import BilansTab from "@/components/consultation_tabs/bilan";
-import ConsultationHeader from "@/components/consultation_tabs/consultation_header";
-import DocumentsTab from "@/components/consultation_tabs/documents";
-import LettresTab from "@/components/consultation_tabs/lettres";
-import MaladiesTab from "@/components/consultation_tabs/maladies";
-import ObservationMedicalTab from "@/components/consultation_tabs/observation";
-import OrdonnancesTab from "@/components/consultation_tabs/ordonnance";
-import SymptomesTab from "@/components/consultation_tabs/symptomes";
+import BilansTab from "./_tabs/_bilan";
+import ConsultationHeader from "./_tabs/_consultation_header";
+import DocumentsTab from "./_tabs/_documents";
+import LettresTab from "./_tabs/_lettres";
+import MaladiesTab from "./_tabs/_maladies";
+import ObservationMedicalTab from "./_tabs/_observation";
+import OrdonnancesTab from "./_tabs/_ordonnance";
+import SymptomesTab from "./_tabs/_symptomes";
 
 
 

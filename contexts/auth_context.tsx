@@ -47,10 +47,8 @@ const buildDemoUser = () => {
     username: "demo",
     fullname:
       role === "doctor"
-        ? "Yasmine Benali"
-        : role === "admin"
-          ? "Admin Demo"
-          : "Assistant Demo",
+        ? "Dr Demo"
+        : "Reception Demo",
     role,
     clinic_id: "demo-clinic",
     doctorProfile:
@@ -64,8 +62,8 @@ const buildDemoUser = () => {
             active: true,
           }
         : null,
-    assistantProfile:
-      role === "assistant"
+    receptionProfile:
+      role === "reception"
         ? {
             department: "Accueil",
             shift_start: "08:00",
@@ -106,7 +104,7 @@ export const AuthProvider = ({ children }: any) => {
           *,
           user_roles!user_id ( role ),
           doctor_profiles!id ( * ),
-          assistant_profiles!id ( * )
+          reception_profiles!id ( * )
         `,
         )
         .eq("id", id)

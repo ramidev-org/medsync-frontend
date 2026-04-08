@@ -15,7 +15,7 @@ const demoId = (prefix: string) => `${prefix}_${Math.random().toString(16).slice
 export async function createUser(payload: {
   email: string;
   password: string;
-  role: "doctor" | "assistant";
+  role: "doctor" | "reception";
   adminId: string; // current logged-in admin
 }) {
   if (IS_DEMO) {

@@ -1,5 +1,6 @@
 import { APP_ROLE, AppRole } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
+import { useAppData } from "@/contexts/appData_context";
 import { useTheme } from "@/theme/theme_provider";
 import {
   Fontisto,
@@ -18,16 +19,18 @@ type NavItem = {
   label: string;
   icon: (opts: { active: boolean; color: string; size: number }) => JSX.Element;
   route: string; // without leading slash, e.g. "dashboard"
-  roles?: AppRole[];
+  visible?: (ctx: { role: AppRole; isClinicAdmin: boolean }) => boolean;
 };
 
 export default function Layout() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { isClinicAdmin } = useAppData();
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   // Prefer authenticated user's role (demo or real). Fallback to env role.
-  const role: AppRole = (user?.role as AppRole) || APP_ROLE;
+  const rawRole = (user?.role as any) || APP_ROLE;
+  const role: AppRole = (rawRole === "assistant" ? "reception" : rawRole) as AppRole;
 
   const [expanded, setExpanded] = useState(true);
   const drawerWidth = expanded ? 240 : 86;
@@ -62,6 +65,7 @@ export default function Layout() {
           theme={theme}
           iconSize={iconSize}
           role={role}
+          isClinicAdmin={isClinicAdmin}
         />
       )}
     >
@@ -106,7 +110,8 @@ const NAV: NavItem[] = [
     key: "payments",
     label: "Paiements",
     route: "payments",
-    roles: ["admin", "assistant"],
+    visible: ({ role, isClinicAdmin }) =>
+      role === "reception" || (role === "doctor" && isClinicAdmin),
     icon: ({ color, size }) => (
       <Ionicons name="card-outline" size={size} color={color} />
     ),
@@ -127,7 +132,7 @@ const NAV: NavItem[] = [
     key: "users",
     label: "Utilisateurs",
     route: "users",
-    roles: ["admin"],
+    visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin,
     icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} />,
   },
   {
@@ -147,6 +152,7 @@ function CustomDrawerContent({
   state,
   iconSize,
   role,
+  isClinicAdmin,
 }: any) {
   const router = useRouter();
   const styles = getStyles(theme);
@@ -154,7 +160,7 @@ function CustomDrawerContent({
   // React Navigation route name may be "dashboard" or "dashboard/index" or "dashboard/something"
   const currentRoute: string = state?.routes?.[state?.index]?.name ?? "";
 
-  const items = NAV.filter((i) => !i.roles || i.roles.includes(role));
+  const items = NAV.filter((i) => (i.visible ? i.visible({ role, isClinicAdmin }) : true));
 
   const isActiveRoute = (route: string) => {
     // keep dashboard highlighted for nested routes

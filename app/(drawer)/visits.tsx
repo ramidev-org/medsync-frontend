@@ -186,7 +186,7 @@ export default function VisitsPage() {
             {/* Progress Card (matches screenshot placement) */}
             <ThemedCard style={{ marginBottom: 16 }}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>État d'avancement</Text>
+                <Text style={styles.progressTitle}>État d&apos;avancement</Text>
                 <Text style={[styles.progressValue, { color: theme.colors.primary }]}>
                   {progress}%
                 </Text>
@@ -265,7 +265,7 @@ export default function VisitsPage() {
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
             {/* Waiting Room */}
             <ThemedCard>
-              <Text style={styles.waitingTitle}>Salle d'attente</Text>
+              <Text style={styles.waitingTitle}>Salle d&apos;attente</Text>
               <Text style={styles.waitingSubtitle}>Patients en attente ou en consultation</Text>
               <View style={{ marginTop: 16 }}>
                 {waitingRoomAppointments.map(a => (

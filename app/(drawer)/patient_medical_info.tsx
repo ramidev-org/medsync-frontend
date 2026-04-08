@@ -372,7 +372,7 @@ export default function PatientMedicalDocument() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="call" size={24} color="#ef4444" />
-              <Text style={styles.cardTitle}>Contact d'Urgence</Text>
+              <Text style={styles.cardTitle}>Contact d&apos;Urgence</Text>
             </View>
             <View style={styles.emergencyContact}>
               <Text style={styles.emergencyName}>{patient.emergency_contact_name}</Text>

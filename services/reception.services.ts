@@ -4,7 +4,7 @@ import { IS_DEMO } from "@/config/runtime";
 const demoId = (prefix: string) => `${prefix}_${Math.random().toString(16).slice(2, 10)}`;
 
 /* ============================
-   APPOINTMENTS
+   APPOINTMENTS (RECEPTION)
 ============================ */
 export async function createAppointment(payload: any) {
   if (IS_DEMO) return { ...payload, id: demoId("appt") };

@@ -1,4 +1,4 @@
-import { BlueField, MetricCard } from "@/components/consultation_tabs/ui";
+import { BlueField, MetricCard } from "./_ui";
 import { ThemedCard } from "@/components/default_card";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -13,9 +13,9 @@ import {
   View,
 } from "react-native";
 
-import { CardiologyState, CardiologyTab } from "@/components/consultation_tabs/observation_specialities/cardiologie";
-import { DermatologyState, DermatologyTab } from "@/components/consultation_tabs/observation_specialities/dermatologie";
-import { GynecologyState, GynecologyTab } from "@/components/consultation_tabs/observation_specialities/gynecologie";
+import { CardiologyState, CardiologyTab } from "./observation_specialities/_cardiologie";
+import { DermatologyState, DermatologyTab } from "./observation_specialities/_dermatologie";
+import { GynecologyState, GynecologyTab } from "./observation_specialities/_gynecologie";
 
 
 
@@ -287,7 +287,7 @@ export default function ObservationMedicalTab({
         <View style={styles.metaRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.metaLine}>N° de consultation : 1436</Text>
-            <Text style={styles.metaLine}>Date d'Impression : 31.05.2022</Text>
+            <Text style={styles.metaLine}>Date d&apos;Impression : 31.05.2022</Text>
           </View>
 
           <View style={{ flex: 1 }}>

@@ -10,7 +10,7 @@ export type DoctorProfile = {
   active: boolean;
 };
 
-export type AssistantProfile = {
+export type ReceptionProfile = {
   department: string;
   shift_start: string;
   shift_end: string;
@@ -22,11 +22,11 @@ export class User {
   email: string;
   username: string;
   fullname: string;
-  role: "admin" | "doctor" | "assistant" | "clinic";
+  role: "doctor" | "reception";
   clinic_id:string;
 
   doctorProfile: DoctorProfile | null;
-  assistantProfile: AssistantProfile | null;
+  receptionProfile: ReceptionProfile | null;
 
   constructor(params: {
     id: string;
@@ -36,7 +36,7 @@ export class User {
     role: any;
     clinic_id:string;
     doctorProfile?: DoctorProfile | null;
-    assistantProfile?: AssistantProfile | null;
+    receptionProfile?: ReceptionProfile | null;
   }) {
     this.id = params.id;
     this.email = params.email;
@@ -45,11 +45,12 @@ export class User {
     this.role = params.role;
     this.clinic_id= params.clinic_id;
     this.doctorProfile = params.doctorProfile ?? null;
-    this.assistantProfile = params.assistantProfile ?? null;
+    this.receptionProfile = params.receptionProfile ?? null;
   }
 
   static fromDb(data: any): User {
-    const role = data.user_roles?.[0]?.role;
+    const rawRole = data.user_roles?.[0]?.role;
+    const role = rawRole === "assistant" ? "reception" : rawRole;
 
     return new User({
       id: data.id,
@@ -59,7 +60,7 @@ export class User {
       role,
       clinic_id: data.clinic_id,
       doctorProfile: data.doctor_profiles ?? null,
-      assistantProfile: data.assistant_profiles ?? null,
+      receptionProfile: data.reception_profiles ?? data.assistant_profiles ?? null,
     });
   }
 }
