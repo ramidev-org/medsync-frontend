@@ -49,7 +49,7 @@ function AuthGateWrapper() {
       router.replace("/dashboard");
       return;
     }
-  }, [user, segments, loading]);
+  }, [user, segments, loading, router]);
 
   // Web-friendly loading UI
   if (loading) {

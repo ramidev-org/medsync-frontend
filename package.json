@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web && node ./scripts/patch-export-assets.cjs",
     "vercel-build": "npm run export:web",
     "deploy:prod": "node ./scripts/deploy-vercel-prod.cjs"

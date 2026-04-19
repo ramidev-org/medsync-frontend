@@ -42,7 +42,7 @@ export default function ReceptionDashboardPage() {
           <View style={styles.leftColumn}>
             {/* Welcome */}
             <View style={styles.welcomeCard}>
-              <Text style={styles.welcomeTitle}>Bonjour, {user?.fullname ?? "RÃ©ception"} 👋</Text>
+              <Text style={styles.welcomeTitle}>Bonjour, {user?.fullname ?? "Réception"} 👋</Text>
               <Text style={styles.welcomeSubtitle}>
                 Suivez les rendez-vous, enregistrez les patients et gardez la journée fluide.
               </Text>
@@ -211,10 +211,10 @@ export default function ReceptionDashboardPage() {
                 <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
                 <View style={styles.doctorInfo}>
                   <Text style={[styles.doctorName, { color: theme.colors.text }]}>
-                    {user?.fullname ?? "RÃ©ception"}
+                    {user?.fullname ?? "Réception"}
                   </Text>
                   <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>
-                    RÃ©ception • Gestion quotidienne
+                    Réception • Gestion quotidienne
                   </Text>
                 </View>
               </View>

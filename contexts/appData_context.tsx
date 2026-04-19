@@ -23,8 +23,10 @@ export const AppDataProvider = ({ children }: any) => {
   const clinicId = user?.clinic_id;
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
-      setLoading(true);
+      if (!cancelled) setLoading(true);
 
       // Demo: use bundled JSON and skip all database calls.
       if (IS_DEMO) {
@@ -44,7 +46,7 @@ export const AppDataProvider = ({ children }: any) => {
           },
         );
         setIsClinicAdmin(IS_CLINIC_ADMIN && user?.role === "doctor");
-        setLoading(false);
+        if (!cancelled) setLoading(false);
         return;
       }
 
@@ -53,7 +55,7 @@ export const AppDataProvider = ({ children }: any) => {
         .from("doctor_specialities")
         .select("*")
         .order("name");
-      setSpecialities(specialitiesData ?? []);
+      if (!cancelled) setSpecialities(specialitiesData ?? []);
 
       if (clinicId) {
         const { data: clinicData } = await db
@@ -61,16 +63,23 @@ export const AppDataProvider = ({ children }: any) => {
           .select("*")
           .eq("id", clinicId)
           .single();
-        setClinic(clinicData ?? null);
-        setIsClinicAdmin(!!clinicData?.admin_id && clinicData.admin_id === user?.id);
+        if (!cancelled) {
+          setClinic(clinicData ?? null);
+          setIsClinicAdmin(!!clinicData?.admin_id && clinicData.admin_id === user?.id);
+        }
+      } else if (!cancelled) {
+        setClinic(null);
+        setIsClinicAdmin(false);
       }
 
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
 
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [clinicId, user?.id, user?.role]);
 
   return (
     <AppDataContext.Provider value={{ clinic, specialities, isClinicAdmin, loading }}>

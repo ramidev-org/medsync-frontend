@@ -215,7 +215,7 @@ export default function UsersPage() {
           </View>
 
           {/* Reception */}
-          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>RÃ©ception</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>Réception</Text>
           <View style={styles.grid}>
             {(IS_DEMO ? receptions : users.filter((u) => u.role === "reception")).map((u: any) => (
               <View key={u.id} style={styles.userCard}>
@@ -224,7 +224,7 @@ export default function UsersPage() {
                     <Text style={styles.avatarText}>{(u.full_name || u.email)[0]?.toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.name}>{u.full_name || "RÃ©ception"}</Text>
+                    <Text style={styles.name}>{u.full_name || "Réception"}</Text>
                     {IS_DEMO && (
                       <View style={styles.pill}>
                         <Text style={styles.pillText}>{u.department || "Accueil"}</Text>

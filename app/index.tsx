@@ -322,7 +322,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
       -1,
       true
     );
-  }, []);
+  }, [t]);
 
   const blob1 = useAnimatedStyle(() => ({
     transform: [

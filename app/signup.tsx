@@ -41,7 +41,7 @@ export default function Signup() {
       duration: 600,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fade]);
 
   const handleSignup = async () => {
     if (!fullName || !email || !password || !clinicName || !state || !city || !street) {

@@ -4,10 +4,11 @@ import PatientFormWithMedical from "@/components/new_patient";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
+import { IS_DEMO } from "@/config/runtime";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -62,12 +63,13 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-   useEffect(() => {
-    // Simulate async fetch
-    setTimeout(() => {
+  useEffect(() => {
+    if (!IS_DEMO) return;
+    const timeout = setTimeout(() => {
       setPatients(MOCK.patients as any);
       setIsLoading(false);
-    }, 500);
+    }, 250);
+    return () => clearTimeout(timeout);
   }, []);
 
 
@@ -76,7 +78,7 @@ export default function PatientsPage() {
   const itemsPerPage = 10;
 
   /* ================= FETCH PATIENTS ================= */
-  const fetchPatients = async (isRefresh = false) => {
+  const fetchPatients = useCallback(async (isRefresh = false) => {
     if (!session?.access_token) return;
 
     try {
@@ -108,13 +110,13 @@ export default function PatientsPage() {
       if (!response.ok) throw new Error(data.error);
 
       setPatients(data.patients || []);
-    } catch (err) {
+    } catch {
       Alert.alert("Erreur", "Impossible de charger les patients");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [fromDate, globalSearch, session?.access_token, toDate]);
 
   
 
@@ -128,24 +130,16 @@ export default function PatientsPage() {
     session?.access_token,
     fromDate,
     toDate,
+    globalSearch,
+    fetchPatients,
   ]);
-
-
-  // Debug: log patients state changes
-  useEffect(() => {
-    console.log("Patients state updated:", patients.length, "patients");
-  }, [patients]);
 
   /* ================= FILTER LOGIC ================= */
   const filteredPatients = useMemo(() => {
-    console.log("Filtering patients. Total:", patients.length);
-    console.log("Date range:", fromDate.toISOString(), "to", toDate.toISOString());
-    
     const filtered = patients.filter((p) => {
       // date filter
       const patientDate = new Date(p.created_at);
       if (patientDate < fromDate || patientDate > toDate) {
-        console.log("Patient filtered by date:", p.first_name, p.last_name, patientDate);
         return false;
       }
 
@@ -157,14 +151,8 @@ export default function PatientsPage() {
         p.phone.includes(globalSearch) ||
         (p.email && p.email.toLowerCase().includes(searchLower));
 
-      if (!nameMatch && globalSearch) {
-        console.log("Patient filtered by search:", p.first_name, p.last_name);
-      }
-
       return nameMatch;
     });
-    
-    console.log("Filtered patients:", filtered.length);
     return filtered;
   }, [patients, fromDate, toDate, globalSearch]);
 

@@ -63,9 +63,7 @@ export default function VisitsPage() {
   const [detailsPosition, setDetailsPosition] = useState<{ x: number; y: number } | null>(null);
 
   const infoIconRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  const [selectedConsultation, setSelectedConsultation] = useState<Appointment | null>(null);
+  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
 

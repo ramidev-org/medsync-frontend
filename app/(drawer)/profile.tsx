@@ -108,7 +108,7 @@ function ReceptionSettings({ theme }: any) {
     <View style={{ gap: 16 }}>
       <ThemedCard style={{ padding: 18 }}>
         <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Profil rÃ©ception
+          Profil réception
         </Text>
         <Text style={{ marginTop: 4, color: theme.colors.muted }}>
           Ces champs sont en mode prototype (démo)

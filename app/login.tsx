@@ -28,12 +28,12 @@ export default function Login() {
       duration: 800,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fade]);
 
   const handleLogin = async () => {
     try {
       await login(email, password);
-      router.push("/(drawer)");
+      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
     }

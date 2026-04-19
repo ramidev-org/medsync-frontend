@@ -11,14 +11,23 @@ import {
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
+
+type AppRoute =
+  | "/dashboard"
+  | "/visits"
+  | "/patients"
+  | "/payments"
+  | "/chats"
+  | "/users"
+  | "/profile";
 
 type NavItem = {
   key: string;
   label: string;
-  icon: (opts: { active: boolean; color: string; size: number }) => JSX.Element;
-  route: string; // without leading slash, e.g. "dashboard"
+  icon: (opts: { active: boolean; color: string; size: number }) => ReactElement;
+  route: AppRoute;
   visible?: (ctx: { role: AppRole; isClinicAdmin: boolean }) => boolean;
 };
 
@@ -85,7 +94,7 @@ const NAV: NavItem[] = [
   {
     key: "dashboard",
     label: "Accueil",
-    route: "dashboard",
+    route: "/dashboard",
     icon: ({ color, size }) => (
       <MaterialIcons name="space-dashboard" size={size} color={color} />
     ),
@@ -93,7 +102,7 @@ const NAV: NavItem[] = [
   {
     key: "visits",
     label: "Visites",
-    route: "visits",
+    route: "/visits",
     icon: ({ color, size }) => (
       <Ionicons name="calendar-outline" size={size} color={color} />
     ),
@@ -101,7 +110,7 @@ const NAV: NavItem[] = [
   {
     key: "patients",
     label: "Patients",
-    route: "patients",
+    route: "/patients",
     icon: ({ color, size }) => (
       <MaterialIcons name="personal-injury" size={size} color={color} />
     ),
@@ -109,7 +118,7 @@ const NAV: NavItem[] = [
   {
     key: "payments",
     label: "Paiements",
-    route: "payments",
+    route: "/payments",
     visible: ({ role, isClinicAdmin }) =>
       role === "reception" || (role === "doctor" && isClinicAdmin),
     icon: ({ color, size }) => (
@@ -119,7 +128,7 @@ const NAV: NavItem[] = [
   {
     key: "chats",
     label: "Chats",
-    route: "chats",
+    route: "/chats",
     icon: ({ color, size }) => (
       <Ionicons
         name="chatbubble-ellipses-outline"
@@ -131,14 +140,14 @@ const NAV: NavItem[] = [
   {
     key: "users",
     label: "Utilisateurs",
-    route: "users",
+    route: "/users",
     visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin,
     icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} />,
   },
   {
     key: "settings",
     label: "Paramètres",
-    route: "profile",
+    route: "/profile",
     icon: ({ color, size }) => (
       <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
     ),
@@ -162,9 +171,10 @@ function CustomDrawerContent({
 
   const items = NAV.filter((i) => (i.visible ? i.visible({ role, isClinicAdmin }) : true));
 
-  const isActiveRoute = (route: string) => {
+  const isActiveRoute = (route: AppRoute) => {
+    const routeName = route.replace(/^\//, "");
     // keep dashboard highlighted for nested routes
-    return currentRoute === route || currentRoute.startsWith(route + "/");
+    return currentRoute === routeName || currentRoute.startsWith(routeName + "/");
   };
 
   return (
@@ -218,7 +228,7 @@ function CustomDrawerContent({
               // ✅ Force icon color to match label tint
               icon={() => item.icon({ active, color: tint, size: iconSize })}
               // ✅ Always push absolute URL; fixes "Dashboard not clickable"
-              onPress={() => router.push(`/${item.route}`)}
+              onPress={() => router.push(item.route)}
               style={styles.drawerItem}
             />
           </View>

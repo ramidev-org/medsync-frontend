@@ -23,6 +23,7 @@ interface TextFieldProps extends Omit<TextInputProps, "style"> {
   suffixIcon?: keyof typeof Ionicons.glyphMap;
   onSuffixPress?: () => void;
   containerStyle?: object;
+  inputStyle?: TextInputProps["style"];
   required?: boolean;
 }
 
@@ -33,6 +34,7 @@ export const TextField: React.FC<TextFieldProps> = ({
   suffixIcon,
   onSuffixPress,
   containerStyle,
+  inputStyle,
   required = false,
   ...props
 }) => {
@@ -76,7 +78,11 @@ export const TextField: React.FC<TextFieldProps> = ({
       padding: 14,
       fontSize: 15,
       color: theme.colors.text,
-      ...(Platform.OS === "web" && { outlineStyle: "none" }),
+      ...(Platform.OS === "web" && {
+        outlineStyle: "solid",
+        outlineWidth: 0,
+        outlineColor: "transparent",
+      }),
     },
     suffixIcon: {
       paddingRight: 12,
@@ -115,7 +121,7 @@ export const TextField: React.FC<TextFieldProps> = ({
         )}
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, inputStyle]}
           placeholderTextColor={theme.colors.textSecondary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -278,15 +284,13 @@ interface TextAreaProps extends Omit<TextFieldProps, "multiline"> {
 }
 
 export const TextArea: React.FC<TextAreaProps> = ({ rows = 4, ...props }) => {
-  const { theme } = useTheme();
-
   return (
     <TextField
       {...props}
       multiline
       numberOfLines={rows}
       textAlignVertical="top"
-      style={{
+      inputStyle={{
         minHeight: rows * 24,
         paddingTop: 12,
       }}

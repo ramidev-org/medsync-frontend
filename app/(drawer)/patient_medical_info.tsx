@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -63,11 +63,7 @@ export default function PatientMedicalDocument() {
   const [medicalInfo, setMedicalInfo] = useState<MedicalInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPatientData();
-  }, [patientId]);
-
-  const fetchPatientData = async () => {
+  const fetchPatientData = useCallback(async () => {
     if (!session?.access_token) return;
 
     try {
@@ -97,7 +93,12 @@ export default function PatientMedicalDocument() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [patientId, session?.access_token]);
+
+  useEffect(() => {
+    if (!patientId) return;
+    fetchPatientData();
+  }, [fetchPatientData, patientId]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("fr-FR", {
