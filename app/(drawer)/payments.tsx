@@ -1,11 +1,11 @@
 import DatePickerField from "@/components/datepicker";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
-import { MOCK_PAYMENTS } from "@/data/mock/payments_data";
+import { getPayments } from "@/services/payments.services";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function PaymentsPage() {
@@ -15,13 +15,25 @@ export default function PaymentsPage() {
   const [toDate, setToDate] = useState<Date>(new Date("2024-12-31"));
   const [globalSearch, setGlobalSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoading(true);
+      const data = await getPayments();
+      setPayments(data);
+      setLoading(false);
+    };
+    fetchPayments();
+  }, []);
 
   /* ================= FILTER ================= */
 
   const filteredPayments = useMemo(() => {
-    return MOCK_PAYMENTS.filter((p) => {
+    return payments.filter((p) => {
       const paymentDate = new Date(p.createdAt);
       if (paymentDate < fromDate || paymentDate > toDate) return false;
 
@@ -32,7 +44,7 @@ export default function PaymentsPage() {
         p.method.toLowerCase().includes(globalSearch.toLowerCase())
       );
     });
-  }, [fromDate, toDate, globalSearch]);
+  }, [payments, fromDate, toDate, globalSearch]);
 
   /* ================= PAGINATION ================= */
 

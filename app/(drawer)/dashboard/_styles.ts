@@ -88,3 +88,9 @@ export const getDashboardStyles = (theme: any) =>
     sectionTitle: { fontWeight: "700", fontSize: 15, marginBottom: 16 },
     activityList: { gap: 12 },
   });
+
+// This file is imported as a helper module, but it's also under `app/` so expo-router
+// treats it as a route. Provide a harmless default export to satisfy route scanning.
+export default function DashboardStylesRoute() {
+  return null;
+}

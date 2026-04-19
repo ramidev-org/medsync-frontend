@@ -1,21 +1,20 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
-import { useAuth } from "@/contexts/auth_context";
 import { useAppData } from "@/contexts/appData_context";
-import { MOCK } from "@/data/mock";
+import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Image,
+    Modal,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { getDashboardStyles } from "./_styles";
 
@@ -61,10 +60,12 @@ export default function ClinicAdminDashboardPage() {
     }
   }, [user, isClinicAdmin, router]);
 
-  const doctors = (MOCK as any).adminUsers?.doctors ?? [];
+  const { clinic, specialities } = useAppData();
+
+  const doctors = [] as any[]; // TODO: Fetch doctors from database
 
   const [clinics, setClinics] = useState<any[]>(
-    ((MOCK as any).adminClinics ?? []).map((c: any) => ({
+    (clinic ? [clinic] : []).map((c: any) => ({
       status: (c.status as ClinicStatus) ?? "inwork",
       speciality: c.speciality ?? "Médecine générale",
       workingDays: c.workingDays ?? ["Mon", "Tue", "Wed", "Thu", "Fri"],

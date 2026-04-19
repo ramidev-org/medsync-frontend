@@ -42,3 +42,8 @@ const createStyles = (theme: any) =>
     title: { fontWeight: "900", color: theme.colors.primary },
     row: { flexDirection: "row", gap: 12 },
   });
+
+// Not a route screen; keep router scanning happy.
+export default function CardiologyRoute() {
+  return null;
+}

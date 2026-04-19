@@ -176,3 +176,8 @@ const createStyles = (theme: any) =>
     },
     timelinePoints: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
   });
+
+// Not a route screen; keep router scanning happy.
+export default function GynecologyRoute() {
+  return null;
+}

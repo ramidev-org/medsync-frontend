@@ -90,24 +90,6 @@ export const getAppRole = (): AppRole => {
   return "reception";
 };
 
-/** WEB first: query param -> session -> env/extra */
-export const getIsDemo = (): boolean => {
-  // 1) URL override
-  const url = getQueryParam("demo");
-  if (url != null) {
-    const v = String(readBool(url));
-    writeSession(DEMO_KEY, v);
-    return readBool(v);
-  }
-
-  // 2) session override
-  const saved = readSession(DEMO_KEY);
-  if (saved != null) return readBool(saved);
-
-  // 3) env/extra
-  return readBool(readEnv("EXPO_PUBLIC_DEMO"));
-};
-
 /** WEB first: query param -> session -> env/extra (demo helper) */
 export const getIsClinicAdminOverride = (): boolean => {
   const url = getQueryParam("clinic_admin") ?? getQueryParam("admin");
@@ -141,14 +123,12 @@ export const getDoctorSpeciality = (): string => {
 };
 
 export const RUNTIME_INFO = () => ({
-  IS_DEMO: getIsDemo(),
   APP_ROLE: getAppRole(),
   IS_CLINIC_ADMIN: getIsClinicAdminOverride(),
   DOCTOR_SPECIALITY: getDoctorSpeciality(),
 });
 
 // Convenience constants (note: these are fixed at import time)
-export const IS_DEMO = getIsDemo();
 export const APP_ROLE: AppRole = getAppRole();
 export const IS_CLINIC_ADMIN = getIsClinicAdminOverride();
 

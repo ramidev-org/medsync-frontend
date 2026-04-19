@@ -2,6 +2,7 @@
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
+import { SUPABASE_ANON_KEY } from "@/database/database_conn";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -74,6 +75,7 @@ export default function PatientMedicalDocument() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
             Authorization: `Bearer ${session.access_token}`,
           },
         }

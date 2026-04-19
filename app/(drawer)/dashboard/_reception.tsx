@@ -1,7 +1,6 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
-import { MOCK } from "@/data/mock";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo } from "react";
@@ -15,22 +14,20 @@ export default function ReceptionDashboardPage() {
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
 
-  const visits = (((MOCK as any).appointments ?? []) as any[])
-    .slice()
-    .sort((a, b) => String(a.time ?? "").localeCompare(String(b.time ?? "")));
+  // TODO: Replace with real data from database when appointments/visits table is added
+  const visits = [] as any[];
+  const pendingCount = 0;
+  const inConsultCount = 0;
+  const completedCount = 0;
+  const cancelledCount = 0;
 
-  const pendingCount = visits.filter((v: any) => v.status === "pending").length;
-  const inConsultCount = visits.filter((v: any) => v.status === "in_consultation").length;
-  const completedCount = visits.filter((v: any) => v.status === "completed").length;
-  const cancelledCount = visits.filter((v: any) => v.status === "cancelled").length;
+  // Reception-focused "work queue"
+  const toConfirm = 0;
+  const toBill = 0;
+  const toReschedule = 0;
 
-  // Reception-focused “work queue”
-  const toConfirm = visits.filter((v: any) => v.status === "pending").length;
-  const toBill = visits.filter((v: any) => v.status === "completed" && !v.payment_status).length;
-  const toReschedule = visits.filter((v: any) => v.status === "cancelled").length;
-
-  // “Today agenda” (instead of waiting room)
-  const agenda = visits.slice(0, 10);
+  // "Today agenda" (instead of waiting room)
+  const agenda: any[] = [];
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>

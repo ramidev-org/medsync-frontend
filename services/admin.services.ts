@@ -1,7 +1,5 @@
-import { IS_DEMO } from "@/config/runtime";
 import { db } from "@/database/database_conn";
-
-const demoId = (prefix: string) => `${prefix}_${Math.random().toString(16).slice(2, 10)}`;
+import { SUPABASE_ANON_KEY } from "@/database/database_conn";
 
 
 
@@ -18,21 +16,21 @@ export async function createUser(payload: {
   role: "doctor" | "reception";
   adminId: string; // current logged-in admin
 }) {
-  if (IS_DEMO) {
-    return {
-      id: demoId("user"),
-      email: payload.email,
-      role: payload.role,
-    };
-  }
   const EDGE_FUNCTION_URL = "https://cxycroqsgmtasgibapen.functions.supabase.co/create-user";
 
   try {
+    const {
+      data: { session },
+    } = await db.auth.getSession();
+
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // optionally send a token if you want to verify the admin on the edge function
+        apikey: SUPABASE_ANON_KEY,
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
       },
       body: JSON.stringify(payload),
     });
@@ -51,7 +49,6 @@ export async function createUser(payload: {
 }
 
 export async function deactivateUser(userId: string) {
-  if (IS_DEMO) return;
   const { error } = await db.auth.admin.updateUserById(userId, {
     ban_duration: "indefinite",
   });
@@ -60,7 +57,6 @@ export async function deactivateUser(userId: string) {
 
 
 export async function getDoctorsByAdmin(adminProfileId: string) {
-  if (IS_DEMO) return [];
   // Step 1: Get the clinic managed by this admin
   const { data: clinic, error: clinicError } = await db
     .from("clinics")
@@ -101,7 +97,6 @@ export async function getDoctorsByAdmin(adminProfileId: string) {
  * Get all virtual clinics with readable data
  */
 export async function getVirtualClinics(currentAdminId: string) {
-  if (IS_DEMO) return [];
   const { data, error } = await db
     .from("virtual_clinics")
     .select(`
@@ -132,12 +127,6 @@ export type CreateClinicPayload = {
 };
 
 export async function createVirtualClinic(payload: CreateClinicPayload) {
-  if (IS_DEMO) {
-    return {
-      data: { ...payload, id: demoId("vclinic") },
-      error: null,
-    } as any;
-  }
   return db
     .from("virtual_clinics")
     .insert({
@@ -159,7 +148,6 @@ export async function assignDoctorToVirtualClinic(
   virtualClinicId: string,
   doctorId: string | null,
 ) {
-  if (IS_DEMO) return;
   const { error } = await db
     .from("virtual_clinics")
     .update({ doctor_id: doctorId })
@@ -169,10 +157,10 @@ export async function assignDoctorToVirtualClinic(
 }
 
 /* ============================
-   AUDIT LOGS
+   AUDIT LOGS - TODO: Update to match schema
 ============================ */
+/*
 export async function getAuditLogs() {
-  if (IS_DEMO) return [];
   const { data, error } = await db
     .from("audit_logs")
     .select("*")
@@ -180,3 +168,4 @@ export async function getAuditLogs() {
   if (error) throw error;
   return data;
 }
+*/

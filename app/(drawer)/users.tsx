@@ -1,23 +1,21 @@
 // app/(drawer)/UsersPage.tsx
 import { TopBar } from "@/components/top_bar";
-import { IS_DEMO } from "@/config/runtime";
-import { useAuth } from "@/contexts/auth_context";
 import { useAppData } from "@/contexts/appData_context";
-import { MOCK_USERS } from "@/data/mock/admin_users";
+import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
 import { createUser } from "@/services/admin.services";
 import { useTheme } from "@/theme/theme_provider";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 type UserRole = "doctor" | "reception";
@@ -43,7 +41,6 @@ export default function UsersPage() {
 
   // Only clinic-admin doctors can manage users
   useEffect(() => {
-    if (IS_DEMO) return;
     if (!user) return;
     if (user.role !== "doctor" || !isClinicAdmin) {
       router.replace("/dashboard");
@@ -54,14 +51,6 @@ export default function UsersPage() {
   useEffect(() => {
     const loadUsers = async () => {
       setLoading(true);
-
-      if (IS_DEMO) {
-        setDoctors(MOCK_USERS.doctors);
-        setReceptions(MOCK_USERS.assistants);
-        setUsers([...MOCK_USERS.doctors, ...MOCK_USERS.assistants]);
-        setLoading(false);
-        return;
-      }
 
       const { data, error } = await db
         .from("profiles")
@@ -160,7 +149,7 @@ export default function UsersPage() {
           {/* Doctors */}
           <Text style={styles.sectionTitle}>Médecins</Text>
           <View style={styles.grid}>
-            {(IS_DEMO ? doctors : users.filter((u) => u.role === "doctor")).map((u: any) => (
+            {users.filter((u) => u.role === "doctor").map((u: any) => (
               <View key={u.id} style={styles.userCard}>
                 <View style={styles.cardTop}>
                   <View style={styles.avatarCircle}>
@@ -168,39 +157,8 @@ export default function UsersPage() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{u.full_name || "Docteur"}</Text>
-                    {!!u.speciality && (
-                      <View style={styles.pill}>
-                        <Text style={styles.pillText}>{u.speciality}</Text>
-                      </View>
-                    )}
                   </View>
                 </View>
-
-                {/* stats rows (demo only) */}
-                {IS_DEMO && (
-                  <View style={{ gap: 10, marginTop: 12 }}>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Patients</Text>
-                      <Text style={styles.rowValue}>{u.patients}</Text>
-                    </View>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Rating</Text>
-                      <Text style={styles.rowValue}>{u.rating}/5.0</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.rowLabel}>Availability</Text>
-                      <Text style={styles.rowSub}>{u.availability}</Text>
-                    </View>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Téléphone</Text>
-                      <Text style={styles.rowValue}>{u.phone}</Text>
-                    </View>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Email</Text>
-                      <Text style={styles.rowValue}>{u.email}</Text>
-                    </View>
-                  </View>
-                )}
 
                 <View style={styles.cardActions}>
                   <TouchableOpacity style={styles.secondaryBtn}>
@@ -217,7 +175,7 @@ export default function UsersPage() {
           {/* Reception */}
           <Text style={[styles.sectionTitle, { marginTop: 22 }]}>Réception</Text>
           <View style={styles.grid}>
-            {(IS_DEMO ? receptions : users.filter((u) => u.role === "reception")).map((u: any) => (
+            {users.filter((u) => u.role === "reception").map((u: any) => (
               <View key={u.id} style={styles.userCard}>
                 <View style={styles.cardTop}>
                   <View style={styles.avatarCircle}>
@@ -225,30 +183,8 @@ export default function UsersPage() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{u.full_name || "Réception"}</Text>
-                    {IS_DEMO && (
-                      <View style={styles.pill}>
-                        <Text style={styles.pillText}>{u.department || "Accueil"}</Text>
-                      </View>
-                    )}
                   </View>
                 </View>
-
-                {IS_DEMO && (
-                  <View style={{ gap: 10, marginTop: 12 }}>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Shift</Text>
-                      <Text style={styles.rowValue}>{u.shift}</Text>
-                    </View>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Téléphone</Text>
-                      <Text style={styles.rowValue}>{u.phone}</Text>
-                    </View>
-                    <View style={styles.rowLine}>
-                      <Text style={styles.rowLabel}>Email</Text>
-                      <Text style={styles.rowValue}>{u.email}</Text>
-                    </View>
-                  </View>
-                )}
 
                 <View style={styles.cardActions}>
                   <TouchableOpacity style={styles.secondaryBtn}>

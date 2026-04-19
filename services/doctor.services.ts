@@ -1,13 +1,9 @@
-import { IS_DEMO } from "@/config/runtime";
 import { db } from "@/database/database_conn";
-
-const demoId = (prefix: string) => `${prefix}_${Math.random().toString(16).slice(2, 10)}`;
 
 /* ============================
    DOCTOR PROFILE
 ============================ */
 export async function getDoctorProfile(profileId: string) {
-  if (IS_DEMO) return null;
   const { data, error } = await db
     .from("doctor_profiles")
     .select("*")
@@ -21,7 +17,6 @@ export async function updateDoctorProfile(
   profileId: string,
   payload: any,
 ) {
-  if (IS_DEMO) return;
   const { error } = await db
     .from("doctor_profiles")
     .update(payload)
@@ -36,7 +31,6 @@ export async function getDoctorAgenda(
   doctorId: string,
   date?: string,
 ) {
-  if (IS_DEMO) return [];
   let q = db
     .from("appointments")
     .select("*, patient:patients(*)")
@@ -58,25 +52,22 @@ export async function updateAppointmentStatus(
     | "cancelled"
     | "no_show",
 ) {
-  if (IS_DEMO) return;
+  // TODO: Update to match schema - appointments table doesn't exist
+  /*
   const { error } = await db
     .from("appointments")
     .update({ status })
     .eq("id", appointmentId);
   if (error) throw error;
+  */
 }
 
 /* ============================
    CONSULTATION
 ============================ */
 export async function openConsultation(appointmentId: string) {
-  if (IS_DEMO)
-    return {
-      id: demoId("cons"),
-      appointment_id: appointmentId,
-      status: "open",
-      started_at: new Date(),
-    };
+  // TODO: Update to match schema - consultations table doesn't exist
+  /*
   const { data, error } = await db
     .from("consultations")
     .insert({
@@ -89,6 +80,7 @@ export async function openConsultation(appointmentId: string) {
 
   if (error) throw error;
   return data;
+  */
 }
 
 export async function closeConsultation(
@@ -100,7 +92,8 @@ export async function closeConsultation(
     follow_up?: string;
   },
 ) {
-  if (IS_DEMO) return;
+  // TODO: Update to match schema - consultations table doesn't exist
+  /*
   const { error } = await db
     .from("consultations")
     .update({
@@ -111,13 +104,15 @@ export async function closeConsultation(
     .eq("id", consultationId);
 
   if (error) throw error;
+  */
 }
 
 /* ============================
    PRESCRIPTIONS
 ============================ */
 export async function createPrescription(payload: any) {
-  if (IS_DEMO) return { ...payload, id: demoId("rx") };
+  // TODO: Update to match schema - prescriptions table doesn't exist
+  /*
   const { data, error } = await db
     .from("prescriptions")
     .insert(payload)
@@ -125,27 +120,32 @@ export async function createPrescription(payload: any) {
     .single();
   if (error) throw error;
   return data;
+  */
 }
 
 export async function getPrescriptionTemplates(doctorId: string) {
-  if (IS_DEMO) return [];
+  // TODO: Update to match schema - prescription_templates table doesn't exist
+  /*
   const { data, error } = await db
     .from("prescription_templates")
     .select("*")
     .eq("doctor_id", doctorId);
   if (error) throw error;
   return data;
+  */
 }
 
 /* ============================
    MEDICAL RECORDS
 ============================ */
 export async function getPatientMedicalHistory(patientId: string) {
-  if (IS_DEMO) return [];
+  // TODO: Update to match schema - consultations table doesn't exist
+  /*
   const { data, error } = await db
     .from("consultations")
     .select("*, prescriptions(*)")
     .eq("patient_id", patientId);
   if (error) throw error;
   return data;
+  */
 }

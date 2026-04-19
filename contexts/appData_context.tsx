@@ -1,6 +1,4 @@
-import { IS_CLINIC_ADMIN, IS_DEMO } from "@/config/runtime";
 import { db } from "@/database/database_conn";
-import preview from "@/data/mock/preview_data.json";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./auth_context";
 
@@ -27,28 +25,6 @@ export const AppDataProvider = ({ children }: any) => {
 
     const load = async () => {
       if (!cancelled) setLoading(true);
-
-      // Demo: use bundled JSON and skip all database calls.
-      if (IS_DEMO) {
-        setSpecialities(
-          (preview as any).specialities ?? [
-            { id: "gen", name: "Médecine générale" },
-            { id: "cardio", name: "Cardiologie" },
-            { id: "derm", name: "Dermatologie" },
-          ],
-        );
-        setClinic(
-          (preview as any).clinic ?? {
-            id: "demo-clinic",
-            name: "Cabinet Démo",
-            state: "Alger",
-            city: "Alger",
-          },
-        );
-        setIsClinicAdmin(IS_CLINIC_ADMIN && user?.role === "doctor");
-        if (!cancelled) setLoading(false);
-        return;
-      }
 
       // Real mode
       const { data: specialitiesData } = await db

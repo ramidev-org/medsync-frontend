@@ -184,3 +184,8 @@ const subTabStyles = StyleSheet.create({
     fontSize: 12,
   },
 });
+
+// Helper module (not a real screen) but expo-router scans `app/` for routes.
+export default function ConsultationUiRoute() {
+  return null;
+}

@@ -6,7 +6,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { MOCK } from "@/data/mock";
 import { useAuth } from "@/contexts/auth_context";
 
 // Tab pages (separate files)
@@ -161,9 +160,9 @@ export default function ConsultationPage() {
     }
   }, [user, router]);
 
-  const doctor: Doctor | null = (MOCK as any).doctor ?? null;
+  const doctor: Partial<Doctor> | null = null; // TODO: Fetch from database when doctor profile is available
   const doctorSpeciality =
-    (user as any)?.doctorProfile?.speciality ?? (doctor as any)?.specialite;
+    (user as any)?.doctorProfile?.speciality ?? null;
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
@@ -176,59 +175,15 @@ export default function ConsultationPage() {
   const [parameters, setParameters] = useState(initialParams);
   const [observations, setObservations] = useState("");
 
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>(
-    () => ((MOCK as any).prescriptions as Prescription[]) || []
-  );
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
 
   /* ================= LOAD ================= */
 
   useEffect(() => {
-    const appt = (MOCK as any).appointments?.find((a: Appointment) => a.id === id) as
-      | Appointment
-      | undefined;
-    if (!appt) return;
-
-    const patient = (MOCK as any).patients?.find((p: Patient) => p.id === appt.patient_id) as
-      | Patient
-      | undefined;
-
-    setAppointment({ ...appt, patient });
-
-    const found = (MOCK as any).consultations?.find(
-      (c: Consultation) => c.appointment_id === appt.id
-    ) as Consultation | undefined;
-
-    const consult: Consultation =
-      found || {
-        id: `c_${appt.id}`,
-        appointment_id: appt.id,
-        diagnosis: [],
-        observations: "",
-        treatment_plan: "",
-        follow_up: "",
-        status: "open",
-        vitals: {},
-        parameters: {},
-      };
-
-    setConsultation(consult);
-
-    const mv = (consult.vitals || {}) as ConsultationVitals;
-
-    setVitals({
-      ...initialVitals,
-      taille_cm: mv.taille_cm ?? (mv.height_cm != null ? String(mv.height_cm) : ""),
-      poids_kg: mv.poids_kg ?? (mv.weight_kg != null ? String(mv.weight_kg) : ""),
-      tension: mv.tension ?? (mv.blood_pressure != null ? String(mv.blood_pressure) : ""),
-      temperature_c: mv.temperature_c ?? (mv.temperature != null ? String(mv.temperature) : ""),
-    });
-
-    setParameters({
-      ...initialParams,
-      ...(consult.parameters || {}),
-    });
-
-    setObservations(consult.observations || "");
+    // TODO: Load appointment and consultation data from database when appointments table is added
+    // For now, set to null since appointments table doesn't exist
+    setAppointment(null);
+    setConsultation(null);
   }, [id]);
 
   /* ================= ORDONNANCES HELPERS ================= */
@@ -250,7 +205,7 @@ export default function ConsultationPage() {
       patient_id: appointment.patient.id,
       drugs: [],
       template_name: "Ordonnance libre",
-      signed_by: doctor?.signature_numerique || "Médecin",
+      signed_by: (doctor as any)?.signature_numerique || "Médecin",
     };
 
     setPrescriptions((prev) => [...prev, rx!]);
@@ -372,7 +327,7 @@ export default function ConsultationPage() {
         {activeMainTab === "prescriptions" && (
           <OrdonnancesTab
             theme={theme}
-            signedBy={currentPrescription?.signed_by || doctor?.signature_numerique || "Médecin"}
+            signedBy={currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "Médecin"}
           />
         )}
 

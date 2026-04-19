@@ -1,11 +1,7 @@
 // app/contexts/auth_context.tsx
-import {
-  getAppRole,
-  getDoctorSpeciality,
-  IS_DEMO,
-} from "@/config/runtime";
-import { db } from "@/database/database_conn";
+import { db, SUPABASE_ANON_KEY } from "@/database/database_conn";
 import { User } from "@/models/User";
+import { getAppRole } from "@/config/runtime";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import React, { createContext, useEffect, useRef, useState } from "react";
@@ -38,42 +34,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 let globalLoadedUserId: string | null = null;
 let globalAuthListener: any = null;
 
-const buildDemoUser = () => {
-  const role = getAppRole();
-  const speciality = getDoctorSpeciality();
-  return new User({
-    id: "demo-user",
-    email: "demo@mydoctor.local",
-    username: "demo",
-    fullname:
-      role === "doctor"
-        ? "Dr Demo"
-        : "Reception Demo",
-    role,
-    clinic_id: "demo-clinic",
-    doctorProfile:
-      role === "doctor"
-        ? {
-            speciality,
-            license_number: "DEMO-0001",
-            years_of_experience: 6,
-            consultation_fee: 2000,
-            bio: "Mode démo",
-            active: true,
-          }
-        : null,
-    receptionProfile:
-      role === "reception"
-        ? {
-            department: "Accueil",
-            shift_start: "08:00",
-            shift_end: "16:00",
-            active: true,
-          }
-        : null,
-  });
-};
-
 export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any | null>(null);
@@ -97,27 +57,97 @@ export const AuthProvider = ({ children }: any) => {
     globalLoadedUserId = id;
 
     try {
-      const { data, error } = await db
+      // Avoid PostgREST embedded selects here because `reception_profiles` is a view
+      // (views don't carry FK metadata, so embeds can produce 400s). Load related
+      // role/profile rows with targeted follow-up queries instead.
+      const { data: profiles, error: profileError } = await db
         .from("profiles")
         .select(
           `
           *,
-          user_roles!user_id ( role ),
-          doctor_profiles!id ( * ),
-          reception_profiles!id ( * )
+          user_roles ( role )
         `,
         )
         .eq("id", id)
-        .single();
+        .limit(1);
 
-      if (error || !data) {
+      let profile = profiles?.[0] ?? null;
+
+      // If the profile row doesn't exist yet (common when users are created without the
+      // usual "create profile on signup" trigger), try to create a minimal one using
+      // the user's own JWT. If RLS disallows it, we'll fall back to a clean sign-out.
+      if (!profile && !profileError) {
+        const { data: authData } = await db.auth.getUser();
+        const email = authData.user?.email ?? "";
+        if (email) {
+          const base = (email.split("@")[0] || "user").trim();
+          const safeBase = base.replace(/[^a-zA-Z0-9_-]/g, "") || "user";
+          const username = `${safeBase}-${id.slice(0, 6)}`;
+
+          const { error: insertError } = await db.from("profiles").insert({
+            id,
+            username,
+            full_name: base,
+            email,
+            active: true,
+          });
+          if (insertError) {
+            throw insertError;
+          }
+
+          const retry = await db
+            .from("profiles")
+            .select(
+              `
+              *,
+              user_roles ( role )
+            `,
+            )
+            .eq("id", id)
+            .limit(1);
+          if (retry.error) {
+            throw retry.error;
+          }
+          profile = retry.data?.[0] ?? null;
+        }
+      }
+
+      if (profileError || !profile) {
         setUser(null);
         await db.auth.signOut();
         globalLoadedUserId = null;
         return;
       }
 
-      setUser(User.fromDb(data));
+      const rawRole = profile.user_roles?.[0]?.role as string | undefined;
+      const role = (rawRole === "assistant" ? "reception" : rawRole) ?? getAppRole();
+
+      let doctorProfile: any = null;
+      let receptionProfile: any = null;
+
+      if (role === "doctor") {
+        const { data: doctorData } = await db
+          .from("doctor_profiles")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+        doctorProfile = doctorData ?? null;
+      } else if (role === "reception") {
+        const { data: receptionData } = await db
+          .from("reception_profiles")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+        receptionProfile = receptionData ?? null;
+      }
+
+      setUser(
+        User.fromDb({
+          ...profile,
+          doctor_profiles: doctorProfile,
+          reception_profiles: receptionProfile,
+        }),
+      );
     } catch {
       setUser(null);
       globalLoadedUserId = null;
@@ -127,29 +157,6 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   useEffect(() => {
-    // Demo mode: bypass Supabase completely.
-    if (IS_DEMO) {
-      setUser(buildDemoUser());
-      setSession(null);
-      setLoading(false);
-
-      // In some dev setups, changing .env + hot reload can keep module state.
-      // Poll lightly to pick up role/speciality changes after refresh.
-      const t = setInterval(() => {
-        setUser((prev) => {
-          const next = buildDemoUser();
-          if (!prev) return next;
-          if (prev.role !== next.role) return next;
-          const prevSpec = (prev as any)?.doctorProfile?.speciality;
-          const nextSpec = (next as any)?.doctorProfile?.speciality;
-          if (prevSpec !== nextSpec) return next;
-          return prev;
-        });
-      }, 1000);
-
-      return () => clearInterval(t);
-    }
-
     // Prevent duplicate initialization
     if (hasInitialized.current) return;
     hasInitialized.current = true;
@@ -199,12 +206,15 @@ export const AuthProvider = ({ children }: any) => {
   }, []);
 
   const signupWithLicense = async (payload: SignupPayload) => {
-    if (IS_DEMO) return;
     const res = await fetch(
       "https://cxycroqsgmtasgibapen.functions.supabase.co/signup-with-license",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Supabase Functions require an API key even when JWT verification is disabled.
+          apikey: SUPABASE_ANON_KEY,
+        },
         body: JSON.stringify({
           email: payload.email,
           password: payload.password,
@@ -224,17 +234,11 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const login = async (email: string, password: string) => {
-    if (IS_DEMO) return;
     const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   const logout = async () => {
-    if (IS_DEMO) {
-      setUser(null);
-      globalLoadedUserId = null;
-      return;
-    }
     await db.auth.signOut();
     setUser(null);
     globalLoadedUserId = null;

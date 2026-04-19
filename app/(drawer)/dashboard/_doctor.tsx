@@ -2,19 +2,44 @@ import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAuth } from "@/contexts/auth_context";
-import { chartData } from "@/data/mock/chart_data";
 import { useTheme } from "@/theme/theme_provider";
 import {
-  FontAwesome5,
-  FontAwesome6,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
+    FontAwesome5,
+    FontAwesome6,
+    Ionicons,
+    MaterialCommunityIcons,
+    MaterialIcons,
 } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BarChart, LineChart, PieChart } from "react-native-chart-kit";
 import { getDashboardStyles } from "./_styles";
+
+// Mock chart data removed - TODO: Implement real chart data from database
+const chartData = {
+  "RDV - CONS": {
+    type: "line" as const,
+    labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const,
+    datasets: [
+      { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: 3, label: "RDV" },
+      { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: 3, label: "Consultations" },
+    ],
+  },
+  "Revenus": {
+    type: "bar" as const,
+    labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const,
+    datasets: [
+      { data: [0, 0, 0, 0, 0, 0, 0], label: "Revenus (€)" },
+    ],
+  },
+  "Répartition": {
+    type: "pie" as const,
+    data: [
+      { name: "Général", population: 0, color: "#FF6384", legendFontColor: "#7F7F7F" },
+      { name: "Spécialisé", population: 0, color: "#36A2EB", legendFontColor: "#7F7F7F" },
+    ],
+  },
+} as const;
 
 const ICON_FAMILIES = {
   ion: Ionicons,

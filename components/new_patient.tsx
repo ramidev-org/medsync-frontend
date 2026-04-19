@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SUPABASE_ANON_KEY } from "@/database/database_conn";
 
 // Database enum types
 type SexEnum = 'male' | 'female';
@@ -168,6 +169,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
             Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({

@@ -4,24 +4,23 @@ import PatientFormWithMedical from "@/components/new_patient";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
-import { IS_DEMO } from "@/config/runtime";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 
-import { MOCK } from "@/data/mock";
+import { db } from "@/database/database_conn";
 import { useRouter } from "expo-router";
 
 
@@ -50,7 +49,7 @@ export default function PatientsPage() {
   const [menuVisibleFor, setMenuVisibleFor] = useState<string | null>(null);
 
   const { theme } = useTheme();
-  const { session } = useAuth();
+  const { user } = useAuth();
   const tableStyles = createTableStyles(theme);
 
   const [fromDate, setFromDate] = useState(new Date("2025-01-01"));
@@ -63,71 +62,46 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!IS_DEMO) return;
-    const timeout = setTimeout(() => {
-      setPatients(MOCK.patients as any);
-      setIsLoading(false);
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, []);
-
-
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const itemsPerPage = 10;
 
   /* ================= FETCH PATIENTS ================= */
   const fetchPatients = useCallback(async (isRefresh = false) => {
-    if (!session?.access_token) return;
+    if (!user?.id) return;
 
     try {
       if (isRefresh) setIsRefreshing(true);
       else setIsLoading(true);
 
-      const params = new URLSearchParams();
+      // Fetch patients created by this user
+      const { data, error } = await db
+        .from("patients")
+        .select("*")
+        .eq("created_by", user.id)
+        .order("created_at", { ascending: false });
 
-      if (fromDate)
-        params.append("start_date", fromDate.toISOString().split("T")[0]);
+      if (error) throw error;
 
-      if (toDate)
-        params.append("end_date", toDate.toISOString().split("T")[0]);
-
-      if (globalSearch.trim() !== "")
-        params.append("search", globalSearch.trim());
-
-      const response = await fetch(
-        `https://cxycroqsgmtasgibapen.functions.supabase.co/get-patients?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error);
-
-      setPatients(data.patients || []);
+      setPatients(data || []);
     } catch {
       Alert.alert("Erreur", "Impossible de charger les patients");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [fromDate, globalSearch, session?.access_token, toDate]);
+  }, [user?.id]);
 
   
 
 
   useEffect(() => {
-    if (!session?.access_token) return;
+    if (!user?.id) return;
 
     setCurrentPage(1);   // reset pagination on any filter change
     fetchPatients();
   }, [
-    session?.access_token,
+    user?.id,
     fromDate,
     toDate,
     globalSearch,

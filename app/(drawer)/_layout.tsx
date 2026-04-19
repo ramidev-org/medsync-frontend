@@ -79,7 +79,7 @@ export default function Layout() {
       )}
     >
       {/* Screens must exist for routing */}
-      <Drawer.Screen name="dashboard" options={{ drawerLabel: "Dashboard" }} />
+      <Drawer.Screen name="dashboard/index" options={{ drawerLabel: "Dashboard" }} />
       <Drawer.Screen name="visits" options={{ drawerLabel: "Visites" }} />
       <Drawer.Screen name="patients" options={{ drawerLabel: "Patients" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Paiements" }} />

@@ -6,18 +6,16 @@ import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ViewStyle
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    ViewStyle
 } from "react-native";
 
-// Mock data (single source)
-import { MOCK } from "@/data/mock";
 import { router } from "expo-router";
 
 /* ================= STATUS LABELS ================= */
@@ -69,11 +67,9 @@ export default function VisitsPage() {
 
   /* ================= LOAD APPOINTMENTS WITH PATIENT ================= */
   useEffect(() => {
-    const merged: Appointment[] = MOCK.appointments.map((a: any) => {
-      const patient = MOCK.patients.find((p: any) => p.id === a.patient_id);
-      return { ...a, patient };
-    });
-    setAppointments(merged);
+    // TODO: Update to use database when appointments table is added
+    // For now, showing empty list since appointments table doesn't exist in schema
+    setAppointments([]);
   }, []);
 
   /* ================= FILTERED APPOINTMENTS ================= */

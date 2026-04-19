@@ -1,19 +1,18 @@
 import { ThemedCard } from "@/components/default_card";
 import { TopBar } from "@/components/top_bar";
-import { useAuth } from "@/contexts/auth_context";
+import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAppData } from "@/contexts/appData_context";
-import { MOCK } from "@/data/mock";
-import { specialityLabelFr, normalizeSpeciality } from "@/config/speciality";
+import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 // NOTE: This route is kept as "profile" for backward compatibility,
@@ -140,7 +139,8 @@ function ReceptionSettings({ theme }: any) {
 }
 
 function ClinicAdminSettings({ theme }: any) {
-  const clinics = (MOCK as any).adminClinics ?? [];
+  const { clinic } = useAppData();
+  const clinics = clinic ? [clinic] : [];
   const [orgName, setOrgName] = useState("Mon Organisation");
 
   return (
