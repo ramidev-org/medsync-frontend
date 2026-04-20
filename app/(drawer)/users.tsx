@@ -2,209 +2,205 @@
 import { TopBar } from "@/components/top_bar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
-import { db } from "@/database/database_conn";
-import { createUser } from "@/services/admin.services";
+import { callRpc, invokeEdgeFunction } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-type UserRole = "doctor" | "reception";
+type UserType = "doctor" | "assistant";
+
+type StaffRow = {
+  id: string;
+  email?: string | null;
+  full_name?: string | null;
+  user_type: UserType;
+  active?: boolean | null;
+  created_at?: string | null;
+};
 
 export default function UsersPage() {
   const { theme } = useTheme();
-  const { user } = useAuth();
-  const { isClinicAdmin } = useAppData();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const router = useRouter();
-  const styles = getStyles(theme);
 
-  const [users, setUsers] = useState<any[]>([]);
-  const [doctors, setDoctors] = useState<any[]>([]);
-  const [receptions, setReceptions] = useState<any[]>([]);
+  const { user, session } = useAuth();
+  const { isClinicAdmin } = useAppData();
+
+  const [users, setUsers] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("doctor");
+  const [userType, setUserType] = useState<UserType>("assistant");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [inviteUrl, setInviteUrl] = useState("");
 
-  // Only clinic-admin doctors can manage users
+  // Only clinic-admin doctors can manage staff.
   useEffect(() => {
     if (!user) return;
-    if (user.role !== "doctor" || !isClinicAdmin) {
+    if (user.user_type !== "doctor" || !isClinicAdmin) {
       router.replace("/dashboard");
     }
   }, [user, isClinicAdmin, router]);
 
-  /* ===== LOAD USERS ===== */
-  useEffect(() => {
-    const loadUsers = async () => {
-      setLoading(true);
-
-      const { data, error } = await db
-        .from("profiles")
-        .select(`
-          id,
-          email,
-          full_name,
-          created_at,
-          user_roles!inner (
-            role
-          )
-        `)
-        .in("user_roles.role", ["doctor", "reception"])
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Load users error:", error);
-      } else {
-        // flatten role
-        const formatted = data.map((u: any) => ({
-          id: u.id,
-          email: u.email,
-          full_name: u.full_name,
-          role: u.user_roles[0]?.role,
-          created_at: u.created_at,
-        }));
-
-        setUsers(formatted);
-        setDoctors(formatted.filter((u: any) => u.role === "doctor"));
-        setReceptions(formatted.filter((u: any) => u.role === "reception"));
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      if (!user?.id) {
+        setUsers([]);
+        return;
       }
-
+      const staff = await callRpc<StaffRow[], Record<string, unknown>>(
+        "rpc_get_clinic_staff",
+        { p_requester_id: user.id },
+      );
+      setUsers(staff ?? []);
+    } catch (e) {
+      console.error("Load staff error:", e);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
-    loadUsers();
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-  /* ===== CREATE USER ===== */
-  const handleCreateUser = async () => {
-    if (!email || !password || !user) {
-      setMessage("Email et mot de passe requis.");
+  const handleInviteStaff = async () => {
+    if (!email.trim()) {
+      setMessage("Email requis.");
+      return;
+    }
+    if (!session?.access_token) {
+      setMessage("Vous devez être connecté.");
       return;
     }
 
     setSaving(true);
     setMessage("");
+    setInviteUrl("");
 
     try {
-      const newUser = await createUser({
-        email: email.trim(),
-        password,
-        role,
-        adminId: user.id,
-      });
+      const res = await invokeEdgeFunction<any, { email: string; user_type: UserType }>(
+        "create-staff-invite",
+        { email: email.trim(), user_type: userType },
+        session.access_token,
+      );
 
-      setUsers((prev) => [
-        { id: newUser.id, email: newUser.email, role },
-        ...prev,
-      ]);
+      const url =
+        (res?.invite_url as string | undefined) ??
+        (res?.url as string | undefined) ??
+        (res?.inviteUrl as string | undefined) ??
+        "";
+      if (url) setInviteUrl(url);
 
       setShowModal(false);
       setEmail("");
-      setPassword("");
-      setRole("doctor");
+      setUserType("assistant");
+      await refresh();
     } catch (e: any) {
-      setMessage(e.message || "Erreur de création.");
+      setMessage(e?.message || "Erreur d'invitation.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const copyInviteUrl = async () => {
+    if (!inviteUrl) return;
+    if (Platform.OS === "web" && typeof navigator !== "undefined" && navigator.clipboard) {
+      await navigator.clipboard.writeText(inviteUrl);
+      Alert.alert("Copied", "Invite link copied to clipboard.");
+      return;
+    }
+    Alert.alert("Invite link", inviteUrl);
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <TopBar theme={theme} />
 
-      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.title}>Utilisateurs</Text>
+        <Text style={styles.title}>Personnel</Text>
         <TouchableOpacity
           style={[styles.addBtn, { backgroundColor: theme.colors.primary }]}
-          onPress={() => setShowModal(true)}
+          onPress={() => {
+            setMessage("");
+            setInviteUrl("");
+            setShowModal(true);
+          }}
         >
           <Text style={{ color: theme.colors.surface, fontWeight: "700" }}>
-            + Ajouter
+            + Inviter
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* USERS LIST */}
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} />
       ) : (
         <ScrollView contentContainerStyle={styles.page}>
-          {/* Doctors */}
           <Text style={styles.sectionTitle}>Médecins</Text>
           <View style={styles.grid}>
-            {users.filter((u) => u.role === "doctor").map((u: any) => (
-              <View key={u.id} style={styles.userCard}>
-                <View style={styles.cardTop}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>{(u.full_name || u.email)[0]?.toUpperCase()}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.name}>{u.full_name || "Docteur"}</Text>
+            {users
+              .filter((u) => u.user_type === "doctor")
+              .map((u) => (
+                <View key={u.id} style={styles.userCard}>
+                  <View style={styles.cardTop}>
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>
+                        {(u.full_name || u.email || "?")[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.name}>{u.full_name || "Docteur"}</Text>
+                      {!!u.email && <Text style={styles.rowSub}>{u.email}</Text>}
+                    </View>
                   </View>
                 </View>
-
-                <View style={styles.cardActions}>
-                  <TouchableOpacity style={styles.secondaryBtn}>
-                    <Text style={styles.secondaryBtnText}>View Profile</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.primaryBtn}>
-                    <Text style={styles.primaryBtnText}>Schedule</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              ))}
           </View>
 
-          {/* Reception */}
-          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>Réception</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 22 }]}>Assistants</Text>
           <View style={styles.grid}>
-            {users.filter((u) => u.role === "reception").map((u: any) => (
-              <View key={u.id} style={styles.userCard}>
-                <View style={styles.cardTop}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>{(u.full_name || u.email)[0]?.toUpperCase()}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.name}>{u.full_name || "Réception"}</Text>
+            {users
+              .filter((u) => u.user_type === "assistant")
+              .map((u) => (
+                <View key={u.id} style={styles.userCard}>
+                  <View style={styles.cardTop}>
+                    <View style={styles.avatarCircle}>
+                      <Text style={styles.avatarText}>
+                        {(u.full_name || u.email || "?")[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.name}>{u.full_name || "Assistant"}</Text>
+                      {!!u.email && <Text style={styles.rowSub}>{u.email}</Text>}
+                    </View>
                   </View>
                 </View>
-
-                <View style={styles.cardActions}>
-                  <TouchableOpacity style={styles.secondaryBtn}>
-                    <Text style={styles.secondaryBtnText}>View Profile</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.primaryBtn}>
-                    <Text style={styles.primaryBtnText}>Schedule</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              ))}
           </View>
         </ScrollView>
       )}
 
-      {/* CREATE USER MODAL */}
       <Modal visible={showModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Nouvel utilisateur</Text>
+            <Text style={styles.modalTitle}>Inviter un membre du personnel</Text>
 
             <TextInput
               placeholder="Email"
@@ -212,45 +208,53 @@ export default function UsersPage() {
               onChangeText={setEmail}
               style={styles.input}
               autoCapitalize="none"
-            />
-
-            <TextInput
-              placeholder="Mot de passe initial"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
+              keyboardType="email-address"
             />
 
             <View style={styles.roleSelector}>
-              {["doctor", "reception"].map((r) => (
+              {(["doctor", "assistant"] as const).map((r) => (
                 <TouchableOpacity
                   key={r}
                   style={[
                     styles.roleOption,
-                    role === r && {
+                    userType === r && {
                       backgroundColor: theme.colors.primary + "22",
                     },
                   ]}
-                  onPress={() => setRole(r as UserRole)}
+                  onPress={() => setUserType(r)}
                 >
                   <Text style={{ fontWeight: "600" }}>{r}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
+            {inviteUrl ? (
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontWeight: "700" }}>Invite link</Text>
+                <Text selectable style={{ color: theme.colors.textSecondary }}>
+                  {inviteUrl}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.createBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={copyInviteUrl}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "700" }}>Copy link</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
             {message ? <Text style={styles.error}>{message}</Text> : null}
 
             <TouchableOpacity
               style={[styles.createBtn, { backgroundColor: theme.colors.primary }]}
-              onPress={handleCreateUser}
+              onPress={handleInviteStaff}
               disabled={saving}
             >
               {saving ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={{ color: "#fff", fontWeight: "700" }}>
-                  Créer
+                  Envoyer l’invitation
                 </Text>
               )}
             </TouchableOpacity>
@@ -265,7 +269,6 @@ export default function UsersPage() {
   );
 }
 
-/* ===== STYLES ===== */
 const getStyles = (theme: any) =>
   StyleSheet.create({
     header: {
@@ -336,51 +339,7 @@ const getStyles = (theme: any) =>
 
     name: { fontSize: 16, fontWeight: "800", color: theme.colors.text },
 
-    pill: {
-      alignSelf: "flex-start",
-      marginTop: 6,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 999,
-      backgroundColor: theme.colors.primary + "18",
-    },
-    pillText: { fontSize: 12, fontWeight: "700", color: theme.colors.primary },
-
-    rowLine: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingBottom: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    rowLabel: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
-    rowValue: { color: theme.colors.text, fontWeight: "700", fontSize: 12 },
     rowSub: { color: theme.colors.text, fontWeight: "600", marginTop: 4, fontSize: 12 },
-
-    cardActions: {
-      flexDirection: "row",
-      gap: 12,
-      marginTop: 16,
-    },
-    secondaryBtn: {
-      flex: 1,
-      paddingVertical: 10,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      alignItems: "center",
-      backgroundColor: theme.colors.surface,
-    },
-    secondaryBtnText: { fontWeight: "800", color: theme.colors.text, fontSize: 13 },
-    primaryBtn: {
-      flex: 1,
-      paddingVertical: 10,
-      borderRadius: 12,
-      alignItems: "center",
-      backgroundColor: theme.colors.primary,
-    },
-    primaryBtnText: { fontWeight: "800", color: theme.colors.surface, fontSize: 13 },
 
     modalOverlay: {
       flex: 1,
@@ -401,29 +360,31 @@ const getStyles = (theme: any) =>
       borderColor: theme.colors.border,
       borderRadius: 12,
       padding: 12,
+      backgroundColor: theme.colors.background,
     },
 
-    roleSelector: { flexDirection: "row", gap: 12 },
+    roleSelector: { flexDirection: "row", gap: 10 },
     roleOption: {
-      flex: 1,
-      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
       borderRadius: 12,
-      padding: 10,
-      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
     },
+
+    error: { color: theme.colors.error, fontWeight: "700" },
 
     createBtn: {
-      marginTop: 10,
-      padding: 14,
+      paddingVertical: 12,
       borderRadius: 12,
       alignItems: "center",
     },
 
     cancel: {
-      textAlign: "center",
       marginTop: 10,
+      textAlign: "center",
+      fontWeight: "700",
       color: theme.colors.textSecondary,
     },
-
-    error: { color: theme.colors.error, fontWeight: "600" },
   });

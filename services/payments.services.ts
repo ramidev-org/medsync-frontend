@@ -32,6 +32,15 @@ export const getPayments = async (): Promise<Payment[]> => {
     return [];
   }
 
+  const statusLabel = (raw: unknown) => {
+    const v = String(raw ?? "").toLowerCase();
+    if (v === "paid") return "Payé";
+    if (v === "pending") return "En attente";
+    if (v === "failed") return "Échoué";
+    if (v === "refunded") return "Remboursé";
+    return String(raw ?? "");
+  };
+
   return (data || []).map((payment: any) => ({
     id: payment.id,
     amount: payment.amount,
@@ -39,7 +48,7 @@ export const getPayments = async (): Promise<Payment[]> => {
     visitId: payment.visit_id,
     patientId: payment.patient_id,
     method: payment.method,
-    status: payment.status,
+    status: statusLabel(payment.status),
     nom: payment.patients.last_name,
     prenom: payment.patients.first_name,
     code: payment.patients.code,

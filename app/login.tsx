@@ -109,11 +109,20 @@ export default function Login() {
             </View>
 
             <Pressable
-              onPress={() => router.push("/signup")}
+              onPress={() => router.push("/activate-clinic")}
               style={styles.secondaryButton}
             >
               <Text style={styles.secondaryButtonText}>
-                Need a license? Activate now
+                Have an activation link? Activate clinic
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push("/accept-invite")}
+              style={styles.secondaryButton}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Invited as staff? Accept invite
               </Text>
             </Pressable>
           </View>

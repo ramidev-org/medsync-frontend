@@ -38,8 +38,8 @@ export default function Layout() {
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   // Prefer authenticated user's role (demo or real). Fallback to env role.
-  const rawRole = (user?.role as any) || APP_ROLE;
-  const role: AppRole = (rawRole === "assistant" ? "reception" : rawRole) as AppRole;
+  const rawRole = (user?.user_type as any) || APP_ROLE;
+  const role: AppRole = (rawRole === "reception" ? "assistant" : rawRole) as AppRole;
 
   const [expanded, setExpanded] = useState(true);
   const drawerWidth = expanded ? 240 : 86;
@@ -120,7 +120,7 @@ const NAV: NavItem[] = [
     label: "Paiements",
     route: "/payments",
     visible: ({ role, isClinicAdmin }) =>
-      role === "reception" || (role === "doctor" && isClinicAdmin),
+      role === "assistant" || (role === "doctor" && isClinicAdmin),
     icon: ({ color, size }) => (
       <Ionicons name="card-outline" size={size} color={color} />
     ),

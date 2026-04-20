@@ -10,7 +10,7 @@ export type DoctorProfile = {
   active: boolean;
 };
 
-export type ReceptionProfile = {
+export type AssistantProfile = {
   department: string;
   shift_start: string;
   shift_end: string;
@@ -22,45 +22,45 @@ export class User {
   email: string;
   username: string;
   fullname: string;
-  role: "doctor" | "reception";
-  clinic_id:string;
+  user_type: "doctor" | "assistant";
+  clinic_id: string;
 
   doctorProfile: DoctorProfile | null;
-  receptionProfile: ReceptionProfile | null;
+  assistantProfile: AssistantProfile | null;
 
   constructor(params: {
     id: string;
     email: string;
     username: string;
     fullname: string;
-    role: any;
-    clinic_id:string;
+    user_type: "doctor" | "assistant";
+    clinic_id: string;
     doctorProfile?: DoctorProfile | null;
-    receptionProfile?: ReceptionProfile | null;
+    assistantProfile?: AssistantProfile | null;
   }) {
     this.id = params.id;
     this.email = params.email;
     this.username = params.username;
     this.fullname = params.fullname;
-    this.role = params.role;
-    this.clinic_id= params.clinic_id;
+    this.user_type = params.user_type;
+    this.clinic_id = params.clinic_id;
     this.doctorProfile = params.doctorProfile ?? null;
-    this.receptionProfile = params.receptionProfile ?? null;
+    this.assistantProfile = params.assistantProfile ?? null;
   }
 
   static fromDb(data: any): User {
-    const rawRole = data.user_roles?.[0]?.role;
-    const role = rawRole === "assistant" ? "reception" : rawRole;
+    const userType = String(data.user_type ?? "").toLowerCase();
+    const user_type = userType === "doctor" ? "doctor" : "assistant";
 
     return new User({
       id: data.id,
-      email: data.email,
-      username: data.username,
-      fullname: data.full_name,
-      role,
+      email: data.email ?? "",
+      username: data.username ?? "",
+      fullname: data.full_name ?? "",
+      user_type,
       clinic_id: data.clinic_id,
       doctorProfile: data.doctor_profiles ?? null,
-      receptionProfile: data.reception_profiles ?? data.assistant_profiles ?? null,
+      assistantProfile: data.assistant_profiles ?? null,
     });
   }
 }

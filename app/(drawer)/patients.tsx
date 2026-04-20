@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/auth_context";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -20,7 +20,7 @@ import {
     View
 } from "react-native";
 
-import { db } from "@/database/database_conn";
+import { callRpc } from "@/services/backend";
 import { useRouter } from "expo-router";
 
 
@@ -28,6 +28,7 @@ import { useRouter } from "expo-router";
 
 interface Patient {
   id: string;
+  code?: string | null;
   first_name: string;
   last_name: string;
   date_of_birth: string;
@@ -43,6 +44,13 @@ interface Patient {
   created_at: string;
 }
 
+type RpcGetPatientsResponse = {
+  patients: Patient[];
+  total: number;
+  page: number;
+  itemsPerPage: number;
+};
+
 export default function PatientsPage() {
 
   const router = useRouter();
@@ -52,14 +60,15 @@ export default function PatientsPage() {
   const { user } = useAuth();
   const tableStyles = createTableStyles(theme);
 
-  const [fromDate, setFromDate] = useState(new Date("2025-01-01"));
-  const [toDate, setToDate] = useState(new Date("2027-12-31"));
+  const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1));
+  const [toDate, setToDate] = useState(new Date(new Date().getFullYear(), 11, 31));
 
   const [searchInput, setSearchInput] = useState("");   // typing only
   const [globalSearch, setGlobalSearch] = useState(""); // confirmed search
 
   const [currentPage, setCurrentPage] = useState(1);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [totalPatients, setTotalPatients] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -67,30 +76,35 @@ export default function PatientsPage() {
   const itemsPerPage = 10;
 
   /* ================= FETCH PATIENTS ================= */
-  const fetchPatients = useCallback(async (isRefresh = false) => {
+  const fetchPatients = useCallback(async (isRefresh = false, pageOverride?: number) => {
     if (!user?.id) return;
 
     try {
       if (isRefresh) setIsRefreshing(true);
       else setIsLoading(true);
 
-      // Fetch patients created by this user
-      const { data, error } = await db
-        .from("patients")
-        .select("*")
-        .eq("created_by", user.id)
-        .order("created_at", { ascending: false });
+      const page = pageOverride ?? currentPage;
 
-      if (error) throw error;
-
-      setPatients(data || []);
-    } catch {
-      Alert.alert("Erreur", "Impossible de charger les patients");
+      const data = await callRpc<RpcGetPatientsResponse, Record<string, unknown>>(
+        "rpc_get_patients",
+        {
+          p_requester_id: user.id,
+          p_search: globalSearch.trim() ? globalSearch.trim() : null,
+          p_start_date: fromDate.toISOString(),
+          p_end_date: toDate.toISOString(),
+          p_page: page,
+          p_items_per_page: itemsPerPage,
+        },
+      );
+      setPatients(data?.patients ?? []);
+      setTotalPatients(typeof data?.total === "number" ? data.total : 0);
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.message || "Impossible de charger les patients");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user?.id, currentPage, fromDate, toDate, globalSearch]);
 
   
 
@@ -98,8 +112,8 @@ export default function PatientsPage() {
   useEffect(() => {
     if (!user?.id) return;
 
-    setCurrentPage(1);   // reset pagination on any filter change
-    fetchPatients();
+    setCurrentPage(1); // reset pagination on any filter change
+    fetchPatients(false, 1);
   }, [
     user?.id,
     fromDate,
@@ -108,36 +122,16 @@ export default function PatientsPage() {
     fetchPatients,
   ]);
 
-  /* ================= FILTER LOGIC ================= */
-  const filteredPatients = useMemo(() => {
-    const filtered = patients.filter((p) => {
-      // date filter
-      const patientDate = new Date(p.created_at);
-      if (patientDate < fromDate || patientDate > toDate) {
-        return false;
-      }
-
-      // global name/phone/email search
-      const searchLower = globalSearch.toLowerCase();
-      const nameMatch =
-        p.first_name.toLowerCase().includes(searchLower) ||
-        p.last_name.toLowerCase().includes(searchLower) ||
-        p.phone.includes(globalSearch) ||
-        (p.email && p.email.toLowerCase().includes(searchLower));
-
-      return nameMatch;
-    });
-    return filtered;
-  }, [patients, fromDate, toDate, globalSearch]);
-
   /* ================= PAGINATION ================= */
-  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalPatients / itemsPerPage));
+  const currentPatients = patients;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPatients = filteredPatients.slice(startIndex, endIndex);
+  const endIndex = startIndex + currentPatients.length;
 
   const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    fetchPatients(false, page);
   };
 
   /* ================= HELPER FUNCTIONS ================= */
@@ -193,8 +187,8 @@ export default function PatientsPage() {
             <View>
               <Text style={styles.pageTitle}>Gestion des Patients</Text>
               <Text style={styles.subtitle}>
-                {filteredPatients.length} patient{filteredPatients.length > 1 ? "s" : ""} trouvé
-                {filteredPatients.length > 1 ? "s" : ""}
+                {totalPatients} patient{totalPatients > 1 ? "s" : ""} trouvé
+                {totalPatients > 1 ? "s" : ""}
               </Text>
             </View>
 
@@ -225,7 +219,7 @@ export default function PatientsPage() {
             onPress={() => {
               setGlobalSearch(searchInput.trim());
               setCurrentPage(1);
-              fetchPatients();
+              fetchPatients(false, 1);
             }}
           >
             <Ionicons name="search" size={18} color="#fff" />
@@ -396,10 +390,10 @@ export default function PatientsPage() {
         </View>
 
         {/* ===== PAGINATION ===== */}
-        {filteredPatients.length > 0 && (
+        {totalPatients > 0 && (
           <View style={tableStyles.paginationContainer}>
             <Text style={{ color: theme.colors.textSecondary, fontSize: 14, fontWeight: "500" }}>
-              Affichage {startIndex + 1} - {Math.min(endIndex, filteredPatients.length)} sur {filteredPatients.length}
+              Affichage {startIndex + 1} - {Math.min(endIndex, totalPatients)} sur {totalPatients}
             </Text>
             <View style={tableStyles.paginationButtons}>
               <TouchableOpacity

@@ -1,9 +1,10 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { useAuth } from "@/contexts/auth_context";
+import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { getDashboardStyles } from "./_styles";
 
@@ -13,16 +14,38 @@ export default function ReceptionDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
+  const [counts, setCounts] = useState<any | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        if (!user?.id) return;
+        const c = await callRpc<any, Record<string, unknown>>(
+          "rpc_get_clinic_dashboard_counts",
+          { p_requester_id: user.id },
+        );
+        if (!cancelled) setCounts(c ?? null);
+      } catch {
+        if (!cancelled) setCounts(null);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   // TODO: Replace with real data from database when appointments/visits table is added
   const visits = [] as any[];
-  const pendingCount = 0;
+  const pendingCount =
+    counts?.appointments_pending ?? counts?.pending_appointments ?? counts?.pending_count ?? 0;
   const inConsultCount = 0;
   const completedCount = 0;
   const cancelledCount = 0;
 
   // Reception-focused "work queue"
-  const toConfirm = 0;
+  const toConfirm = pendingCount;
   const toBill = 0;
   const toReschedule = 0;
 
@@ -39,7 +62,7 @@ export default function ReceptionDashboardPage() {
           <View style={styles.leftColumn}>
             {/* Welcome */}
             <View style={styles.welcomeCard}>
-              <Text style={styles.welcomeTitle}>Bonjour, {user?.fullname ?? "Réception"} 👋</Text>
+              <Text style={styles.welcomeTitle}>Bonjour, {user?.fullname ?? "Assistant"} 👋</Text>
               <Text style={styles.welcomeSubtitle}>
                 Suivez les rendez-vous, enregistrez les patients et gardez la journée fluide.
               </Text>
@@ -208,10 +231,10 @@ export default function ReceptionDashboardPage() {
                 <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
                 <View style={styles.doctorInfo}>
                   <Text style={[styles.doctorName, { color: theme.colors.text }]}>
-                    {user?.fullname ?? "Réception"}
+                    {user?.fullname ?? "Assistant"}
                   </Text>
                   <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>
-                    Réception • Gestion quotidienne
+                    Assistant • Gestion quotidienne
                   </Text>
                 </View>
               </View>

@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { user } = useAuth();
   const { isClinicAdmin } = useAppData();
-  const role = (user?.role as any) ?? "reception";
+  const role = (user?.user_type as any) ?? "assistant";
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -42,7 +42,7 @@ export default function SettingsPage() {
             {isClinicAdmin && <ClinicAdminSettings theme={theme} />}
           </>
         )}
-        {role === "reception" && <ReceptionSettings theme={theme} />}
+        {role === "assistant" && <AssistantSettings theme={theme} />}
       </ScrollView>
     </View>
   );
@@ -91,16 +91,16 @@ function DoctorSettings({ theme }: any) {
   );
 }
 
-function ReceptionSettings({ theme }: any) {
+function AssistantSettings({ theme }: any) {
   const { user } = useAuth();
   const [department, setDepartment] = useState(
-    String((user as any)?.receptionProfile?.department ?? "Accueil"),
+    String((user as any)?.assistantProfile?.department ?? "Accueil"),
   );
   const [shiftStart, setShiftStart] = useState(
-    String((user as any)?.receptionProfile?.shift_start ?? "08:00"),
+    String((user as any)?.assistantProfile?.shift_start ?? "08:00"),
   );
   const [shiftEnd, setShiftEnd] = useState(
-    String((user as any)?.receptionProfile?.shift_end ?? "16:00"),
+    String((user as any)?.assistantProfile?.shift_end ?? "16:00"),
   );
 
   return (

@@ -6,12 +6,12 @@
 //
 // Examples (web):
 //   /?role=doctor&speciality=Cardiologie&demo=true
-//   /?role=reception&demo=true
+//   /?role=assistant&demo=true
 //   /?role=doctor&clinic_admin=true&demo=true
 
 import Constants from "expo-constants";
 
-export type AppRole = "doctor" | "reception";
+export type AppRole = "doctor" | "assistant";
 
 const isWeb = typeof window !== "undefined";
 
@@ -32,9 +32,9 @@ const readEnv = (k: string) =>
 const parseRole = (raw: unknown): AppRole | null => {
   const v = String(raw ?? "").toLowerCase();
   if (v === "doctor") return "doctor";
-  if (v === "reception") return "reception";
+  if (v === "assistant") return "assistant";
   // Back-compat (older naming)
-  if (v === "assistant") return "reception";
+  if (v === "reception") return "assistant";
   // Back-compat (older demo)
   if (v === "admin") return "doctor";
   return null;
@@ -87,7 +87,7 @@ export const getAppRole = (): AppRole => {
   const envRole = parseRole(readEnv("EXPO_PUBLIC_ROLE"));
   if (envRole) return envRole;
 
-  return "reception";
+  return "assistant";
 };
 
 /** WEB first: query param -> session -> env/extra (demo helper) */
@@ -136,7 +136,7 @@ export const IS_CLINIC_ADMIN = getIsClinicAdminOverride();
 export const roleImages: Record<AppRole, string> = {
   doctor:
     "https://plus.unsplash.com/premium_photo-1723514536306-26fe5c4adeb7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  reception:
+  assistant:
     "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=687&auto=format&fit=crop",
 };
 

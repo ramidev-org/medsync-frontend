@@ -19,7 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SUPABASE_ANON_KEY } from "@/database/database_conn";
+import { callRpc } from "@/services/backend";
 
 // Database enum types
 type SexEnum = 'male' | 'female';
@@ -51,7 +51,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({
   onSuccess 
 }) => {
   const { theme } = useTheme();
-  const { session } = useAuth();
+  const { session, user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"patient" | "address" | "medical">("patient");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +107,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({
     if (!formData.placeOfBirth.trim())
       newErrors.placeOfBirth = "Le lieu de naissance est requis";
     if (!formData.sex) newErrors.sex = "Le sexe est requis";
+    if (!formData.maritalStatus) newErrors.maritalStatus = "La situation familiale est requise";
     if (!formData.phone.trim())
       newErrors.phone = "Le téléphone est requis";
 
@@ -155,7 +156,7 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({
       return;
     }
 
-    if (!session?.access_token) {
+    if (!session?.access_token || !user?.id) {
       Alert.alert("Erreur", "Vous devez être connecté pour ajouter un patient.");
       return;
     }
@@ -163,61 +164,50 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
-        "https://cxycroqsgmtasgibapen.functions.supabase.co/add-patient",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            ...formData,
-            allergies: formData.allergies
-              ? formData.allergies.split(",").map((s) => s.trim())
-              : [],
-            chronicDiseases: formData.chronicDiseases
-              ? formData.chronicDiseases.split(",").map((s) => s.trim())
-              : [],
-            medications: formData.medications
-              ? formData.medications.split(",").map((s) => s.trim())
-              : [],
-            disabilities: formData.disabilities
-              ? formData.disabilities.split(",").map((s) => s.trim())
-              : [],
-          }),
-        }
-      );
+      const toTextArrayOrNull = (raw: string): string[] | null => {
+        const items = raw
+          ? raw
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [];
+        return items.length > 0 ? items : null;
+      };
 
-      const data = await response.json();
+      const asNumberOrNull = (raw: string): number | null => {
+        const n = raw.trim() ? Number(raw) : NaN;
+        return Number.isFinite(n) ? n : null;
+      };
 
-      if (!response.ok) {
-        // Handle specific error cases
-        let errorMessage = "Échec de l'ajout du patient";
-        
-        if (data.error) {
-          // Check for duplicate email error
-          if (data.error.includes("patients_email_key") || 
-              data.error.includes("duplicate key")) {
-            errorMessage = "Cette adresse email est déjà utilisée par un autre patient.";
-            setErrors({ email: "Email déjà utilisé" });
-            setActiveTab("patient");
-          } 
-          // Check for duplicate phone error
-          else if (data.error.includes("patients_phone_key")) {
-            errorMessage = "Ce numéro de téléphone est déjà utilisé par un autre patient.";
-            setErrors({ phone: "Téléphone déjà utilisé" });
-            setActiveTab("patient");
-          }
-          // Generic error with the server message
-          else {
-            errorMessage = data.error;
-          }
-        }
-        
-        throw new Error(errorMessage);
-      }
+      // rpc_create_patient returns the new patient uuid.
+      const patientId = await callRpc<string, Record<string, unknown>>("rpc_create_patient", {
+        p_created_by: user!.id,
+        p_first_name: formData.firstName.trim(),
+        p_last_name: formData.lastName.trim(),
+        p_date_of_birth: formData.dateOfBirth.trim(),
+        p_place_of_birth: formData.placeOfBirth.trim(),
+        p_sex: formData.sex as any,
+        p_marital_status: formData.maritalStatus as any,
+        p_phone: formData.phone.trim() || null,
+        p_email: formData.email.trim() || null,
+        p_address_street: formData.addressStreet.trim() || null,
+        p_address_city: formData.addressCity.trim() || null,
+        p_address_state: formData.addressState.trim() || null,
+        p_emergency_contact_name: formData.emergencyContactName.trim() || null,
+        p_emergency_contact_relationship: formData.emergencyContactRelationship.trim() || null,
+        p_emergency_contact_phone: formData.emergencyContactPhone.trim() || null,
+        p_insurance_provider: formData.insuranceProvider.trim() || null,
+        p_insurance_policy_number: formData.insurancePolicyNumber.trim() || null,
+        p_blood_type: (formData.bloodType || null) as any,
+        p_allergies: toTextArrayOrNull(formData.allergies),
+        p_chronic_diseases: toTextArrayOrNull(formData.chronicDiseases),
+        p_medications: toTextArrayOrNull(formData.medications),
+        p_disabilities: toTextArrayOrNull(formData.disabilities),
+        p_height: asNumberOrNull(formData.height),
+        p_weight: asNumberOrNull(formData.weight),
+      });
+
+      if (!patientId) throw new Error("Patient created but no id was returned.");
 
       // Success
       resetForm();
@@ -230,12 +220,28 @@ const PatientFormWithMedical: React.FC<PatientFormProps> = ({
       );
     } catch (error) {
       console.error("Error adding patient:", error);
-      Alert.alert(
-        "Erreur",
-        error instanceof Error 
-          ? error.message 
-          : "Une erreur s'est produite lors de l'ajout du patient. Veuillez réessayer."
-      );
+
+      const rawMessage =
+        error instanceof Error
+          ? error.message
+          : "Une erreur s'est produite lors de l'ajout du patient. Veuillez reessayer.";
+
+      let friendly = rawMessage;
+
+      if (
+        rawMessage.includes("patients_email_key") ||
+        rawMessage.toLowerCase().includes("duplicate key")
+      ) {
+        friendly = "Cette adresse email est deja utilisee par un autre patient.";
+        setErrors({ email: "Email deja utilise" });
+        setActiveTab("patient");
+      } else if (rawMessage.includes("patients_phone_key")) {
+        friendly = "Ce numero de telephone est deja utilise par un autre patient.";
+        setErrors({ phone: "Telephone deja utilise" });
+        setActiveTab("patient");
+      }
+
+      Alert.alert("Erreur", friendly);
     } finally {
       setIsSubmitting(false);
     }

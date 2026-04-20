@@ -26,7 +26,7 @@ npm run web
 
 Demo mode (no backend):
 - `/?demo=true&role=doctor`
-- `/?demo=true&role=reception`
+- `/?demo=true&role=assistant`
 - Clinic admin demo doctor: `/?demo=true&role=doctor&clinic_admin=true`
 
 Real mode (Supabase):
@@ -36,6 +36,10 @@ Real mode (Supabase):
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY=...`
 2) Run SQL in Supabase:
    - `database/sql/000_all_changes.sql`
+
+Onboarding:
+- Clinic activation: `/activate-clinic?token=...`
+- Staff invite acceptance: `/accept-invite?token=...`
 
 In the output, you'll find options to open the app in a
 

@@ -2,6 +2,7 @@ import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAuth } from "@/contexts/auth_context";
+import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import {
     FontAwesome5,
@@ -10,7 +11,7 @@ import {
     MaterialCommunityIcons,
     MaterialIcons,
 } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BarChart, LineChart, PieChart } from "react-native-chart-kit";
 import { getDashboardStyles } from "./_styles";
@@ -57,6 +58,27 @@ export default function DoctorDashboardPage() {
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
 
   const { user } = useAuth();
+  const [counts, setCounts] = useState<any | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        if (!user?.id) return;
+        const c = await callRpc<any, Record<string, unknown>>(
+          "rpc_get_clinic_dashboard_counts",
+          { p_requester_id: user.id },
+        );
+        if (!cancelled) setCounts(c ?? null);
+      } catch {
+        if (!cancelled) setCounts(null);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const [selectedTab, setSelectedTab] = useState<ChartKey>("RDV - CONS");
   const [chartWidth, setChartWidth] = useState(500);
@@ -173,35 +195,39 @@ export default function DoctorDashboardPage() {
             <View style={styles.statsRow}>
               <StatCard
                 title="Patients"
-                value="877"
-                percentage="0%"
+                value={String(counts?.patients ?? counts?.patients_count ?? 0)}
+                percentage=""
                 icon="personal-injury"
                 color="#8b5cf6"
                 iconFamily="material"
                 theme={theme}
               />
               <StatCard
-                title="Consultations"
-                value="1,437"
-                percentage="100%"
+                title="Appointments"
+                value={String(
+                  counts?.appointments_total ?? counts?.appointments ?? counts?.appointments_count ?? 0,
+                )}
+                percentage=""
                 icon="eye"
                 color="#f59e0b"
                 iconFamily="fontAwesome5"
                 theme={theme}
               />
               <StatCard
-                title="RDVs"
-                value="1,719"
-                percentage="37.9%"
+                title="Pending"
+                value={String(
+                  counts?.appointments_pending ?? counts?.pending_appointments ?? counts?.pending_count ?? 0,
+                )}
+                percentage=""
                 icon="calendar-check"
                 color="#06b6d4"
                 iconFamily="fontAwesome5"
                 theme={theme}
               />
               <StatCard
-                title="Urgents"
-                value="2"
-                percentage="0.5%"
+                title="Payments (paid)"
+                value={String(counts?.payments_paid ?? counts?.paid_payments ?? counts?.paid_count ?? 0)}
+                percentage=""
                 icon="truck-medical"
                 color="#ef4444"
                 iconFamily="fontAwesome6"

@@ -4,7 +4,6 @@ import { useAuth } from "./auth_context";
 
 type AppData = {
   clinic: any | null;
-  specialities: any[];
   isClinicAdmin: boolean;
   loading: boolean;
 };
@@ -13,7 +12,6 @@ const AppDataContext = createContext<AppData | null>(null);
 
 export const AppDataProvider = ({ children }: any) => {
   const [clinic, setClinic] = useState<any | null>(null);
-  const [specialities, setSpecialities] = useState<any[]>([]);
   const [isClinicAdmin, setIsClinicAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -26,19 +24,12 @@ export const AppDataProvider = ({ children }: any) => {
     const load = async () => {
       if (!cancelled) setLoading(true);
 
-      // Real mode
-      const { data: specialitiesData } = await db
-        .from("doctor_specialities")
-        .select("*")
-        .order("name");
-      if (!cancelled) setSpecialities(specialitiesData ?? []);
-
       if (clinicId) {
         const { data: clinicData } = await db
           .from("clinics")
           .select("*")
           .eq("id", clinicId)
-          .single();
+          .maybeSingle();
         if (!cancelled) {
           setClinic(clinicData ?? null);
           setIsClinicAdmin(!!clinicData?.admin_id && clinicData.admin_id === user?.id);
@@ -55,10 +46,10 @@ export const AppDataProvider = ({ children }: any) => {
     return () => {
       cancelled = true;
     };
-  }, [clinicId, user?.id, user?.role]);
+  }, [clinicId, user?.id, user?.user_type]);
 
   return (
-    <AppDataContext.Provider value={{ clinic, specialities, isClinicAdmin, loading }}>
+    <AppDataContext.Provider value={{ clinic, isClinicAdmin, loading }}>
       {children}
     </AppDataContext.Provider>
   );

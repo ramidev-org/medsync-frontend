@@ -27,7 +27,11 @@ function AuthGateWrapper() {
     if (loading) return;
 
     const inDrawerGroup = segments[0] === "(drawer)";
-    const inAuthScreen = segments[0] === "login" || segments[0] === "signup";
+    const inAuthScreen =
+      segments[0] === "login" ||
+      segments[0] === "signup" ||
+      segments[0] === "activate-clinic" ||
+      segments[0] === "accept-invite";
 
     // If not signed in, block protected drawer screens
     if (!user && inDrawerGroup) {
@@ -70,6 +74,8 @@ function AuthGateWrapper() {
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
       <Stack.Screen name="signup" />
+      <Stack.Screen name="activate-clinic" />
+      <Stack.Screen name="accept-invite" />
       <Stack.Screen name="(drawer)" />
     </Stack>
   );

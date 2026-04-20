@@ -11,8 +11,14 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 export default function PaymentsPage() {
   const { theme } = useTheme();
 
-  const [fromDate, setFromDate] = useState<Date>(new Date("2024-01-01"));
-  const [toDate, setToDate] = useState<Date>(new Date("2024-12-31"));
+  const [fromDate, setFromDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), 0, 1);
+  });
+  const [toDate, setToDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+  });
   const [globalSearch, setGlobalSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [payments, setPayments] = useState<any[]>([]);
@@ -120,7 +126,13 @@ export default function PaymentsPage() {
             <View style={tableStyles.headerCell}><Text style={tableStyles.headerText}>Actions</Text></View>
           </View>
 
-          {currentPayments.length === 0 && (
+          {loading && (
+            <View style={tableStyles.emptyState}>
+              <Text style={tableStyles.emptyText}>Chargement…</Text>
+            </View>
+          )}
+
+          {!loading && currentPayments.length === 0 && (
             <View style={tableStyles.emptyState}>
               <Text style={tableStyles.emptyText}>Aucun paiement trouvé</Text>
             </View>
@@ -155,16 +167,29 @@ export default function PaymentsPage() {
                 <Text style={tableStyles.cellText}>{p.method}</Text>
               </View>
               <View style={tableStyles.cell}>
-                <View
-                  style={[
-                    tableStyles.badge,
-                    { backgroundColor: p.status === "Payé" ? "#dcfce7" : "#fee2e2" },
-                  ]}
-                >
-                  <Text style={{ color: p.status === "Payé" ? "#166534" : "#991b1b", fontWeight: "600" }}>
-                    {p.status}
-                  </Text>
-                </View>
+                {(() => {
+                  const raw = String(p.status ?? "");
+                  const low = raw.toLowerCase();
+                  const isPaid = low === "paid" || low.includes("pay");
+
+                  return (
+                    <View
+                      style={[
+                        tableStyles.badge,
+                        { backgroundColor: isPaid ? "#dcfce7" : "#fee2e2" },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: isPaid ? "#166534" : "#991b1b",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {raw}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
               <View style={tableStyles.cell}>
                 <Text style={tableStyles.cellText}>{formatDateTime(p.createdAt)}</Text>

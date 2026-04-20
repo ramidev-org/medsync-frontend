@@ -2,7 +2,7 @@
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
-import { SUPABASE_ANON_KEY } from "@/database/database_conn";
+import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -42,8 +42,6 @@ interface Patient {
 interface MedicalInfo {
   id: string;
   patient_id: string;
-  height?: number;
-  weight?: number;
   blood_type?: string;
   allergies?: string[];
   chronic_diseases?: string[];
@@ -53,49 +51,58 @@ interface MedicalInfo {
   updated_at?: string;
 }
 
+interface LatestMeasurement {
+  id: string;
+  patient_id: string;
+  recorded_by?: string | null;
+  weight?: number | null;
+  height?: number | null;
+  bmi?: number | null;
+  temperature?: number | null;
+  systolic_bp?: number | null;
+  diastolic_bp?: number | null;
+  oxygen_saturation?: number | null;
+  recorded_at: string;
+  notes?: string | null;
+}
+
+type RpcGetPatientMedicalResponse = {
+  patient: Patient;
+  medical_info: MedicalInfo | null;
+  latest_measurement: LatestMeasurement | null;
+};
+
 
 
 export default function PatientMedicalDocument() {
   const { patientId } = useLocalSearchParams<{ patientId: string }>();
 
   const { theme } = useTheme();
-  const { session } = useAuth();
+  const { user } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [medicalInfo, setMedicalInfo] = useState<MedicalInfo | null>(null);
+  const [latestMeasurement, setLatestMeasurement] = useState<LatestMeasurement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPatientData = useCallback(async () => {
-    if (!session?.access_token) return;
-
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://cxycroqsgmtasgibapen.functions.supabase.co/get-patient-medical?patient_id=${patientId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
+      if (!user?.id) throw new Error("Missing user session.");
+      const data = await callRpc<RpcGetPatientMedicalResponse, Record<string, unknown>>(
+        "rpc_get_patient_medical",
+        { p_requester_id: user.id, p_patient_id: String(patientId) },
       );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors du chargement des données");
-      }
-
-      setPatient(data.patient);
-      setMedicalInfo(data.medical_info);
+      setPatient(data?.patient ?? null);
+      setMedicalInfo(data?.medical_info ?? null);
+      setLatestMeasurement(data?.latest_measurement ?? null);
     } catch (error) {
       console.error("Error fetching patient data:", error);
       Alert.alert("Erreur", "Impossible de charger les informations du patient");
     } finally {
       setIsLoading(false);
     }
-  }, [patientId, session?.access_token]);
+  }, [patientId, user?.id]);
 
   useEffect(() => {
     if (!patientId) return;
@@ -125,9 +132,11 @@ export default function PatientMedicalDocument() {
   };
 
   const getBMI = () => {
-    if (!medicalInfo?.height || !medicalInfo?.weight) return null;
-    const heightM = medicalInfo.height / 100;
-    const bmi = medicalInfo.weight / (heightM * heightM);
+    const height = latestMeasurement?.height ?? null;
+    const weight = latestMeasurement?.weight ?? null;
+    if (!height || !weight) return null;
+    const heightM = height / 100;
+    const bmi = weight / (heightM * heightM);
     return bmi.toFixed(1);
   };
 
@@ -269,13 +278,13 @@ export default function PatientMedicalDocument() {
           <View style={styles.gridContainer}>
             <MetricCard
               label="Taille"
-              value={medicalInfo?.height ? `${medicalInfo.height} cm` : "-"}
+              value={latestMeasurement?.height ? `${latestMeasurement.height} cm` : "-"}
               icon="resize"
               theme={theme}
             />
             <MetricCard
               label="Poids"
-              value={medicalInfo?.weight ? `${medicalInfo.weight} kg` : "-"}
+              value={latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : "-"}
               icon="barbell"
               theme={theme}
             />

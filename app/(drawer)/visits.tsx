@@ -2,6 +2,7 @@ import DatePickerField from "@/components/datepicker";
 import { ThemedCard } from "@/components/default_card";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
+import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +18,7 @@ import {
 } from "react-native";
 
 import { router } from "expo-router";
+import { callRpc } from "@/services/backend";
 
 /* ================= STATUS LABELS ================= */
 const STATUS_LABELS: Record<string, string> = {
@@ -38,16 +40,36 @@ interface Patient {
 interface Appointment {
   id: string;
   patient_id: string;
-  time: string;
+  time: string; // scheduled_at
   status: string;
   type: string;
   notes: string;
   patient?: Patient; // optional, attached dynamically
 }
 
+type RpcGetAppointmentsResponse = {
+  appointments: {
+    id: string;
+    patient_id: string;
+    scheduled_at: string;
+    status: string;
+    type: string;
+    notes: string | null;
+    patient_first_name?: string | null;
+    patient_last_name?: string | null;
+    patient_phone?: string | null;
+    patient_email?: string | null;
+    doctor_name?: string | null;
+  }[];
+  total: number;
+  page: number;
+  itemsPerPage: number;
+};
+
 /* ================= MAIN COMPONENT ================= */
 export default function VisitsPage() {
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -67,10 +89,58 @@ export default function VisitsPage() {
 
   /* ================= LOAD APPOINTMENTS WITH PATIENT ================= */
   useEffect(() => {
-    // TODO: Update to use database when appointments table is added
-    // For now, showing empty list since appointments table doesn't exist in schema
-    setAppointments([]);
-  }, []);
+    let cancelled = false;
+    const run = async () => {
+      try {
+        if (!user?.id) return;
+
+        const dayStart = new Date(fromDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(fromDate);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const data = await callRpc<RpcGetAppointmentsResponse, Record<string, unknown>>(
+          "rpc_get_appointments",
+          {
+            p_requester_id: user.id,
+            p_start_date: dayStart.toISOString(),
+            p_end_date: dayEnd.toISOString(),
+            p_page: 1,
+            p_items_per_page: 200,
+          },
+        );
+        if (cancelled) return;
+
+        const rows = data?.appointments ?? [];
+        const mapped: Appointment[] = rows.map((a) => ({
+          id: String(a.id),
+          patient_id: String(a.patient_id ?? ""),
+          time: String(a.scheduled_at ?? ""),
+          status: String(a.status ?? "pending"),
+          type: String(a.type ?? "consultation"),
+          notes: String(a.notes ?? ""),
+          patient: a.patient_id
+            ? {
+                id: String(a.patient_id),
+                first_name: String(a.patient_first_name ?? ""),
+                last_name: String(a.patient_last_name ?? ""),
+                phone: a.patient_phone ? String(a.patient_phone) : undefined,
+              }
+            : undefined,
+        }));
+
+        setAppointments(mapped);
+      } catch (e) {
+        console.error("Load appointments error:", e);
+        if (!cancelled) setAppointments([]);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [fromDate, user?.id]);
 
   /* ================= FILTERED APPOINTMENTS ================= */
   const filteredAppointments = useMemo(() => {
@@ -91,12 +161,26 @@ export default function VisitsPage() {
 
   /* ================= UPDATE STATUS ================= */
   const updateStatus = (id: string, status: string) => {
-    const updated = appointments.map(a =>
-      a.id === id ? { ...a, status } : a
-    );
-    setAppointments(updated);
-    setMenuVisibleId(null);
-    setMenuPosition(null);
+    const run = async () => {
+      try {
+        if (!user?.id) return;
+        await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
+          p_requester_id: user.id,
+          p_appointment_id: id,
+          p_status: status,
+        });
+
+        setAppointments((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, status } : a)),
+        );
+      } catch (e) {
+        console.error("Update appointment status error:", e);
+      } finally {
+        setMenuVisibleId(null);
+        setMenuPosition(null);
+      }
+    };
+    run();
   };
 
   const openMenu = (id: string) => {

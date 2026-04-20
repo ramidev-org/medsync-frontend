@@ -155,7 +155,7 @@ export default function ConsultationPage() {
 
   // Consultation is only for doctors.
   useEffect(() => {
-    if (user && user.role !== "doctor") {
+    if (user && user.user_type !== "doctor") {
       router.replace("/dashboard");
     }
   }, [user, router]);

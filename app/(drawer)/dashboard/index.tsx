@@ -11,9 +11,9 @@ export default function DashboardIndex() {
   const { isClinicAdmin } = useAppData();
 
   const role: AppRole = useMemo(() => {
-    const raw = (user?.role as any) ?? getAppRole();
+    const raw = (user?.user_type as any) ?? getAppRole();
     // normalize if your backend uses older naming
-    return (raw === "assistant" ? "reception" : raw) as AppRole;
+    return (raw === "reception" ? "assistant" : raw) as AppRole;
   }, [user]);
 
   if (role === "doctor") {
