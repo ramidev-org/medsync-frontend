@@ -2,7 +2,6 @@ import { BlueField, MetricCard } from "./_ui";
 import { ThemedCard } from "@/components/default_card";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { normalizeSpeciality } from "@/config/speciality";
 import {
   Modal,
   ScrollView,
@@ -14,6 +13,7 @@ import {
 } from "react-native";
 
 import { CardiologyState, CardiologyTab } from "./observation_specialities/_cardiologie";
+import { DentistryState, DentistryTab } from "./observation_specialities/_dentistry";
 import { DermatologyState, DermatologyTab } from "./observation_specialities/_dermatologie";
 import { GynecologyState, GynecologyTab } from "./observation_specialities/_gynecologie";
 
@@ -37,7 +37,7 @@ import { GynecologyState, GynecologyTab } from "./observation_specialities/_gyne
    Sub-tab definitions
 ========================== */
 
-type SpecialtyKey = "gynecology" | "cardiology" | "dermatology";
+type SpecialtyKey = "gynecology" | "cardiology" | "dermatology" | "dentistry";
 
 type LeftTabKey =
   | "label"
@@ -61,6 +61,7 @@ const SPECIALTY_TABS: Array<{
   { key: "gynecology", label: "Gynécologie" },
   { key: "cardiology", label: "Cardiologie" },
   { key: "dermatology", label: "Dermatologie" },
+  { key: "dentistry", label: "Dentisterie" },
 ];
 
 
@@ -157,7 +158,6 @@ const PROTO_PREVIOUS_PARAMS: PreviousParamsRow[] = [
 
 export default function ObservationMedicalTab({
   theme,
-  doctorSpeciality,
   vitals,
   setVitals,
   parameters,
@@ -168,12 +168,8 @@ export default function ObservationMedicalTab({
 }: any) {
   const styles = createStyles(theme);
 
-  const enabledSpecialties = React.useMemo(() => {
-    const key = normalizeSpeciality(doctorSpeciality);
-    const found = SPECIALTY_TABS.find((t) => t.key === key);
-    // If no match, show none (general practice has no specialty sub-tab).
-    return found ? [found] : [];
-  }, [doctorSpeciality]);
+  // For testing: always show all specialty tabs, regardless of doctor specialty.
+  const enabledSpecialties = React.useMemo(() => SPECIALTY_TABS, []);
 
   const leftTabs = React.useMemo(() => {
     return [
@@ -184,17 +180,6 @@ export default function ObservationMedicalTab({
 
   const [leftTab, setLeftTab] = React.useState<LeftTabKey>("label");
   const [rightTab, setRightTab] = React.useState<RightTabKey>("current_parameters");
-
-  // If current tab is a specialty tab but doctor doesn't have it, fallback.
-  React.useEffect(() => {
-    const specialtyKeys = new Set(enabledSpecialties.map((s) => s.key));
-    if (
-      (leftTab === "gynecology" || leftTab === "cardiology" || leftTab === "dermatology") &&
-      !specialtyKeys.has(leftTab)
-    ) {
-      setLeftTab("label");
-    }
-  }, [enabledSpecialties, leftTab]);
 
   // Modals
   const [labelModalOpen, setLabelModalOpen] = React.useState(false);
@@ -254,12 +239,14 @@ export default function ObservationMedicalTab({
     gynecology: GynecologyState;
     cardiology: CardiologyState;
     dermatology: DermatologyState;
+    dentistry: DentistryState;
   };
 
   const [specialities, setSpecialities] = React.useState<SpecialitiesState>({
     gynecology: {},
     cardiology: {},
     dermatology: {},
+    dentistry: {},
   });
 
 
@@ -468,6 +455,14 @@ export default function ObservationMedicalTab({
         />
       )}
 
+      {leftTab === "dentistry" && (
+      <DentistryTab
+        theme={theme}
+        value={specialities.dentistry}
+        onChange={(next) => setSpecialities((s) => ({ ...s, dentistry: next }))}
+        />
+      )}
+
 
       </ThemedCard>
       </View>
@@ -661,7 +656,12 @@ function FlatTabs<T extends string>({
   onChange: (k: T) => void;
 }) {
   return (
-    <View style={flatTabStyles.row}>
+    <View
+      style={[
+        flatTabStyles.row,
+        { borderBottomColor: theme.colors.border },
+      ]}
+    >
       {tabs.map((t) => {
         const active = t.key === activeKey;
         return (
@@ -671,8 +671,8 @@ function FlatTabs<T extends string>({
             style={[
               flatTabStyles.tab,
               {
-                backgroundColor: active ? "#fff" : "rgba(0,0,0,0.03)",
-                borderColor: active ? "rgba(0,0,0,0.10)" : "transparent",
+                backgroundColor: active ? theme.colors.surface : theme.colors.surfaceVariant,
+                borderColor: active ? theme.colors.border : "transparent",
               },
             ]}
           >
@@ -694,7 +694,6 @@ const flatTabStyles = StyleSheet.create({
     paddingBottom: 8,
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.08)",
   },
   tab: {
     paddingVertical: 10,
@@ -1151,7 +1150,7 @@ const createStyles = (theme: any) =>
     metaLine: { fontWeight: "800", opacity: 0.75, marginTop: 2 },
 
     yellowBtn: {
-      backgroundColor: "#F5B301",
+      backgroundColor: theme.colors.warning,
       paddingVertical: 10,
       paddingHorizontal: 14,
       borderRadius: 8,
@@ -1174,7 +1173,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       paddingVertical: 18,
       borderRadius: 10,
-      backgroundColor: "rgba(0, 140, 255, 0.06)",
+      backgroundColor: theme.colors.accent,
     },
     labelBannerTitle: { fontWeight: "900", opacity: 0.8, marginBottom: 8 },
     labelBannerDateRow: { flexDirection: "row", gap: 10 },
@@ -1182,7 +1181,7 @@ const createStyles = (theme: any) =>
       width: 54,
       height: 54,
       borderRadius: 10,
-      backgroundColor: "#5B4CE6",
+      backgroundColor: theme.colors.primary,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -1322,7 +1321,7 @@ const createStyles = (theme: any) =>
       maxWidth: 920,
       borderRadius: 10,
       overflow: "hidden",
-      backgroundColor: "#fff",
+      backgroundColor: theme.colors.surface,
     },
     modalHeader: {
       paddingVertical: 14,
@@ -1361,7 +1360,7 @@ const createStyles = (theme: any) =>
     modalFooterBtnGhost: { paddingVertical: 10, paddingHorizontal: 10 },
     modalFooterBtnGhostText: { fontWeight: "900", opacity: 0.8 },
     modalFooterBtnGreen: {
-      backgroundColor: "#10A760",
+      backgroundColor: theme.colors.success,
       paddingVertical: 12,
       paddingHorizontal: 18,
       borderRadius: 999,

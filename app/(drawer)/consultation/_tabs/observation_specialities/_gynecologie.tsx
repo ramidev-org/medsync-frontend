@@ -46,7 +46,7 @@ function TimelinePoint({
           borderRadius: 999,
           borderWidth: 3,
           borderColor: active ? theme.colors.primary : "rgba(0,0,0,0.2)",
-          backgroundColor: "#fff",
+          backgroundColor: theme.colors.surface,
           marginBottom: 6,
         }}
       />
@@ -145,7 +145,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       paddingVertical: 18,
       borderRadius: 10,
-      backgroundColor: "rgba(0, 140, 255, 0.06)",
+      backgroundColor: theme.colors.accent,
     },
     labelBannerTitle: { fontWeight: "900", opacity: 0.8, marginBottom: 8 },
     labelBannerDateRow: { flexDirection: "row", gap: 10 },
@@ -153,7 +153,7 @@ const createStyles = (theme: any) =>
       width: 54,
       height: 54,
       borderRadius: 10,
-      backgroundColor: "#5B4CE6",
+      backgroundColor: theme.colors.primary,
       alignItems: "center",
       justifyContent: "center",
     },

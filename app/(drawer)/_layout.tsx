@@ -19,6 +19,7 @@ type AppRoute =
   | "/visits"
   | "/patients"
   | "/payments"
+  | "/imaging"
   | "/chats"
   | "/users"
   | "/profile";
@@ -83,6 +84,7 @@ export default function Layout() {
       <Drawer.Screen name="visits" options={{ drawerLabel: "Visites" }} />
       <Drawer.Screen name="patients" options={{ drawerLabel: "Patients" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Paiements" }} />
+      <Drawer.Screen name="imaging" options={{ drawerLabel: "Imagerie" }} />
       <Drawer.Screen name="chats" options={{ drawerLabel: "Chats" }} />
       <Drawer.Screen name="users" options={{ drawerLabel: "Utilisateurs" }} />
       <Drawer.Screen name="profile" options={{ drawerLabel: "Profil" }} />
@@ -123,6 +125,14 @@ const NAV: NavItem[] = [
       role === "assistant" || (role === "doctor" && isClinicAdmin),
     icon: ({ color, size }) => (
       <Ionicons name="card-outline" size={size} color={color} />
+    ),
+  },
+  {
+    key: "imaging",
+    label: "Imagerie 3D",
+    route: "/imaging",
+    icon: ({ color, size }) => (
+      <Ionicons name="scan-outline" size={size} color={color} />
     ),
   },
   {

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useAuth } from "@/contexts/auth_context";
+import { callRpc } from "@/services/backend";
 
 // Tab pages (separate files)
 import BilansTab from "./_tabs/_bilan";
@@ -56,6 +57,20 @@ interface Appointment {
   notes: string;
   patient?: Patient;
 }
+
+type RpcAppointmentDetails = {
+  id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  scheduled_at: string;
+  status: string;
+  type: string;
+  notes: string | null;
+  patient_first_name?: string | null;
+  patient_last_name?: string | null;
+  patient_phone?: string | null;
+  patient_email?: string | null;
+};
 
 interface ConsultationVitals {
   taille_cm?: string;
@@ -153,19 +168,13 @@ export default function ConsultationPage() {
 
   const { user } = useAuth();
 
-  // Consultation is only for doctors.
-  useEffect(() => {
-    if (user && user.user_type !== "doctor") {
-      router.replace("/dashboard");
-    }
-  }, [user, router]);
-
   const doctor: Partial<Doctor> | null = null; // TODO: Fetch from database when doctor profile is available
   const doctorSpeciality =
     (user as any)?.doctorProfile?.speciality ?? null;
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Which main tab is open (code key). Labels shown to the user are in French.
   const [activeMainTab, setActiveMainTab] = useState<MainTabKey>("observation");
@@ -175,16 +184,75 @@ export default function ConsultationPage() {
   const [parameters, setParameters] = useState(initialParams);
   const [observations, setObservations] = useState("");
 
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [prescriptions] = useState<Prescription[]>([]);
 
   /* ================= LOAD ================= */
 
   useEffect(() => {
-    // TODO: Load appointment and consultation data from database when appointments table is added
-    // For now, set to null since appointments table doesn't exist
-    setAppointment(null);
-    setConsultation(null);
-  }, [id]);
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        if (!user?.id || !id) return;
+        setLoading(true);
+
+        const details = await callRpc<RpcAppointmentDetails, Record<string, unknown>>(
+          "rpc_get_appointment_details",
+          {
+            p_requester_id: user.id,
+            p_appointment_id: id,
+          },
+        );
+        if (cancelled) return;
+
+        setAppointment({
+          id: String(details.id),
+          patient_id: String(details.patient_id),
+          time: String(details.scheduled_at),
+          status: (details.status as ApptStatus) ?? "pending",
+          type: (details.type as ApptType) ?? "regular",
+          notes: String(details.notes ?? ""),
+          patient: {
+            id: String(details.patient_id),
+            first_name: String(details.patient_first_name ?? ""),
+            last_name: String(details.patient_last_name ?? ""),
+            date_of_birth: "",
+            age: 0,
+            sex: "male",
+            phone: String(details.patient_phone ?? ""),
+            email: String(details.patient_email ?? ""),
+            address: "",
+            created_at: "",
+          },
+        });
+
+        setConsultation({
+          id: `consult_${details.id}`,
+          appointment_id: String(details.id),
+          diagnosis: [],
+          observations: "",
+          treatment_plan: "",
+          follow_up: "",
+          status: "open",
+          vitals: { ...initialVitals },
+          parameters: { ...initialParams },
+        });
+      } catch (e) {
+        console.error("Load consultation details error:", e);
+        if (!cancelled) {
+          setAppointment(null);
+          setConsultation(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user?.id]);
 
   /* ================= ORDONNANCES HELPERS ================= */
 
@@ -193,42 +261,8 @@ export default function ConsultationPage() {
     return prescriptions.find((p) => p.consultation_id === consultation.id) || null;
   }, [consultation, appointment?.patient, prescriptions]);
 
-  const ensurePrescription = () => {
-    if (!consultation || !appointment?.patient) return null;
-
-    let rx = prescriptions.find((p) => p.consultation_id === consultation.id);
-    if (rx) return rx;
-
-    rx = {
-      id: `rx_${consultation.id}`,
-      consultation_id: consultation.id,
-      patient_id: appointment.patient.id,
-      drugs: [],
-      template_name: "Ordonnance libre",
-      signed_by: (doctor as any)?.signature_numerique || "Médecin",
-    };
-
-    setPrescriptions((prev) => [...prev, rx!]);
-    return rx;
-  };
-
-  const addDrug = (drug: PrescriptionDrug) => {
-    const rx = ensurePrescription();
-    if (!rx) return;
-
-    if (!drug.name.trim()) {
-      Alert.alert("Info", "Nom du médicament requis");
-      return;
-    }
-
-    setPrescriptions((prev) =>
-      prev.map((p) => (p.id === rx.id ? { ...p, drugs: [...p.drugs, { ...drug }] } : p))
-    );
-  };
-
   /* ================= SAVE ================= */
-
-  const save = () => {
+  const save = async () => {
     if (!consultation) return;
 
     const updated: Consultation = {
@@ -245,10 +279,29 @@ export default function ConsultationPage() {
       status: "closed",
     };
 
-    setConsultation(updated);
-    Alert.alert("Succès", "Consultation sauvegardée (prototype)");
+    try {
+      if (user?.id && appointment?.id) {
+        await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
+          p_requester_id: user.id,
+          p_appointment_id: appointment.id,
+          p_status: "completed",
+        });
+      }
+      setAppointment((prev) => (prev ? { ...prev, status: "completed" } : prev));
+      setConsultation(updated);
+      Alert.alert("Succes", "Consultation sauvegardee");
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.message || "Impossible de sauvegarder la consultation");
+    }
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.page, { backgroundColor: theme.colors.background, padding: 20 }]}> 
+        <Text>Chargement de la consultation...</Text>
+      </View>
+    );
+  }
   if (!appointment) {
     return (
       <View style={[styles.page, { backgroundColor: theme.colors.background, padding: 20 }]}>
@@ -258,8 +311,6 @@ export default function ConsultationPage() {
   }
 
   /* ================= UI ================= */
-
-  const TAB_BAR_HEIGHT = 60; // Fixed height like the video
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -281,31 +332,22 @@ export default function ConsultationPage() {
         visitMeta={`Visite #${appointment?.id ?? "-"} • ${appointment?.time ?? ""}`}
       />
 
-
-      {/* Main tabs */}
-      <View style={{ height: TAB_BAR_HEIGHT }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ height: TAB_BAR_HEIGHT }}
-          contentContainerStyle={styles.tabsContainer}
-        >
-          {MAIN_TABS.map((t) => (
-            <TouchableOpacity
-              key={t.key}
-              onPress={() => setActiveMainTab(t.key)}
-              style={[
-                styles.mainTab,
-                { height: TAB_BAR_HEIGHT - 10 },
-                activeMainTab === t.key && styles.mainTabActive,
-              ]}
-            >
-              <Text style={[styles.mainTabText, activeMainTab === t.key && styles.mainTabTextActive]}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      {/* Main tabs (simplified: wrapped layout, no horizontal scrolling) */}
+      <View style={styles.tabsContainer}>
+        {MAIN_TABS.map((t) => (
+          <TouchableOpacity
+            key={t.key}
+            onPress={() => setActiveMainTab(t.key)}
+            style={[
+              styles.mainTab,
+              activeMainTab === t.key && styles.mainTabActive,
+            ]}
+          >
+            <Text style={[styles.mainTabText, activeMainTab === t.key && styles.mainTabTextActive]}>
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Content */}
@@ -399,24 +441,34 @@ const createStyles = (theme: any) =>
     titlePillText: { color: "#fff", fontWeight: "900" },
     lastVisitText: { color: theme.colors.text, opacity: 0.7, fontWeight: "800" },
 
-    tabsContainer: { paddingHorizontal: 10, paddingTop: 10,alignItems: "stretch" },
+    tabsContainer: {
+      paddingHorizontal: 12,
+      paddingTop: 10,
+      paddingBottom: 6,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
     mainTab: {
-      width: 200,
-      backgroundColor: theme.colors.primary,
-      borderRadius: 12,
-      marginRight: 10,
+      minWidth: 180,
+      flexGrow: 1,
+      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+      borderRadius: 10,
       alignItems: "center",
       justifyContent: "center",
-      opacity: 0.7,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
     },
     mainTabActive: {
-      opacity: 1,
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
     },
     mainTabText: {
-      color: "#fff",
+      color: theme.colors.text,
       fontWeight: "900",
       textAlign: "center",
-      paddingHorizontal: 8,
     },
     mainTabTextActive: {
       color: "#fff",
@@ -436,3 +488,5 @@ const createStyles = (theme: any) =>
     },
     
   });
+
+

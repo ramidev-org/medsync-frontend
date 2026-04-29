@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { getDashboardStyles } from "./_styles";
@@ -14,6 +15,7 @@ export default function ReceptionDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
+  const router = useRouter();
   const [counts, setCounts] = useState<any | null>(null);
 
   useEffect(() => {
@@ -68,9 +70,9 @@ export default function ReceptionDashboardPage() {
               </Text>
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-                <SoftActionChip theme={theme} icon="add" label="Nouvelle visite" onPress={() => {}} />
-                <SoftActionChip theme={theme} icon="person-add" label="Nouveau patient" onPress={() => {}} />
-                <SoftActionChip theme={theme} icon="cash" label="Encaissement" onPress={() => {}} />
+                <SoftActionChip theme={theme} icon="add" label="Nouvelle visite" onPress={() => router.push("/visits")} />
+                <SoftActionChip theme={theme} icon="person-add" label="Nouveau patient" onPress={() => router.push("/patients")} />
+                <SoftActionChip theme={theme} icon="cash" label="Encaissement" onPress={() => router.push("/payments")} />
               </View>
             </View>
 

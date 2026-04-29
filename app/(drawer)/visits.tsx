@@ -1,56 +1,64 @@
 import DatePickerField from "@/components/datepicker";
 import { ThemedCard } from "@/components/default_card";
+import { Dropdown } from "@/components/input_fields";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
+import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    ViewStyle
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from "react-native";
 
-import { router } from "expo-router";
-import { callRpc } from "@/services/backend";
-
-/* ================= STATUS LABELS ================= */
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
   in_consultation: "En consultation",
-  completed: "Terminé",
-  cancelled: "Annulé",
+  completed: "Termine",
+  cancelled: "Annule",
 };
 
-/* ================= TYPES ================= */
-interface Patient {
+type AppointmentStatus = "pending" | "in_consultation" | "completed" | "cancelled";
+
+type AppointmentType = "consultation" | "regular" | "emergency" | string;
+
+type Patient = {
   id: string;
   first_name: string;
   last_name: string;
   phone?: string;
   age?: number;
-}
+};
 
-interface Appointment {
+type Appointment = {
   id: string;
+  clinic_id?: string;
   patient_id: string;
-  time: string; // scheduled_at
-  status: string;
-  type: string;
+  doctor_id?: string | null;
+  doctor_name?: string;
+  time: string;
+  status: AppointmentStatus;
+  type: AppointmentType;
   notes: string;
-  patient?: Patient; // optional, attached dynamically
-}
+  patient?: Patient;
+};
 
 type RpcGetAppointmentsResponse = {
   appointments: {
     id: string;
+    clinic_id?: string;
     patient_id: string;
+    doctor_id?: string | null;
     scheduled_at: string;
     status: string;
     type: string;
@@ -58,7 +66,6 @@ type RpcGetAppointmentsResponse = {
     patient_first_name?: string | null;
     patient_last_name?: string | null;
     patient_phone?: string | null;
-    patient_email?: string | null;
     doctor_name?: string | null;
   }[];
   total: number;
@@ -66,7 +73,52 @@ type RpcGetAppointmentsResponse = {
   itemsPerPage: number;
 };
 
-/* ================= MAIN COMPONENT ================= */
+type RpcGetPatientsResponse = {
+  patients: {
+    id: string;
+    code?: string | null;
+    first_name: string;
+    last_name: string;
+    phone?: string | null;
+  }[];
+  total: number;
+};
+
+type StaffRow = {
+  id: string;
+  full_name: string;
+  user_type: "doctor" | "assistant";
+  active: boolean;
+};
+
+function toDayStart(d: Date) {
+  const next = new Date(d);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function toDayEnd(d: Date) {
+  const next = new Date(d);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+function getTimeValue(iso?: string) {
+  if (!iso) return "09:00";
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function mergeDateAndTime(date: Date, hhmm: string) {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm.trim());
+  if (!m) return null;
+  const d = new Date(date);
+  d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+  return d.toISOString();
+}
+
 export default function VisitsPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -74,143 +126,259 @@ export default function VisitsPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  const [menuVisibleId, setMenuVisibleId] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [patientOptions, setPatientOptions] = useState<{ id: string; label: string }[]>([]);
+  const [doctorOptions, setDoctorOptions] = useState<{ id: string; label: string }[]>([]);
 
-  const [detailsVisibleId, setDetailsVisibleId] = useState<string | null>(null);
-  const [detailsPosition, setDetailsPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const infoIconRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [patientLabel, setPatientLabel] = useState("");
+  const [doctorLabel, setDoctorLabel] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState(new Date());
+  const [appointmentTime, setAppointmentTime] = useState("09:00");
+  const [appointmentType, setAppointmentType] = useState<AppointmentType>("consultation");
+  const [appointmentStatus, setAppointmentStatus] = useState<AppointmentStatus>("pending");
+  const [appointmentNotes, setAppointmentNotes] = useState("");
 
-  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const patientLabelById = useMemo(
+    () => Object.fromEntries(patientOptions.map((p) => [p.id, p.label])),
+    [patientOptions],
+  );
 
-  /* ================= LOAD APPOINTMENTS WITH PATIENT ================= */
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        if (!user?.id) return;
+  const doctorLabelById = useMemo(
+    () => Object.fromEntries(doctorOptions.map((d) => [d.id, d.label])),
+    [doctorOptions],
+  );
 
-        const dayStart = new Date(fromDate);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(fromDate);
-        dayEnd.setHours(23, 59, 59, 999);
+  const fetchAppointments = useCallback(async () => {
+    try {
+      if (!user?.id) return;
 
-        const data = await callRpc<RpcGetAppointmentsResponse, Record<string, unknown>>(
-          "rpc_get_appointments",
-          {
-            p_requester_id: user.id,
-            p_start_date: dayStart.toISOString(),
-            p_end_date: dayEnd.toISOString(),
-            p_page: 1,
-            p_items_per_page: 200,
-          },
-        );
-        if (cancelled) return;
+      const data = await callRpc<RpcGetAppointmentsResponse, Record<string, unknown>>(
+        "rpc_get_appointments",
+        {
+          p_requester_id: user.id,
+          p_start_date: toDayStart(fromDate).toISOString(),
+          p_end_date: toDayEnd(toDate).toISOString(),
+          p_page: 1,
+          p_items_per_page: 300,
+        },
+      );
 
-        const rows = data?.appointments ?? [];
-        const mapped: Appointment[] = rows.map((a) => ({
+      const rows = data?.appointments ?? [];
+      setAppointments(
+        rows.map((a) => ({
           id: String(a.id),
+          clinic_id: a.clinic_id ? String(a.clinic_id) : undefined,
           patient_id: String(a.patient_id ?? ""),
+          doctor_id: a.doctor_id ? String(a.doctor_id) : null,
+          doctor_name: a.doctor_name ? String(a.doctor_name) : "-",
           time: String(a.scheduled_at ?? ""),
-          status: String(a.status ?? "pending"),
+          status: (a.status as AppointmentStatus) ?? "pending",
           type: String(a.type ?? "consultation"),
           notes: String(a.notes ?? ""),
-          patient: a.patient_id
-            ? {
-                id: String(a.patient_id),
-                first_name: String(a.patient_first_name ?? ""),
-                last_name: String(a.patient_last_name ?? ""),
-                phone: a.patient_phone ? String(a.patient_phone) : undefined,
-              }
-            : undefined,
-        }));
+          patient: {
+            id: String(a.patient_id ?? ""),
+            first_name: String(a.patient_first_name ?? ""),
+            last_name: String(a.patient_last_name ?? ""),
+            phone: a.patient_phone ? String(a.patient_phone) : undefined,
+          },
+        })),
+      );
+    } catch (e: any) {
+      console.error("Load appointments error:", e);
+      setAppointments([]);
+      Alert.alert("Erreur", e?.message || "Impossible de charger les rendez-vous");
+    }
+  }, [fromDate, toDate, user?.id]);
 
-        setAppointments(mapped);
-      } catch (e) {
-        console.error("Load appointments error:", e);
-        if (!cancelled) setAppointments([]);
-      }
-    };
+  const fetchFormOptions = useCallback(async () => {
+    try {
+      if (!user?.id) return;
 
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [fromDate, user?.id]);
+      const [patientsResult, staffResult] = await Promise.all([
+        callRpc<RpcGetPatientsResponse, Record<string, unknown>>("rpc_get_patients", {
+          p_requester_id: user.id,
+          p_page: 1,
+          p_items_per_page: 300,
+        }),
+        callRpc<StaffRow[], Record<string, unknown>>("rpc_get_clinic_staff", {
+          p_requester_id: user.id,
+        }),
+      ]);
 
-  /* ================= FILTERED APPOINTMENTS ================= */
+      const patients = (patientsResult?.patients ?? []).map((p) => ({
+        id: String(p.id),
+        label: `${p.first_name} ${p.last_name}${p.code ? ` (${p.code})` : ""}`,
+      }));
+
+      const doctors = (staffResult ?? [])
+        .filter((s) => s.user_type === "doctor" && s.active)
+        .map((s) => ({ id: String(s.id), label: String(s.full_name || "Medecin") }));
+
+      setPatientOptions(patients);
+      setDoctorOptions(doctors);
+    } catch (e) {
+      console.error("Load options error:", e);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  useEffect(() => {
+    fetchFormOptions();
+  }, [fetchFormOptions]);
+
   const filteredAppointments = useMemo(() => {
-    return appointments.filter(a => {
+    return appointments.filter((a) => {
       const matchesStatus = filter === "all" || a.status === filter;
-      const fullName = `${a.patient?.first_name || ""} ${a.patient?.last_name || ""}`.toLowerCase();
-      return matchesStatus && fullName.includes(search.toLowerCase());
+      const fullName = `${a.patient?.first_name ?? ""} ${a.patient?.last_name ?? ""}`.toLowerCase();
+      const doctorName = String(a.doctor_name ?? "").toLowerCase();
+      const matchesSearch =
+        fullName.includes(search.toLowerCase()) ||
+        doctorName.includes(search.toLowerCase()) ||
+        String(a.type).toLowerCase().includes(search.toLowerCase());
+      return matchesStatus && matchesSearch;
     });
   }, [appointments, filter, search]);
 
-  const waitingRoomAppointments = useMemo(() => {
-    return appointments.filter(a => a.status === "pending" || a.status === "in_consultation");
-  }, [appointments]);
-
-  const progress = Math.round(
-    (appointments.filter(a => a.status === "completed").length / appointments.length) * 100
+  const waitingRoomAppointments = useMemo(
+    () => appointments.filter((a) => a.status === "pending" || a.status === "in_consultation"),
+    [appointments],
   );
 
-  /* ================= UPDATE STATUS ================= */
-  const updateStatus = (id: string, status: string) => {
-    const run = async () => {
-      try {
-        if (!user?.id) return;
+  const completedCount = useMemo(
+    () => appointments.filter((a) => a.status === "completed").length,
+    [appointments],
+  );
+
+  const progress = appointments.length > 0 ? Math.round((completedCount / appointments.length) * 100) : 0;
+
+  const resetForm = () => {
+    setEditingId(null);
+    setPatientLabel("");
+    setDoctorLabel("");
+    setAppointmentDate(new Date());
+    setAppointmentTime("09:00");
+    setAppointmentType("consultation");
+    setAppointmentStatus("pending");
+    setAppointmentNotes("");
+  };
+
+  const openCreateForm = () => {
+    setFormMode("create");
+    resetForm();
+    setIsFormOpen(true);
+  };
+
+  const openEditForm = (a: Appointment) => {
+    setFormMode("edit");
+    setEditingId(a.id);
+    setPatientLabel(patientLabelById[a.patient_id] ?? `${a.patient?.first_name ?? ""} ${a.patient?.last_name ?? ""}`.trim());
+    setDoctorLabel((a.doctor_id && doctorLabelById[a.doctor_id]) || a.doctor_name || "");
+    setAppointmentDate(new Date(a.time));
+    setAppointmentTime(getTimeValue(a.time));
+    setAppointmentType(a.type);
+    setAppointmentStatus(a.status);
+    setAppointmentNotes(a.notes ?? "");
+    setIsFormOpen(true);
+  };
+
+  const updateStatus = async (id: string, status: AppointmentStatus) => {
+    try {
+      if (!user?.id) return;
+      await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
+        p_requester_id: user.id,
+        p_appointment_id: id,
+        p_status: status,
+      });
+      await fetchAppointments();
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.message || "Impossible de mettre a jour le statut");
+    }
+  };
+
+  const cancelAppointment = async (id: string) => {
+    try {
+      if (!user?.id) return;
+      await callRpc<boolean, Record<string, unknown>>("rpc_cancel_appointment", {
+        p_requester_id: user.id,
+        p_appointment_id: id,
+      });
+      await fetchAppointments();
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.message || "Impossible d'annuler le rendez-vous");
+    }
+  };
+
+  const startConsultation = async (a: Appointment) => {
+    await updateStatus(a.id, "in_consultation");
+    router.push(`/consultation?id=${a.id}`);
+  };
+
+  const submitForm = async () => {
+    try {
+      if (!user?.id) return;
+
+      const patientId = patientOptions.find((p) => p.label === patientLabel)?.id;
+      const doctorId = doctorOptions.find((d) => d.label === doctorLabel)?.id;
+
+      if (!patientId) {
+        Alert.alert("Validation", "Veuillez selectionner un patient");
+        return;
+      }
+
+      if (!doctorId) {
+        Alert.alert("Validation", "Veuillez selectionner un medecin");
+        return;
+      }
+
+      const scheduledAt = mergeDateAndTime(appointmentDate, appointmentTime);
+      if (!scheduledAt) {
+        Alert.alert("Validation", "Heure invalide. Utilisez HH:mm (ex: 14:30)");
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      if (formMode === "create") {
+        await callRpc<string, Record<string, unknown>>("rpc_create_appointment", {
+          p_requester_id: user.id,
+          p_patient_id: patientId,
+          p_doctor_id: doctorId,
+          p_scheduled_at: scheduledAt,
+          p_status: appointmentStatus,
+          p_type: appointmentType,
+          p_notes: appointmentNotes || null,
+        });
+      } else {
+        if (!editingId) return;
         await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
           p_requester_id: user.id,
-          p_appointment_id: id,
-          p_status: status,
+          p_appointment_id: editingId,
+          p_doctor_id: doctorId,
+          p_scheduled_at: scheduledAt,
+          p_status: appointmentStatus,
+          p_type: appointmentType,
+          p_notes: appointmentNotes || null,
         });
-
-        setAppointments((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, status } : a)),
-        );
-      } catch (e) {
-        console.error("Update appointment status error:", e);
-      } finally {
-        setMenuVisibleId(null);
-        setMenuPosition(null);
       }
-    };
-    run();
-  };
 
-  const openMenu = (id: string) => {
-    const ref = rowRefs.current[id];
-    if (!ref) return;
-    const rect = ref.getBoundingClientRect();
-    setMenuVisibleId(id);
-    setMenuPosition({ x: rect.right - 320, y: rect.bottom - 25});
-  };
-
-  const openDetails = (id: string) => {
-    if (hoverTimeout.current) {
-      clearTimeout(hoverTimeout.current);
-      hoverTimeout.current = null;
+      setIsFormOpen(false);
+      resetForm();
+      await fetchAppointments();
+    } catch (e: any) {
+      Alert.alert("Erreur", e?.message || "Echec de sauvegarde du rendez-vous");
+    } finally {
+      setIsSubmitting(false);
     }
-    const ref = infoIconRefs.current[id];
-    if (!ref) return;
-    const rect = ref.getBoundingClientRect();
-    setDetailsVisibleId(id);
-    setDetailsPosition({
-      x: rect.left - 260,
-      y: rect.top - 10,
-    });
-  };
-
-  const closeDetails = () => {
-    hoverTimeout.current = setTimeout(() => {
-      setDetailsVisibleId(null);
-      setDetailsPosition(null);
-    }, 120);
   };
 
   const styles = createStyles(theme);
@@ -220,257 +388,404 @@ export default function VisitsPage() {
       <TopBar theme={theme} />
 
       <View style={styles.row}>
-        {/* ================= LEFT ================= */}
         <View style={styles.left}>
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            {/* Filter Section */}
             <View style={styles.filterSection}>
               <View style={styles.searchBox}>
                 <Ionicons name="search" size={20} color="#9ca3af" />
                 <TextInput
-                  placeholder="Rechercher..."
+                  placeholder="Rechercher patient, medecin, type..."
                   value={search}
                   onChangeText={setSearch}
                   style={styles.searchInput}
                 />
               </View>
+
               <DatePickerField label="Du" date={fromDate} setDate={setFromDate} />
-              <TouchableOpacity style={styles.resetButton} onPress={() => setFromDate(new Date())}>
+              <DatePickerField label="Au" date={toDate} setDate={setToDate} />
+
+              <TouchableOpacity style={styles.resetButton} onPress={() => { setFromDate(new Date()); setToDate(new Date()); }}>
                 <Ionicons name="refresh" size={18} color={theme.colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.primaryButton} onPress={openCreateForm}>
+                <Ionicons name="add" size={16} color="#fff" />
+                <Text style={styles.primaryButtonText}>Nouveau RDV</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Tabs */}
-            <View style={[styles.tabs, { backgroundColor: theme.colors.surfaceVariant }]}>
+            <View style={[styles.tabs, { backgroundColor: theme.colors.surfaceVariant }]}> 
               {[
                 { key: "all", label: "Tous" },
                 { key: "pending", label: "En attente" },
                 { key: "in_consultation", label: "En consultation" },
-                { key: "completed", label: "Terminé" },
-                { key: "cancelled", label: "Annulé" },
-              ].map(tab => (
+                { key: "completed", label: "Termine" },
+                { key: "cancelled", label: "Annule" },
+              ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
                   onPress={() => setFilter(tab.key)}
                   style={[styles.tab, filter === tab.key && { backgroundColor: theme.colors.primary }]}
                 >
-                  <Text style={[styles.tabText, filter === tab.key && { color: "#fff" }]}>
-                    {tab.label}
-                  </Text>
+                  <Text style={[styles.tabText, filter === tab.key && { color: "#fff" }]}>{tab.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Progress Card (matches screenshot placement) */}
             <ThemedCard style={{ marginBottom: 16 }}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>État d&apos;avancement</Text>
-                <Text style={[styles.progressValue, { color: theme.colors.primary }]}>
-                  {progress}%
-                </Text>
+                <Text style={styles.progressTitle}>Etat d&apos;avancement</Text>
+                <Text style={[styles.progressValue, { color: theme.colors.primary }]}>{progress}%</Text>
               </View>
-              <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${progress}%`, backgroundColor: theme.colors.primary },
-                  ]}
-                />
+              <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}> 
+                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary }]} />
               </View>
-              <Text style={styles.progressText}>
-                {appointments.filter(a => a.status === "completed").length} sur {appointments.length} patients traités
-              </Text>
+              <Text style={styles.progressText}>{completedCount} sur {appointments.length} patients traites</Text>
             </ThemedCard>
 
-            {/* ================= TABLE ================= */}
             <View style={styles.tableContainer}>
               <View style={[styles.tableRow, styles.header]}>
-                <Text style={[styles.cell, { flex: 0.5 }]}>Avatar</Text>
-                <Text style={[styles.cell, { flex: 1 }]}>Nom complet</Text>
-                <Text style={[styles.cell, { flex: 1 }]}>Téléphone</Text>
-                <Text style={[styles.cell, { flex: 0.5 }]}>Heure</Text>
+                <Text style={[styles.cell, { flex: 0.6 }]}>Avatar</Text>
+                <Text style={[styles.cell, { flex: 1.2 }]}>Patient</Text>
+                <Text style={[styles.cell, { flex: 1.2 }]}>Medecin</Text>
+                <Text style={[styles.cell, { flex: 0.9 }]}>Heure</Text>
+                <Text style={[styles.cell, { flex: 0.9 }]}>Type</Text>
                 <Text style={[styles.cell, { flex: 1, textAlign: "center" }]}>Status</Text>
-                <Text style={{ flex: 0.5, textAlign: "center" }}>Actions</Text>
+                <Text style={{ flex: 1.8, textAlign: "center" }}>Actions</Text>
               </View>
 
-              <ScrollView style={{ maxHeight: 350 }}>
-                {filteredAppointments.map(a => (
-                  <View
-                    key={a.id}
-                    style={styles.tableRow}
-                    ref={el => (rowRefs.current[a.id] = el as any)}
-                  >
-                    <View style={{ flex: 0.5 }}>
-                      <Avatar firstName={a.patient?.first_name!} lastName={a.patient?.last_name!} size={46} borderRadius={10} />
+              <ScrollView style={{ maxHeight: 420 }}>
+                {filteredAppointments.map((a) => (
+                  <View key={a.id} style={styles.tableRow}>
+                    <View style={{ flex: 0.6 }}>
+                      <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={46} borderRadius={10} />
                     </View>
-                    <Text style={[styles.cell, { flex: 1 }]}>{a.patient?.first_name} {a.patient?.last_name}</Text>
-                    <Text style={[styles.cell, { flex: 1 }]}>{a.patient?.phone || "-"}</Text>
-                    <Text style={[styles.cell, { flex: 0.5 }]}>
+
+                    <Text style={[styles.cell, { flex: 1.2 }]}>{a.patient?.first_name} {a.patient?.last_name}</Text>
+                    <Text style={[styles.cell, { flex: 1.2 }]} numberOfLines={1}>{a.doctor_name || "-"}</Text>
+                    <Text style={[styles.cell, { flex: 0.9 }]}>
                       {new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </Text>
-                    <View style={{ flex: 1, alignContent: "center" }}>
+                    <Text style={[styles.cell, { flex: 0.9 }]}>{a.type}</Text>
+
+                    <View style={{ flex: 1 }}>
                       <View style={[styles.status, statusColor(a.status)]}>
                         <Text style={styles.statusText}>{STATUS_LABELS[a.status]}</Text>
                       </View>
                     </View>
-                    <View style={{ flex: 0.5, alignItems: "center" }}>
-                      <View style={styles.row}>
-                        <TouchableOpacity onPress={() => openMenu(a.id)}>
-                          <Ionicons name="ellipsis-vertical" size={24} color={"grey"} />
-                        </TouchableOpacity>
 
-                        <TouchableOpacity onPress={() => router.push(`/consultation?id=${a.id}`)}>
-                          <Ionicons name="document" size={24} color={"grey"} />
-                        </TouchableOpacity>
+                    <View style={[styles.row, { flex: 1.8, justifyContent: "center", gap: 8 }]}>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => openEditForm(a)}>
+                        <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+                      </TouchableOpacity>
 
-                        <Pressable
-                          ref={el => (infoIconRefs.current[a.id] = el as any)}
-                          onHoverIn={() => openDetails(a.id)}
-                          onHoverOut={closeDetails}>
-                          <Ionicons name="information-circle" size={22} color={theme.colors.primary} />
-                        </Pressable>
-                      </View>
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => startConsultation(a)}>
+                        <Ionicons name="medkit-outline" size={16} color={theme.colors.primary} />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => updateStatus(a.id, "completed")}> 
+                        <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.success} />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => cancelAppointment(a.id)}>
+                        <Ionicons name="close-circle-outline" size={16} color={theme.colors.error} />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
+
+                {filteredAppointments.length === 0 && (
+                  <View style={{ padding: 20 }}>
+                    <Text style={{ color: theme.colors.textSecondary }}>Aucun rendez-vous pour ce filtre.</Text>
+                  </View>
+                )}
               </ScrollView>
             </View>
           </ScrollView>
         </View>
 
-        {/* ================= RIGHT ================= */}
         <View style={styles.right}>
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            {/* Waiting Room */}
             <ThemedCard>
               <Text style={styles.waitingTitle}>Salle d&apos;attente</Text>
               <Text style={styles.waitingSubtitle}>Patients en attente ou en consultation</Text>
               <View style={{ marginTop: 16 }}>
-                {waitingRoomAppointments.map(a => (
+                {waitingRoomAppointments.map((a) => (
                   <View key={a.id} style={styles.waitingCard}>
-                    <Avatar firstName={a.patient?.first_name!} lastName={a.patient?.last_name!} size={56} borderRadius={12} />
+                    <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={56} borderRadius={12} />
                     <View style={{ marginLeft: 12 }}>
-                      <Text style={{ fontWeight: "600" }}>
-                        {a.patient?.first_name} {a.patient?.last_name}
-                      </Text>
+                      <Text style={{ fontWeight: "600" }}>{a.patient?.first_name} {a.patient?.last_name}</Text>
                       <Text style={{ fontSize: 12, color: "#6b7280" }}>
                         {new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </Text>
+                      <Text style={{ fontSize: 12, color: "#6b7280" }}>{a.doctor_name || "-"}</Text>
                     </View>
                   </View>
                 ))}
+
+                {waitingRoomAppointments.length === 0 && (
+                  <Text style={{ color: theme.colors.textSecondary }}>Aucun patient en attente.</Text>
+                )}
               </View>
             </ThemedCard>
           </ScrollView>
         </View>
       </View>
 
-      {/* ================= FLOATING MENU ================= */}
-      {menuVisibleId && menuPosition && (
-        <>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => { setMenuVisibleId(null); setMenuPosition(null); }}
-            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: menuPosition.y,
-              left: menuPosition.x,
-              width: 150,
-              backgroundColor: "#fff",
-              borderRadius: 8,
-              paddingVertical: 4,
-              shadowColor: "#000",
-              shadowOpacity: 0.1,
-              shadowRadius: 10,
-              elevation: 5,
-              zIndex: 1000,
-            }}
-          >
-            {["pending", "in_consultation", "completed", "cancelled"].map(status => (
-              <TouchableOpacity key={status} style={{ paddingVertical: 10, paddingHorizontal: 16 }} onPress={() => updateStatus(menuVisibleId, status)}>
-                <Text style={{ fontSize: 14 }}>{STATUS_LABELS[status]}</Text>
+      <Modal visible={isFormOpen} transparent animationType="fade" onRequestClose={() => setIsFormOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{formMode === "create" ? "Nouveau rendez-vous" : "Modifier rendez-vous"}</Text>
+              <TouchableOpacity onPress={() => setIsFormOpen(false)}>
+                <Ionicons name="close" size={20} color={theme.colors.text} />
               </TouchableOpacity>
-            ))}
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+              <Dropdown
+                label="Patient"
+                value={patientLabel}
+                options={patientOptions.map((p) => p.label)}
+                onChange={setPatientLabel}
+                placeholder="Selectionner un patient"
+                required
+              />
+
+              <Dropdown
+                label="Medecin"
+                value={doctorLabel}
+                options={doctorOptions.map((d) => d.label)}
+                onChange={setDoctorLabel}
+                placeholder="Selectionner un medecin"
+                required
+              />
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Date</Text>
+                  <DatePickerField label="Date" date={appointmentDate} setDate={setAppointmentDate} />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Heure (HH:mm)</Text>
+                  <TextInput
+                    value={appointmentTime}
+                    onChangeText={setAppointmentTime}
+                    placeholder="09:30"
+                    style={styles.fieldInput}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={{ flex: 1 }}>
+                  <Dropdown
+                    label="Type"
+                    value={appointmentType}
+                    options={["consultation", "regular", "emergency"]}
+                    onChange={(v) => setAppointmentType(v as AppointmentType)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Dropdown
+                    label="Statut"
+                    value={appointmentStatus}
+                    options={["pending", "in_consultation", "completed", "cancelled"]}
+                    onChange={(v) => setAppointmentStatus(v as AppointmentStatus)}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.fieldLabel}>Notes</Text>
+              <TextInput
+                value={appointmentNotes}
+                onChangeText={setAppointmentNotes}
+                multiline
+                placeholder="Notes de rendez-vous"
+                style={[styles.fieldInput, { minHeight: 100, textAlignVertical: "top" }]}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsFormOpen(false)}>
+                <Text style={styles.cancelBtnText}>Annuler</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.saveBtn} onPress={submitForm} disabled={isSubmitting}>
+                <Text style={styles.saveBtnText}>{isSubmitting ? "Sauvegarde..." : "Enregistrer"}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </>
-      )}
-
-
-
-      {/* ================= DETAILS POPUP ================= */}
-      {detailsVisibleId && detailsPosition && (() => {
-        const a = appointments.find(ap => ap.id === detailsVisibleId);
-        if (!a?.notes) return null;
-        return (
-          <Pressable
-            onHoverIn={() => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); hoverTimeout.current = null; }}
-            onHoverOut={closeDetails}
-            style={{
-              position: "absolute",
-              top: detailsPosition.y,
-              left: detailsPosition.x,
-              width: 240,
-              backgroundColor: "#fff",
-              borderRadius: 10,
-              padding: 14,
-              shadowColor: "#000",
-              shadowOpacity: 0.12,
-              shadowRadius: 12,
-              elevation: 6,
-              zIndex: 1000,
-            }}
-          >
-            <Text style={{ fontWeight: "700", marginBottom: 6 }}>Détails du rendez-vous</Text>
-            <Text style={{ fontSize: 13 }}>{a.notes}</Text>
-          </Pressable>
-        );
-      })()}
-
+        </View>
+      </Modal>
     </View>
   );
 }
 
-/* ================= HELPERS ================= */
 function statusColor(status: string): ViewStyle {
   switch (status) {
-    case "completed": return { backgroundColor: "#22c55e" };
-    case "pending": return { backgroundColor: "#60a5fa" };
-    case "cancelled": return { backgroundColor: "#9ca3af" };
-    case "in_consultation": return { backgroundColor: "#38bdf8" };
-    default: return {};
+    case "completed":
+      return { backgroundColor: "#22c55e" };
+    case "pending":
+      return { backgroundColor: "#60a5fa" };
+    case "cancelled":
+      return { backgroundColor: "#9ca3af" };
+    case "in_consultation":
+      return { backgroundColor: "#38bdf8" };
+    default:
+      return {};
   }
 }
 
-/* ================= STYLES ================= */
 const createStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
     row: { flexDirection: "row" },
-    filterSection: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
     left: { flex: 2, padding: 24 },
     right: { flex: 1, padding: 20 },
-    searchBox: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, paddingHorizontal: 12 },
+
+    filterSection: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+    searchBox: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#fff",
+      borderRadius: 10,
+      paddingHorizontal: 12,
+    },
     searchInput: { flex: 1, padding: 12, fontSize: 14 },
+    resetButton: {
+      padding: 12,
+      backgroundColor: theme.colors.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    primaryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    primaryButtonText: { color: "#fff", fontWeight: "700" },
+
     tabs: { flexDirection: "row", borderRadius: 12, padding: 6, marginBottom: 16 },
     tab: { flex: 1, padding: 10, borderRadius: 10, alignItems: "center" },
     tabText: { fontWeight: "600" },
-    tableContainer: { height: 400, backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
-    tableRow: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-    cell: { fontSize: 13 },
-    header: { backgroundColor: "#f3f4f6" },
-    status: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginHorizontal: 16 },
-    statusText: { color: "#fff", fontSize: 12, fontWeight: "500", textAlign: "center" },
+
     progressHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
     progressTitle: { fontWeight: "600" },
     progressValue: { fontSize: 24, fontWeight: "700" },
     progressBg: { height: 10, borderRadius: 10 },
     progressFill: { height: 10, borderRadius: 10 },
     progressText: { marginTop: 12, fontSize: 13, color: "#6b7280" },
+
+    tableContainer: { height: 470, backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
+    tableRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: "#e5e7eb",
+    },
+    cell: { fontSize: 13 },
+    header: { backgroundColor: "#f3f4f6" },
+    status: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      marginHorizontal: 10,
+      alignItems: "center",
+    },
+    statusText: { color: "#fff", fontSize: 12, fontWeight: "500", textAlign: "center" },
+
+    actionBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+
     waitingTitle: { fontSize: 16, fontWeight: "700" },
     waitingSubtitle: { fontSize: 13, color: "#6b7280" },
-    waitingCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#f0f8fd", padding: 12, borderRadius: 12, marginBottom: 10 },
-    resetButton: { padding: 12, backgroundColor: theme.colors.card, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border },
+    waitingCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#f0f8fd",
+      padding: 12,
+      borderRadius: 12,
+      marginBottom: 10,
+    },
+
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 18,
+    },
+    modalCard: {
+      width: "100%",
+      maxWidth: 780,
+      backgroundColor: "#fff",
+      borderRadius: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    modalHeader: {
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    modalTitle: { fontWeight: "900", color: theme.colors.text },
+    modalFooter: {
+      padding: 14,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    cancelBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    cancelBtnText: { fontWeight: "700", color: theme.colors.text },
+    saveBtn: {
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 8,
+      backgroundColor: theme.colors.primary,
+    },
+    saveBtnText: { color: "#fff", fontWeight: "700" },
+
+    formRow: { flexDirection: "row", gap: 12, marginBottom: 8 },
+    fieldLabel: { fontWeight: "700", color: theme.colors.text, marginBottom: 8 },
+    fieldInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: theme.colors.background,
+      color: theme.colors.text,
+      marginBottom: 12,
+    },
   });

@@ -3,29 +3,38 @@ export type SpecialityKey =
   | "cardiology"
   | "dermatology"
   | "gynecology"
-  | "pediatrics";
+  | "pediatrics"
+  | "dentistry";
 
 const MAP: Record<string, SpecialityKey> = {
   // French
-  "médecine générale": "general",
-  "generaliste": "general",
-  "généraliste": "general",
+  "medecine generale": "general",
+  generaliste: "general",
+  "general practice": "general",
   cardiologie: "cardiology",
   dermatologie: "dermatology",
-  gynécologie: "gynecology",
+  gynecologie: "gynecology",
   pediatrie: "pediatrics",
-  pédiatrie: "pediatrics",
+  dentaire: "dentistry",
+  dentisterie: "dentistry",
+  odontologie: "dentistry",
 
   // English
-  "general practice": "general",
   cardiology: "cardiology",
   dermatology: "dermatology",
   gynecology: "gynecology",
   pediatrics: "pediatrics",
+  dentistry: "dentistry",
+  dentist: "dentistry",
 };
 
 export const normalizeSpeciality = (raw?: string | null): SpecialityKey => {
-  const k = String(raw ?? "").trim().toLowerCase();
+  const k = String(raw ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
   return MAP[k] ?? "general";
 };
 
@@ -36,10 +45,12 @@ export const specialityLabelFr = (key: SpecialityKey) => {
     case "dermatology":
       return "Dermatologie";
     case "gynecology":
-      return "Gynécologie";
+      return "Gynecologie";
     case "pediatrics":
-      return "Pédiatrie";
+      return "Pediatrie";
+    case "dentistry":
+      return "Dentisterie";
     default:
-      return "Médecine générale";
+      return "Medecine generale";
   }
 };
