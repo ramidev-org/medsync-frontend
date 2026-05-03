@@ -1,10 +1,11 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { TreatmentHistoryPanel } from "@/components/dentistry/TreatmentHistoryPanel";
-import { WebOdontogram } from "@/components/dentistry/WebOdontogram";
 import { ToothTreatmentPanel } from "@/components/dentistry/ToothTreatmentPanel";
 import { OdontogramState, type ProcedureKey, type ToothSurface, clearSurface, upsertProcedure } from "@/components/dentistry/odontogram";
+import { Dropdown } from "@/components/input_fields";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export type DentistryState = {
   activeProcedure?: ProcedureKey;
@@ -14,6 +15,42 @@ export type DentistryState = {
 };
 
 const ALL_SURFACES: ToothSurface[] = ["B", "L", "M", "D", "O"];
+const EMPTY_SELECTION: string[] = [];
+
+const TEETH: string[] = [
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "21",
+  "22",
+  "23",
+  "24",
+  "25",
+  "26",
+  "27",
+  "28",
+  "31",
+  "32",
+  "33",
+  "34",
+  "35",
+  "36",
+  "37",
+  "38",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+  "47",
+  "48",
+];
 
 function applyProcedureToTooth({
   odontogram,
@@ -51,7 +88,7 @@ export function DentistryTab({
 
   const activeProcedure = value.activeProcedure ?? "caries";
   const odontogram = value.odontogram ?? {};
-  const selectedTeeth = value.selectedTeeth ?? [];
+  const selectedTeeth = value.selectedTeeth ?? EMPTY_SELECTION;
 
   const prevSelectedRef = React.useRef<string[]>(selectedTeeth);
   React.useEffect(() => {
@@ -95,19 +132,57 @@ export function DentistryTab({
     <ScrollView contentContainerStyle={{ gap: 12 }}>
       <Text style={[styles.title, { color: theme.colors.primary }]}>Dentistry</Text>
 
-      <WebOdontogram
-        themeMode="light"
-        odontogram={odontogram}
-        defaultSelected={selectedTeeth.map((t) => `teeth-${t}`)}
-        onSelectionChange={onSelectionChange}
-        maxWidth={900}
-        splitUpperLower
-      />
+      <View style={{ padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface, gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: theme.colors.primarySoft, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.colors.border }}>
+              <MaterialCommunityIcons name="flask-outline" size={14} color={theme.colors.primary} />
+            </View>
+            <Text style={{ fontWeight: "900", color: theme.colors.text }}>Tooth selection</Text>
+          </View>
+          <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>{selectedTeeth.length} selected</Text>
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <View style={{ minWidth: 220, flexGrow: 1, flexBasis: 220 }}>
+            <Dropdown
+              label="Tooth (FDI)"
+              value={value.selectedTeeth?.[0] ?? ""}
+              options={TEETH}
+              onChange={(picked) => {
+                if (!picked) return;
+                const next = Array.from(new Set([picked, ...(selectedTeeth || [])]));
+                onSelectionChange(next);
+              }}
+              prefixIcon="grid-outline"
+              placeholder="Select a tooth…"
+            />
+          </View>
+        </View>
+
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {selectedTeeth.length === 0 ? (
+            <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>Pick teeth to apply procedures and populate history.</Text>
+          ) : (
+            selectedTeeth.map((t) => (
+              <Pressable
+                key={t}
+                onPress={() => onSelectionChange(selectedTeeth.filter((x) => x !== t))}
+                style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: theme.colors.background, flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 12 }}>{t}</Text>
+                <MaterialCommunityIcons name="close" size={14} color={theme.colors.textSecondary} />
+              </Pressable>
+            ))
+          )}
+        </View>
+      </View>
 
       <View style={{ gap: 12 }}>
         <ToothTreatmentPanel
           theme={theme}
           selectedTeeth={selectedTeeth}
+          onChangeSelectedTeeth={(next) => set({ selectedTeeth: next })}
           activeProcedure={activeProcedure}
           onChangeActiveProcedure={(next) => set({ activeProcedure: next })}
           odontogram={odontogram}

@@ -7,11 +7,13 @@ export function WorkspaceHero({
   title,
   subtitle,
   badge,
+  icon,
 }: {
   theme: any;
   title: string;
   subtitle: string;
   badge?: string;
+  icon?: ReactNode;
 }) {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
@@ -25,6 +27,7 @@ export function WorkspaceHero({
       >
         {!!badge && (
           <View style={styles.badge}>
+            {icon ? <View style={styles.badgeIcon}>{icon}</View> : null}
             <Text style={styles.badgeText}>{badge}</Text>
           </View>
         )}
@@ -88,7 +91,11 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 10,
       paddingVertical: 5,
       marginBottom: 2,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
     },
+    badgeIcon: { opacity: 0.95 },
     badgeText: {
       color: theme.colors.primary,
       fontWeight: "900",
@@ -115,4 +122,3 @@ const createStyles = (theme: any) =>
     surfaceTitle: { fontWeight: "900", color: theme.colors.text, fontSize: 18 },
     surfaceSubtitle: { marginTop: 4, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
   });
-

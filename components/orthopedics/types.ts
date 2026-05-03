@@ -25,5 +25,12 @@ export type RangeOfMotion = {
 export type OrthopedicsWorkspaceState = {
   selectedJoint?: OrthoJoint | null;
   rom?: Partial<Record<OrthoJoint, RangeOfMotion>>;
+  romLog?: OrthoRomEntry[];
 };
 
+export type OrthoRomEntry = {
+  id: string;
+  joint: OrthoJoint;
+  atIso: string;
+  value: RangeOfMotion;
+};

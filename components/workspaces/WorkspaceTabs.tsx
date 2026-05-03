@@ -1,7 +1,7 @@
 import React from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export type WorkspaceTabDef<T extends string> = { key: T; label: string };
+export type WorkspaceTabDef<T extends string> = { key: T; label: string; icon?: React.ReactNode };
 
 export function WorkspaceTabs<T extends string>({
   theme,
@@ -32,7 +32,10 @@ export function WorkspaceTabs<T extends string>({
               },
             ]}
           >
-            <Text style={[styles.label, { color: isActive ? "#fff" : theme.colors.textSecondary }]}>{t.label}</Text>
+            <View style={styles.tabInner}>
+              {t.icon ? <View style={styles.icon}>{t.icon}</View> : null}
+              <Text style={[styles.label, { color: isActive ? "#fff" : theme.colors.textSecondary }]}>{t.label}</Text>
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -59,5 +62,7 @@ const createStyles = (theme: any) =>
           } as any)
         : null),
     },
+    tabInner: { flexDirection: "row", alignItems: "center", gap: 8 },
+    icon: { opacity: 0.95 },
     label: { fontWeight: "900", fontSize: 12, letterSpacing: 0.2 },
   });

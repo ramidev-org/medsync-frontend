@@ -1,9 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 import { OdontogramState, ProcedureKey, ToothSurface, clearSurface, upsertProcedure } from "./odontogram";
 import { ProcedurePicker } from "./ProcedurePicker";
-import { TreatmentHistoryPanel } from "./TreatmentHistoryPanel";
+import { OdontogramDialog } from "./OdontogramDialog";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const ALL_SURFACES: ToothSurface[] = ["B", "L", "M", "D", "O"];
 
@@ -32,6 +33,7 @@ function applyProcedureToTooth({
 export function ToothTreatmentPanel({
   theme,
   selectedTeeth,
+  onChangeSelectedTeeth,
   activeProcedure,
   onChangeActiveProcedure,
   odontogram,
@@ -39,15 +41,15 @@ export function ToothTreatmentPanel({
 }: {
   theme: any;
   selectedTeeth: string[];
+  onChangeSelectedTeeth: (next: string[]) => void;
   activeProcedure: ProcedureKey;
   onChangeActiveProcedure: (next: ProcedureKey) => void;
   odontogram: OdontogramState;
   onChangeOdontogram: (next: OdontogramState) => void;
 }) {
-  const styles = React.useMemo(() => createStyles(theme), [theme]);
-  const primaryTooth = selectedTeeth[0];
+  const [openSelector, setOpenSelector] = React.useState(false);
 
-  const applyToSelection = () => {
+  const createTreatment = () => {
     if (selectedTeeth.length === 0) return;
     const nowIso = new Date().toISOString();
     let next = odontogram;
@@ -64,43 +66,51 @@ export function ToothTreatmentPanel({
 
   return (
     <View style={{ gap: 12 }}>
-      <Text style={styles.h1}>Treatment panel</Text>
-      <Text style={styles.sub}>Selected: {selectedTeeth.length ? selectedTeeth.join(", ") : "None"}</Text>
+      <OdontogramDialog
+        theme={theme}
+        open={openSelector}
+        title="Select teeth"
+        subtitle="Click teeth to select/deselect, then close."
+        odontogram={odontogram}
+        selectedTeethFdi={selectedTeeth}
+        onChangeSelectedTeethFdi={onChangeSelectedTeeth}
+        onClose={() => setOpenSelector(false)}
+      />
 
-      <ProcedurePicker theme={theme} value={activeProcedure} onChange={onChangeActiveProcedure} />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        <ProcedurePicker theme={theme} value={activeProcedure} onChange={onChangeActiveProcedure} />
+
+        <TouchableOpacity
+          onPress={() => setOpenSelector(true)}
+          style={{ borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }}
+        >
+          <MaterialCommunityIcons name="tooth-outline" size={16} color={theme.colors.textSecondary} />
+          <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 12 }}>Teeth</Text>
+          <Text style={{ fontWeight: "900", color: theme.colors.text, fontSize: 12 }}>{selectedTeeth.length ? selectedTeeth.join(", ") : "None"}</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         <TouchableOpacity
           disabled={selectedTeeth.length === 0}
-          onPress={applyToSelection}
+          onPress={createTreatment}
           style={[
-            styles.actionBtn,
-            { borderColor: theme.colors.primary, opacity: selectedTeeth.length === 0 ? 0.45 : 1 },
+            { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, borderColor: theme.colors.primary, backgroundColor: theme.colors.primary, opacity: selectedTeeth.length === 0 ? 0.45 : 1 },
           ]}
         >
-          <Text style={[styles.actionText, { color: theme.colors.primary }]}>Apply to selected</Text>
+          <Text style={{ fontWeight: "900", fontSize: 12, color: theme.colors.textOnPrimary }}>Create treatment</Text>
         </TouchableOpacity>
         <TouchableOpacity
           disabled={selectedTeeth.length === 0}
           onPress={clearSelection}
           style={[
-            styles.actionBtn,
             { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceVariant, opacity: selectedTeeth.length === 0 ? 0.45 : 1 },
+            { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10 },
           ]}
         >
-          <Text style={[styles.actionText, { color: theme.colors.text }]}>Clear selected</Text>
+          <Text style={{ fontWeight: "900", fontSize: 12, color: theme.colors.text }}>Clear selected</Text>
         </TouchableOpacity>
       </View>
-
-      {primaryTooth ? <TreatmentHistoryPanel theme={theme} odontogram={odontogram} selected={{ tooth: primaryTooth }} /> : null}
     </View>
   );
 }
-
-const createStyles = (theme: any) =>
-  StyleSheet.create({
-    h1: { fontWeight: "900", color: theme.colors.primary },
-    sub: { fontWeight: "800", opacity: 0.7 },
-    actionBtn: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: theme.colors.surface },
-    actionText: { fontWeight: "900", fontSize: 12 },
-  });

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { OrthoJoint, RangeOfMotion } from "./types";
 
@@ -38,11 +38,13 @@ export function RangeOfMotionPanel({
   joint,
   value,
   onChange,
+  onCreate,
 }: {
   theme: any;
   joint: OrthoJoint;
   value: RangeOfMotion | null;
   onChange: (next: RangeOfMotion) => void;
+  onCreate: (next: RangeOfMotion) => void;
 }) {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
   const v = value ?? { joint };
@@ -87,6 +89,25 @@ export function RangeOfMotionPanel({
           multiline
         />
       </View>
+
+      <Pressable
+        onPress={() => onCreate({ ...v, joint })}
+        style={{
+          alignSelf: "flex-start",
+          borderWidth: 1,
+          borderColor: theme.colors.primary,
+          backgroundColor: theme.colors.primary,
+          borderRadius: 999,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <MaterialCommunityIcons name="plus" size={16} color={theme.colors.textOnPrimary} />
+        <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Create entry</Text>
+      </Pressable>
     </View>
   );
 }
@@ -171,4 +192,3 @@ const createStyles = (theme: any) =>
     },
     hintText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
   });
-

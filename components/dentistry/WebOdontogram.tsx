@@ -54,6 +54,7 @@ export function WebOdontogram({
   odontogram,
   defaultSelected,
   onSelectionChange,
+  readOnly,
   maxWidth,
   splitUpperLower,
 }: {
@@ -61,6 +62,7 @@ export function WebOdontogram({
   odontogram: OdontogramState;
   defaultSelected?: string[];
   onSelectionChange: (selectedFdi: string[]) => void;
+  readOnly?: boolean;
   maxWidth?: number;
   splitUpperLower?: boolean;
 }) {
@@ -168,6 +170,7 @@ export function WebOdontogram({
               onChange={handleUpperChange}
               teethConditions={conditions}
               showLabels={false}
+              readOnly={!!readOnly}
               styles={{ width: "100%", maxWidth: 520, margin: 0 }}
             />
           </View>
@@ -182,6 +185,7 @@ export function WebOdontogram({
               onChange={handleLowerChange}
               teethConditions={conditions}
               showLabels={false}
+              readOnly={!!readOnly}
               styles={{ width: "100%", maxWidth: 520, margin: 0 }}
             />
           </View>
@@ -194,6 +198,7 @@ export function WebOdontogram({
           onChange={handleChange}
           teethConditions={conditions}
           showLabels
+          readOnly={!!readOnly}
           styles={{ maxWidth: maxWidth ?? 760, width: "100%" }}
         />
       )}

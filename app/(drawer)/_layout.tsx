@@ -18,6 +18,8 @@ type AppRoute =
   | "/dentistry-workspace"
   | "/dermatology-workspace"
   | "/orthopedics-workspace"
+  | "/gynecology-workspace"
+  | "/cardiology-workspace"
   | "/payments"
   | "/services"
   | "/reports"
@@ -44,6 +46,8 @@ const NAV: NavItem[] = [
   { key: "dentistry_workspace", label: "Dentistry (Test)", route: "/dentistry-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
   { key: "dermatology_workspace", label: "Dermatology (Test)", route: "/dermatology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
   { key: "orthopedics_workspace", label: "Orthopedics (Test)", route: "/orthopedics-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
+  { key: "gynecology_workspace", label: "Gynecology (Test)", route: "/gynecology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
+  { key: "cardiology_workspace", label: "Cardiology (Test)", route: "/cardiology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
   { key: "services", label: "Services", route: "/services", visible: ({ role }) => role === "doctor", icon: ({ color, size }) => <Ionicons name="pricetag-outline" size={size} color={color} /> },
   { key: "reports", label: "Reports", route: "/reports", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
   { key: "tasks", label: "Tasks", route: "/tasks", icon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} /> },
@@ -88,6 +92,8 @@ export default function Layout() {
       <Drawer.Screen name="dentistry-workspace" options={{ drawerLabel: "Dentistry (Test)" }} />
       <Drawer.Screen name="dermatology-workspace" options={{ drawerLabel: "Dermatology (Test)" }} />
       <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics (Test)" }} />
+      <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology (Test)" }} />
+      <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology (Test)" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
       <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />

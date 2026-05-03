@@ -1,80 +1,57 @@
 import { PageShell } from "@/components/page_shell";
-import { DentistryState, DentistryTab } from "@/app/(drawer)/consultation/_tabs/observation_specialities/_dentistry";
 import { useTheme } from "@/theme/theme_provider";
 import React from "react";
-import { DentistryWorkspaceTabs, type DentistryWorkspaceTool } from "@/components/dentistry/DentistryWorkspaceTabs";
-import { XrayViewer } from "@/components/dentistry/XrayViewer";
 import { ToothTreatmentPanel } from "@/components/dentistry/ToothTreatmentPanel";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { DentistryTreatmentHistoryCards } from "@/components/dentistry/DentistryTreatmentHistoryCards";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Text, View } from "react-native";
 
 export default function DentistryWorkspacePage() {
   const { theme } = useTheme();
-  const [state, setState] = React.useState<DentistryState>({});
-  const [tool, setTool] = React.useState<DentistryWorkspaceTool>("odontogram");
-  const [xrayDraft, setXrayDraft] = React.useState("");
+  const [state, setState] = React.useState<{
+    activeProcedure?: any;
+    selectedTeeth?: string[];
+    odontogram?: any;
+  }>({});
 
   return (
-    <PageShell title="Dentistry Workspace" subtitle="Testing area for the odontogram, history, and X‑ray viewer.">
-      <DentistryWorkspaceTabs theme={theme} active={tool} onChange={setTool} />
-
-      {tool === "odontogram" ? (
-        <DentistryTab theme={theme} value={state} onChange={setState} />
-      ) : tool === "dental-xray-viewer" ? (
-        <View style={{ gap: 12 }}>
-          <Text style={{ fontWeight: "900", color: theme.colors.primary }}>Dental X‑ray viewer</Text>
-
-          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <TextInput
-              value={xrayDraft}
-              onChangeText={setXrayDraft}
-              placeholder="Paste image URL…"
-              placeholderTextColor={theme.colors.textSecondary}
-              style={{
-                flexGrow: 1,
-                minWidth: 280,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: 10,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                backgroundColor: theme.colors.surface,
-                fontWeight: "800",
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                const uri = xrayDraft.trim();
-                if (!uri) return;
-                setState((s) => ({ ...s, xrays: [...(s.xrays ?? []), uri] }));
-                setXrayDraft("");
-              }}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.colors.primary,
-                borderRadius: 999,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                backgroundColor: theme.colors.surface,
-              }}
-            >
-              <Text style={{ fontWeight: "900", color: theme.colors.primary }}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          <XrayViewer theme={theme} xrays={state.xrays ?? []} onChange={(next) => setState((s) => ({ ...s, xrays: next }))} />
+    <PageShell title="Dentistry Workspace" subtitle="Treatment entry + card history with date filters.">
+      <View style={{ paddingBottom: 8 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 999,
+            alignSelf: "flex-start",
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <MaterialCommunityIcons name="flask-outline" size={14} color={theme.colors.primary} />
+          <Text style={{ fontWeight: "900", color: theme.colors.primary, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase" }}>
+            Medical Lab Workspace
+          </Text>
         </View>
-      ) : tool === "tooth-treatment-panel" ? (
+      </View>
+
+      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 2 }}>Treatment</Text>
+
+      <View style={{ marginTop: 10, gap: 12 }}>
         <ToothTreatmentPanel
           theme={theme}
           selectedTeeth={state.selectedTeeth ?? []}
+          onChangeSelectedTeeth={(next) => setState((s) => ({ ...s, selectedTeeth: next }))}
           activeProcedure={state.activeProcedure ?? "caries"}
           onChangeActiveProcedure={(next) => setState((s) => ({ ...s, activeProcedure: next }))}
           odontogram={state.odontogram ?? {}}
           onChangeOdontogram={(next) => setState((s) => ({ ...s, odontogram: next }))}
         />
-      ) : (
-        <View />
-      )}
+        <DentistryTreatmentHistoryCards theme={theme} odontogram={state.odontogram ?? {}} />
+      </View>
     </PageShell>
   );
 }
