@@ -3,24 +3,22 @@ import { StyleSheet } from "react-native";
 
 export const createTableStyles = (theme: any) =>
   StyleSheet.create({
-    // Card container with border like the old table
     tableCard: {
       backgroundColor: theme.colors.card,
-      borderRadius: 12,
+      borderRadius: 16,
       overflow: "hidden",
       borderWidth: 1,
       borderColor: theme.colors.border,
       marginVertical: 8,
     },
 
-    // Table header with bottom border
     tableHeader: {
       flexDirection: "row",
-      backgroundColor: theme.colors.background,
-      borderBottomWidth: 2,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       paddingVertical: 12,
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
     },
     headerCell: {
       flex: 1,
@@ -28,27 +26,25 @@ export const createTableStyles = (theme: any) =>
       paddingHorizontal: 12,
     },
     headerText: {
-      fontSize: 12,
-      fontWeight: "700",
+      fontSize: 11,
+      fontWeight: "800",
       textTransform: "uppercase",
-      letterSpacing: 0.5,
-      color: theme.colors.text,
+      letterSpacing: 0.4,
+      color: theme.colors.textSecondary,
     },
 
-    // Rows with bottom border and alternate colors
     tableRow: {
       flexDirection: "row",
-      paddingVertical: 16,
-      paddingHorizontal: 8,
+      paddingVertical: 14,
+      paddingHorizontal: 10,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
-      backgroundColor: theme.colors.card, // default background
+      backgroundColor: theme.colors.card,
     },
     tableRowAlt: {
       backgroundColor: theme.colors.backgroundAlt, // alternate row color
     },
 
-    // Cells
     cell: {
       flex: 1,
       justifyContent: "center",
@@ -59,11 +55,10 @@ export const createTableStyles = (theme: any) =>
       color: theme.colors.text,
     },
 
-    // Badge like old status indicators
     badge: {
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 12,
+      borderRadius: 999,
       alignSelf: "flex-start",
     },
     badgeText: {
@@ -72,7 +67,6 @@ export const createTableStyles = (theme: any) =>
       color: theme.colors.textOnPrimary,
     },
 
-    // Empty state
     emptyState: {
       alignItems: "center",
       justifyContent: "center",
@@ -84,7 +78,6 @@ export const createTableStyles = (theme: any) =>
       color: theme.colors.textSecondary,
     },
 
-    // Pagination
     paginationContainer: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -100,10 +93,10 @@ export const createTableStyles = (theme: any) =>
       height: 40,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 8,
+      borderRadius: 10,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      backgroundColor: theme.colors.card,
+      backgroundColor: theme.colors.surface,
     },
     paginationText: {
       fontSize: 14,

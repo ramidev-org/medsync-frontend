@@ -1,26 +1,23 @@
-import { TopBar } from "@/components/top_bar";
+import { ThemedCard } from "@/components/default_card";
+import { PageShell } from "@/components/page_shell";
 import { useTheme } from "@/theme/theme_provider";
-import { ScrollView, StyleSheet, View } from "react-native";
+import React from "react";
+import { Text, View } from "react-native";
 
 export default function ChatsPage() {
   const { theme } = useTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      {/* ===== TOP BAR ===== */}
-      <TopBar theme={theme} />
-
-      {/* ===== PAGE CONTENT ===== */}
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* 🔽 PUT YOUR PAGE CONTENT HERE 🔽 */}
-      </ScrollView>
-    </View>
+    <PageShell title="Chats" subtitle="Messagerie interne (bientot)">
+      <ThemedCard>
+        <View style={{ gap: 10 }}>
+          <Text style={{ fontWeight: "900", color: theme.colors.text }}>Module en cours</Text>
+          <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>
+            Prochaine etape: conversations patient / staff, notifications, et pieces jointes.
+          </Text>
+        </View>
+      </ThemedCard>
+    </PageShell>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    paddingBottom: 32,
-  },
-});

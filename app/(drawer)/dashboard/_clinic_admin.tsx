@@ -56,7 +56,7 @@ export default function ClinicAdminDashboardPage() {
   const router = useRouter();
 
   const { user } = useAuth();
-  const { isClinicAdmin, clinic } = useAppData();
+  const { isClinicAdmin, clinic, subscription } = useAppData();
 
   useEffect(() => {
     if (!user) return;
@@ -197,6 +197,32 @@ export default function ClinicAdminDashboardPage() {
           </View>
         ) : (
           <>
+            <View
+              style={[
+                localStyles.subBanner,
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[localStyles.subBannerTitle, { color: theme.colors.text }]}>
+                  Abonnement
+                </Text>
+                <Text style={[localStyles.subBannerText, { color: theme.colors.textSecondary }]}>
+                  {(subscription?.tier_plan || clinic?.tier_plan || "basic").toString()} •{" "}
+                  {subscription?.status || "missing"}
+                  {subscription?.expires_at ? ` • exp: ${String(subscription.expires_at)}` : ""}
+                </Text>
+              </View>
+              <View style={localStyles.subBannerRight}>
+                <Text style={[localStyles.subBannerSmall, { color: theme.colors.text }]}>
+                  Doctors: {subscription?.current_doctors ?? "—"}/{subscription?.max_doctors ?? "—"}
+                </Text>
+                <Text style={[localStyles.subBannerSmall, { color: theme.colors.text }]}>
+                  Assistants: {subscription?.current_assistants ?? "—"}/{subscription?.max_assistants ?? "—"}
+                </Text>
+              </View>
+            </View>
+
             <View style={localStyles.statsGrid}>
               <StatCard title="Patients" value={counts.patients ?? 0} theme={theme} />
               <StatCard title="Doctors" value={counts.doctors ?? 0} theme={theme} />
@@ -460,6 +486,19 @@ const localStyles = StyleSheet.create({
     borderRadius: 12,
   },
   primaryBtnText: { color: "#fff", fontWeight: "900" },
+  subBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  subBannerTitle: { fontWeight: "900", fontSize: 14 },
+  subBannerText: { marginTop: 4, fontWeight: "800", fontSize: 12 },
+  subBannerRight: { alignItems: "flex-end", gap: 4 },
+  subBannerSmall: { fontWeight: "900", fontSize: 12 },
   outlineBtn: {
     flexDirection: "row",
     gap: 8,

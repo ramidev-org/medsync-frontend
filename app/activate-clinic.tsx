@@ -1,5 +1,3 @@
-"use client";
-
 import { callRpcTokenStatus, invokeEdgeFunction } from "@/services/backend";
 import type {
   ActivateClinicBody,

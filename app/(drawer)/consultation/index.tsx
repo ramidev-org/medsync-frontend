@@ -4,15 +4,17 @@ import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
+import type { ConsultationSession } from "@/services/backend.types";
 
 // Tab pages (separate files)
 import BilansTab from "./_tabs/_bilan";
 import ConsultationHeader from "./_tabs/_consultation_header";
 import DocumentsTab from "./_tabs/_documents";
+import ImagingTab from "./_tabs/_imaging";
 import LettresTab from "./_tabs/_lettres";
 import MaladiesTab from "./_tabs/_maladies";
 import ObservationMedicalTab from "./_tabs/_observation";
@@ -126,6 +128,7 @@ type MainTabKey =
   | "observation"
   | "prescriptions"
   | "lab_tests"
+  | "imaging"
   | "letters"
   | "diagnoses"
   | "symptoms"
@@ -133,10 +136,11 @@ type MainTabKey =
 
 /* ================= UI CONST ================= */
 
-const MAIN_TABS: Array<{ key: MainTabKey; label: string }> = [
+const MAIN_TABS: { key: MainTabKey; label: string }[] = [
   { key: "observation", label: "Observation médicale" },
   { key: "prescriptions", label: "Ordonnances" },
   { key: "lab_tests", label: "Bilans" },
+  { key: "imaging", label: "Imagerie" },
   { key: "letters", label: "Lettres" },
   { key: "diagnoses", label: "Maladies" },
   { key: "symptoms", label: "Symptômes" },
@@ -205,7 +209,7 @@ export default function ConsultationPage() {
         );
         if (cancelled) return;
 
-        setAppointment({
+        const nextAppointment: Appointment = {
           id: String(details.id),
           patient_id: String(details.patient_id),
           time: String(details.scheduled_at),
@@ -224,19 +228,81 @@ export default function ConsultationPage() {
             address: "",
             created_at: "",
           },
-        });
+        };
+        setAppointment(nextAppointment);
 
-        setConsultation({
-          id: `consult_${details.id}`,
-          appointment_id: String(details.id),
-          diagnosis: [],
-          observations: "",
-          treatment_plan: "",
-          follow_up: "",
-          status: "open",
-          vitals: { ...initialVitals },
-          parameters: { ...initialParams },
-        });
+        // Preferred path: open/get consultation session from DB (requires 2026_04_29_full_upgrade.sql)
+        let session: ConsultationSession | null = null;
+        try {
+          session = await callRpc<ConsultationSession, Record<string, unknown>>("rpc_open_consultation", {
+            p_requester_id: user.id,
+            p_appointment_id: id,
+          });
+        } catch {
+          // Backward-compat: DB migration not applied yet
+          session = null;
+        }
+
+        if (session?.consultation?.id) {
+          setConsultation({
+            id: String(session.consultation.id),
+            appointment_id: String(session.consultation.appointment_id),
+            diagnosis: (session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean),
+            observations: String(session.consultation.observations ?? ""),
+            treatment_plan: String(session.consultation.treatment_plan ?? ""),
+            follow_up: String(session.consultation.follow_up ?? ""),
+            status: (session.consultation.status as any) === "closed" ? "closed" : "open",
+            vitals: { ...initialVitals },
+            parameters: { ...initialParams },
+          });
+
+          // Hydrate UI fields
+          setObservations(String(session.consultation.observations ?? ""));
+
+          if (session.parameters) {
+            setParameters({
+              motif_consultation: String(session.parameters.motif_consultation ?? ""),
+              glycemie: String(session.parameters.glycemie ?? ""),
+              hba1c: String(session.parameters.hba1c ?? ""),
+              examen_clinique: String(session.parameters.examen_clinique ?? ""),
+              conclusion: String(session.parameters.conclusion ?? ""),
+            });
+          } else {
+            setParameters({ ...initialParams });
+          }
+
+          // Map DB vitals to existing UI shape
+          if (session.vitals) {
+            const tension =
+              session.vitals.systolic_bp != null && session.vitals.diastolic_bp != null
+                ? `${session.vitals.systolic_bp}/${session.vitals.diastolic_bp}`
+                : "";
+            setVitals({
+              taille_cm: session.vitals.height != null ? String(session.vitals.height) : "",
+              poids_kg: session.vitals.weight != null ? String(session.vitals.weight) : "",
+              tension,
+              temperature_c: session.vitals.temperature != null ? String(session.vitals.temperature) : "",
+            });
+          } else {
+            setVitals({ ...initialVitals });
+          }
+        } else {
+          // Fallback: local-only consultation state (prototype mode)
+          setConsultation({
+            id: `consult_${details.id}`,
+            appointment_id: String(details.id),
+            diagnosis: [],
+            observations: "",
+            treatment_plan: "",
+            follow_up: "",
+            status: "open",
+            vitals: { ...initialVitals },
+            parameters: { ...initialParams },
+          });
+          setObservations("");
+          setVitals({ ...initialVitals });
+          setParameters({ ...initialParams });
+        }
       } catch (e) {
         console.error("Load consultation details error:", e);
         if (!cancelled) {
@@ -281,11 +347,46 @@ export default function ConsultationPage() {
 
     try {
       if (user?.id && appointment?.id) {
-        await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
-          p_requester_id: user.id,
-          p_appointment_id: appointment.id,
-          p_status: "completed",
-        });
+        // Preferred: persist full consultation + close (requires 2026_04_29_full_upgrade.sql)
+        const [sysStr, diaStr] = String(vitals.tension || "").split("/").map((x) => x.trim());
+        const systolic = sysStr && /^\d+$/.test(sysStr) ? Number(sysStr) : null;
+        const diastolic = diaStr && /^\d+$/.test(diaStr) ? Number(diaStr) : null;
+
+        try {
+          await callRpc<boolean, Record<string, unknown>>("rpc_save_consultation", {
+            p_requester_id: user.id,
+            p_consultation_id: consultation.id,
+            p_observations: observations,
+            p_treatment_plan: updated.treatment_plan,
+            p_follow_up: updated.follow_up,
+            p_status: "open",
+            p_vitals: {
+              weight: vitals.poids_kg || null,
+              height: vitals.taille_cm || null,
+              temperature: vitals.temperature_c || null,
+              systolic_bp: systolic,
+              diastolic_bp: diastolic,
+            },
+            p_parameters: {
+              motif_consultation: parameters.motif_consultation || null,
+              glycemie: parameters.glycemie || null,
+              hba1c: parameters.hba1c || null,
+              examen_clinique: parameters.examen_clinique || null,
+              conclusion: parameters.conclusion || null,
+            },
+          });
+          await callRpc<boolean, Record<string, unknown>>("rpc_close_consultation", {
+            p_requester_id: user.id,
+            p_consultation_id: consultation.id,
+          });
+        } catch {
+          // Backward-compat: only update appointment status
+          await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
+            p_requester_id: user.id,
+            p_appointment_id: appointment.id,
+            p_status: "completed",
+          });
+        }
       }
       setAppointment((prev) => (prev ? { ...prev, status: "completed" } : prev));
       setConsultation(updated);
@@ -351,7 +452,15 @@ export default function ConsultationPage() {
       </View>
 
       {/* Content */}
-      <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 30 }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 12,
+          paddingBottom: 30,
+          ...(Platform.OS === "web"
+            ? ({ maxWidth: 1280, width: "100%", alignSelf: "center" } as any)
+            : null),
+        }}
+      >
         {activeMainTab === "observation" && (
           <ObservationMedicalTab
             theme={theme}
@@ -379,6 +488,10 @@ export default function ConsultationPage() {
             consultationId={consultation!.id}
             patientId={appointment!.patient!.id}
           />
+        )}
+
+        {activeMainTab === "imaging" && (
+          <ImagingTab theme={theme} doctorSpeciality={doctorSpeciality} consultationId={consultation?.id} />
         )}
 
         {activeMainTab === "letters" && (
@@ -448,6 +561,16 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 8,
+      ...(Platform.OS === "web"
+        ? ({
+            position: "sticky",
+            top: 64,
+            zIndex: 10,
+            backgroundColor: theme.colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border,
+          } as any)
+        : null),
     },
     mainTab: {
       minWidth: 180,

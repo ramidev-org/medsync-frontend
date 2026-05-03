@@ -1,5 +1,6 @@
 import { BlueField, MetricCard } from "./_ui";
 import { ThemedCard } from "@/components/default_card";
+import { normalizeSpeciality } from "@/config/speciality";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
@@ -158,6 +159,7 @@ const PROTO_PREVIOUS_PARAMS: PreviousParamsRow[] = [
 
 export default function ObservationMedicalTab({
   theme,
+  doctorSpeciality,
   vitals,
   setVitals,
   parameters,
@@ -168,8 +170,17 @@ export default function ObservationMedicalTab({
 }: any) {
   const styles = createStyles(theme);
 
-  // For testing: always show all specialty tabs, regardless of doctor specialty.
-  const enabledSpecialties = React.useMemo(() => SPECIALTY_TABS, []);
+  const isSpecialtyTab = (k: string): k is SpecialtyKey =>
+    k === "gynecology" || k === "cardiology" || k === "dermatology" || k === "dentistry";
+
+  // Only show the specialty sub-tab that matches the doctor's speciality (if any).
+  const enabledSpecialties = React.useMemo(() => {
+    const normalized = normalizeSpeciality(doctorSpeciality ?? null);
+    if (isSpecialtyTab(normalized)) {
+      return SPECIALTY_TABS.filter((t) => t.key === normalized);
+    }
+    return [];
+  }, [doctorSpeciality]);
 
   const leftTabs = React.useMemo(() => {
     return [

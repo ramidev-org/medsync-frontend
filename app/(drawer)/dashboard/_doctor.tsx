@@ -1,6 +1,7 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
+import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
@@ -58,6 +59,7 @@ export default function DoctorDashboardPage() {
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
 
   const { user } = useAuth();
+  const { clinic, subscription } = useAppData();
   const [counts, setCounts] = useState<any | null>(null);
 
   useEffect(() => {
@@ -190,6 +192,22 @@ export default function DoctorDashboardPage() {
             <View style={styles.welcomeCard}>
               <Text style={styles.welcomeTitle}>Bonjour, Dr {user?.fullname} 👋</Text>
               <Text style={styles.welcomeSubtitle}>Bienvenue sur votre tableau de bord</Text>
+            </View>
+
+            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface, padding: 16 }]}>
+              <Text style={[styles.cardTitle, { color: theme.colors.text, marginBottom: 10 }]}>
+                Clinique & Abonnement
+              </Text>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>
+                {clinic?.name ? String(clinic.name) : "—"} •{" "}
+                {(subscription?.tier_plan || clinic?.tier_plan || "basic").toString()} •{" "}
+                {subscription?.status || "missing"}
+              </Text>
+              {!!subscription?.expires_at && (
+                <Text style={{ marginTop: 6, color: theme.colors.textSecondary, fontWeight: "800" }}>
+                  Expiration: {String(subscription.expires_at)}
+                </Text>
+              )}
             </View>
 
             <View style={styles.statsRow}>

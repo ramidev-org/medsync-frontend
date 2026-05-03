@@ -1,5 +1,3 @@
-"use client";
-
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {

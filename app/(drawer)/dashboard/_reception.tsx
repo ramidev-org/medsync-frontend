@@ -1,5 +1,6 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
+import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
@@ -15,6 +16,7 @@ export default function ReceptionDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
+  const { clinic, subscription } = useAppData();
   const router = useRouter();
   const [counts, setCounts] = useState<any | null>(null);
 
@@ -74,6 +76,17 @@ export default function ReceptionDashboardPage() {
                 <SoftActionChip theme={theme} icon="person-add" label="Nouveau patient" onPress={() => router.push("/patients")} />
                 <SoftActionChip theme={theme} icon="cash" label="Encaissement" onPress={() => router.push("/payments")} />
               </View>
+            </View>
+
+            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface, padding: 16 }]}>
+              <Text style={[styles.cardTitle, { color: theme.colors.text, marginBottom: 10 }]}>
+                Clinique & Abonnement
+              </Text>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>
+                {clinic?.name ? String(clinic.name) : "—"} •{" "}
+                {(subscription?.tier_plan || clinic?.tier_plan || "basic").toString()} •{" "}
+                {subscription?.status || "missing"}
+              </Text>
             </View>
 
             {/* Stats */}

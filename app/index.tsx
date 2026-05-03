@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Inter_400Regular,
   Inter_600SemiBold,

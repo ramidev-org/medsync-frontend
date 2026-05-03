@@ -1,5 +1,3 @@
-"use client";
-
 import { useAuth } from "@/contexts/auth_context";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";

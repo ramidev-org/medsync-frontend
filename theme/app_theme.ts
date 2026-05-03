@@ -15,6 +15,8 @@ export const appTheme = {
     info: colors.info,
 
     background: colors.light.background,
+    // alternate backgrounds (tables, zebra rows, etc.)
+    backgroundAlt: colors.light.surfaceVariant,
     surface: colors.light.surface,
     surfaceVariant: colors.light.surfaceVariant,
     card: colors.light.card,
@@ -24,6 +26,13 @@ export const appTheme = {
     muted: colors.light.muted,
     disabled: colors.light.disabled,
     overlay: colors.light.overlay,
+
+    // readable-on-primary helper
+    textOnPrimary: "#FFFFFF",
+
+    // interaction helpers (web hover/pressed)
+    hoverBg: "rgba(37, 99, 235, 0.08)",
+    pressedBg: "rgba(37, 99, 235, 0.16)",
 
     // UI helpers
     primarySoft: colors.accent,
@@ -60,8 +69,5 @@ export const appTheme = {
     xl: 20,
     full: 9999,
   },
-  card: {
-    radius: 12,
-    elevation: 2,
-  },
+  card: { radius: 16, elevation: 2 },
 };

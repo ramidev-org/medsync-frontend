@@ -1,32 +1,38 @@
 import { StyleSheet } from "react-native";
+import { Platform } from "react-native";
 
 export const getDashboardStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
     container: {
-      paddingHorizontal: 24,
-      paddingTop: 24,
-      paddingBottom: 32,
+      paddingHorizontal: 20,
+      paddingTop: 18,
+      paddingBottom: 30,
+      ...(Platform.OS === "web"
+        ? ({
+            maxWidth: 1280,
+            width: "100%",
+            alignSelf: "center",
+          } as any)
+        : null),
     },
-    row: { flexDirection: "row", gap: 24 },
-    leftColumn: { flex: 2, gap: 20 },
-    rightColumn: { flex: 1 },
+    row: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
+    leftColumn: { flex: 2, gap: 14, minWidth: 360 },
+    rightColumn: { flex: 1, minWidth: 320 },
 
     welcomeCard: {
-      backgroundColor: theme.colors.primary,
-      padding: 28,
-      borderRadius: 16,
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 6,
+      backgroundColor: theme.colors.surface,
+      padding: 20,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
-    welcomeTitle: { color: "#fff", fontSize: 24, fontWeight: "700" },
+    welcomeTitle: { color: theme.colors.text, fontSize: 24, fontWeight: "800" },
     welcomeSubtitle: {
-      color: "rgba(255, 255, 255, 0.85)",
+      color: theme.colors.textSecondary,
       marginTop: 6,
-      fontSize: 15,
+      fontSize: 14,
+      fontWeight: "700",
     },
 
     statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 16 },
@@ -35,42 +41,29 @@ export const getDashboardStyles = (theme: any) =>
     tab: {
       paddingHorizontal: 18,
       paddingVertical: 10,
-      borderRadius: 999,
+      borderRadius: 10,
       borderWidth: 2,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 3,
-      elevation: 2,
     },
     tabText: { fontWeight: "700", fontSize: 13 },
 
     chartCard: {
       borderRadius: 16,
-      padding: 24,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 4,
+      padding: 18,
       borderWidth: 1,
       borderColor: theme.colors.border,
       overflow: "hidden",
+      backgroundColor: theme.colors.surface,
     },
-    cardTitle: { fontWeight: "700", fontSize: 18, marginBottom: 20 },
+    cardTitle: { fontWeight: "800", fontSize: 17, marginBottom: 14, color: theme.colors.text },
     chartPlaceholder: { alignItems: "center", width: "100%", overflow: "hidden" },
     chart: { borderRadius: 12, marginVertical: 8 },
 
     doctorCard: {
-      padding: 24,
+      padding: 18,
       borderRadius: 16,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 4,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
     },
     doctorHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
     avatar: {

@@ -1,5 +1,7 @@
 # Production Roadmap (Expo -> Next.js)
 
+> Note (2026-04-30): The experimental `apps/web` Next.js app was removed. The project currently targets **Expo Router for mobile + web** (via `expo start --web` and `expo export --platform web`). Keep this document only as a possible future migration plan.
+
 This project currently runs on Expo Router (React Native + web export). To reach the target production stack, migrate in phases.
 
 ## Target stack

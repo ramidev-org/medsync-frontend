@@ -1,4 +1,4 @@
-// pages/PatientMedicalDocument.tsx
+﻿// pages/PatientMedicalDocument.tsx
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";

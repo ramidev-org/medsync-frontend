@@ -22,7 +22,20 @@ export type RpcName =
   | "rpc_cancel_appointment"
   | "rpc_get_doctor_schedule"
   | "rpc_get_activation_link_status"
-  | "rpc_get_staff_invite_status";
+  | "rpc_get_staff_invite_status"
+  | "rpc_open_consultation"
+  | "rpc_save_consultation"
+  | "rpc_close_consultation"
+  | "rpc_get_consultation"
+  | "rpc_get_consultations"
+  | "rpc_get_clinic_speciality_tools"
+  | "rpc_upsert_clinic_speciality_tool"
+  | "rpc_get_services"
+  | "rpc_upsert_service"
+  | "rpc_set_service_active"
+  | "rpc_get_invoices"
+  | "rpc_get_expenses"
+  | "rpc_create_expense";
 
 const asErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;

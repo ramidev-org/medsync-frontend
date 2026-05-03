@@ -1,26 +1,23 @@
 export const colors = {
-  // Brand palette (aligned with the prototype screenshot)
-  // Slightly "washed" / lower-contrast palette for a calmer UI.
-  // Slightly desaturated ("washed") blues for lower contrast.
-  primary: "#3A6FDB",
-  secondary: "#6E95EA",
-  accent: "#EEF4FF",
+  primary: "#2563EB",
+  secondary: "#4F46E5",
+  accent: "#E0ECFF",
   success: "#2E9B63",
   warning: "#E6A23C",
   error: "#E0565B",
   info: "#4AA3D9",
 
   light: {
-    background: "#F7F9FC",
+    background: "#F4F7FB",
     surface: "#FFFFFF",
-    surfaceVariant: "#F2F5FB",
+    surfaceVariant: "#EDF2FA",
     card: "#FFFFFF",
-    text: "#111827",
-    textSecondary: "#6B7280",
-    border: "#E3E9F2",
-    muted: "#7A8797",
-    disabled: "#C7D0DC",
-    overlay: "rgba(17, 24, 39, 0.35)",
+    text: "#0F172A",
+    textSecondary: "#64748B",
+    border: "#D8E1EE",
+    muted: "#8695AA",
+    disabled: "#C4CEDD",
+    overlay: "rgba(15, 23, 42, 0.35)",
   },
 
   // Medical status colors
