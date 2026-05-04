@@ -1,4 +1,4 @@
-// app/(drawer)/consultation/index.tsx
+﻿// app/(drawer)/consultation/index.tsx
 import { TopBar } from "@/components/top_bar";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,8 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useAuth } from "@/contexts/auth_context";
+import { useAppData } from "@/contexts/appData_context";
 import { callRpc } from "@/services/backend";
 import type { ConsultationSession } from "@/services/backend.types";
+import { printOrdonnanceA4 } from "@/services/print.services";
 
 // Tab pages (separate files)
 import BilansTab from "./_tabs/_bilan";
@@ -123,6 +125,20 @@ interface Prescription {
   signed_by: string;
 }
 
+type SelectedOrdonnanceDrug = {
+  name: string;
+  qty?: string;
+  dose?: string;
+  frequency?: string;
+  duration?: string;
+  instructions?: string;
+};
+
+type SelectedOrdonnance = {
+  ref: string;
+  drugs: SelectedOrdonnanceDrug[];
+};
+
 // Main tab keys are English in code. Visible labels are French (matching the video UI).
 type MainTabKey =
   | "observation"
@@ -137,13 +153,13 @@ type MainTabKey =
 /* ================= UI CONST ================= */
 
 const MAIN_TABS: { key: MainTabKey; label: string }[] = [
-  { key: "observation", label: "Observation médicale" },
+  { key: "observation", label: "Observation mÃ©dicale" },
   { key: "prescriptions", label: "Ordonnances" },
   { key: "lab_tests", label: "Bilans" },
   { key: "imaging", label: "Imagerie" },
   { key: "letters", label: "Lettres" },
   { key: "diagnoses", label: "Maladies" },
-  { key: "symptoms", label: "Symptômes" },
+  { key: "symptoms", label: "SymptÃ´mes" },
   { key: "documents", label: "Documents" },
 ];
 
@@ -171,8 +187,17 @@ export default function ConsultationPage() {
   const styles = createStyles(theme);
 
   const { user } = useAuth();
+  const { clinic } = useAppData();
 
-  const doctor: Partial<Doctor> | null = null; // TODO: Fetch from database when doctor profile is available
+  const doctor: Partial<Doctor> | null = user
+    ? {
+        id: String(user.id || ""),
+        nom_complet: String((user as any).fullname || ""),
+        specialite: String((user as any)?.doctorProfile?.speciality || ""),
+        tarif_consultation: 0,
+        signature_numerique: String((user as any).fullname || ""),
+      }
+    : null;
   const doctorSpeciality =
     (user as any)?.doctorProfile?.speciality ?? null;
 
@@ -189,6 +214,7 @@ export default function ConsultationPage() {
   const [observations, setObservations] = useState("");
 
   const [prescriptions] = useState<Prescription[]>([]);
+  const [selectedOrdonnance, setSelectedOrdonnance] = useState<SelectedOrdonnance | null>(null);
 
   /* ================= LOAD ================= */
 
@@ -327,6 +353,28 @@ export default function ConsultationPage() {
     return prescriptions.find((p) => p.consultation_id === consultation.id) || null;
   }, [consultation, appointment?.patient, prescriptions]);
 
+  const handlePrintOrdonnance = () => {
+    if (!selectedOrdonnance) {
+      Alert.alert("Impression", "Aucune ordonnance sÃ©lectionnÃ©e.");
+      return;
+    }
+
+    printOrdonnanceA4({
+      reference: selectedOrdonnance.ref,
+      clinicName: String((clinic as any)?.name || "Clinique"),
+      clinicAddress: String((clinic as any)?.google_maps_address || (clinic as any)?.address || ""),
+      clinicPhone: String((clinic as any)?.phone || ""),
+      patientName: `${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim(),
+      patientAge: appointment?.patient?.age != null ? `${appointment.patient.age} ans` : "",
+      patientSex: appointment?.patient?.sex === "female" ? "F" : "M",
+      doctorName: (doctor as any)?.nom_complet || "MÃ©decin",
+      doctorSpeciality: (doctor as any)?.specialite || "",
+      doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
+      signedBy: currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin",
+      drugs: selectedOrdonnance.drugs,
+    });
+  };
+
   /* ================= SAVE ================= */
   const save = async () => {
     if (!consultation) return;
@@ -423,14 +471,14 @@ export default function ConsultationPage() {
         title="CONSULTATION"
         stepText="1/4"
         onBack={() => router.push("/visits")}
-        onLastVisit={() => Alert.alert("Dernière visite", "Prototype")}
+        onLastVisit={() => Alert.alert("DerniÃ¨re visite", "Prototype")}
         onSave={save}
-        onClose={() => Alert.alert("Clôturer", "Prototype")}
-        onPrint={() => Alert.alert("Imprimer", "Prototype")}
+        onClose={() => Alert.alert("ClÃ´turer", "Prototype")}
+        onPrint={handlePrintOrdonnance}
         status={appointment?.status === "completed" ? "closed" : "in_consultation"}
         patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
-        patientMeta={`${appointment?.patient?.age ?? "-"} ans • ${appointment?.patient?.sex === "female" ? "F" : "M"} • ID: ${appointment?.patient?.id ?? "-"}`}
-        visitMeta={`Visite #${appointment?.id ?? "-"} • ${appointment?.time ?? ""}`}
+        patientMeta={`${appointment?.patient?.age ?? "-"} ans â€¢ ${appointment?.patient?.sex === "female" ? "F" : "M"} â€¢ ID: ${appointment?.patient?.id ?? "-"}`}
+        visitMeta={`Visite #${appointment?.id ?? "-"} â€¢ ${appointment?.time ?? ""}`}
       />
 
       {/* Main tabs (simplified: wrapped layout, no horizontal scrolling) */}
@@ -478,7 +526,46 @@ export default function ConsultationPage() {
         {activeMainTab === "prescriptions" && (
           <OrdonnancesTab
             theme={theme}
-            signedBy={currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "Médecin"}
+            requesterId={user?.id}
+            signedBy={currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin"}
+            onSelectedPrescriptionChange={(rx) => {
+              if (!rx) return setSelectedOrdonnance(null);
+              setSelectedOrdonnance({
+                ref: String(rx.ref || ""),
+                drugs: (rx.drugs || []).map((d) => ({
+                  name: String(d.name || ""),
+                  qty: d.qty ?? "",
+                  dose: d.dose ?? "",
+                  frequency: d.frequency ?? "",
+                  duration: d.duration ?? "",
+                  instructions: d.instructions ?? "",
+                })),
+              });
+            }}
+            onPrint={(rx) => {
+              if (!rx) return;
+              printOrdonnanceA4({
+                reference: String(rx.ref || ""),
+                clinicName: String((clinic as any)?.name || "Clinique"),
+                clinicAddress: String((clinic as any)?.google_maps_address || (clinic as any)?.address || ""),
+                clinicPhone: String((clinic as any)?.phone || ""),
+                patientName: `${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim(),
+                patientAge: appointment?.patient?.age != null ? `${appointment.patient.age} ans` : "",
+                patientSex: appointment?.patient?.sex === "female" ? "F" : "M",
+                doctorName: (doctor as any)?.nom_complet || "MÃ©decin",
+      doctorSpeciality: (doctor as any)?.specialite || "",
+      doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
+      signedBy: currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin",
+                drugs: (rx.drugs || []).map((d) => ({
+                  name: String(d.name || ""),
+                  qty: d.qty ?? "",
+                  dose: d.dose ?? "",
+                  frequency: d.frequency ?? "",
+                  duration: d.duration ?? "",
+                  instructions: d.instructions ?? "",
+                })),
+              });
+            }}
           />
         )}
 
@@ -611,5 +698,10 @@ const createStyles = (theme: any) =>
     },
     
   });
+
+
+
+
+
 
 

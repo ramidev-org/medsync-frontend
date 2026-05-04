@@ -6,7 +6,7 @@ import { Fontisto, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 type AppRoute =
@@ -48,14 +48,10 @@ const NAV: NavItem[] = [
   { key: "orthopedics_workspace", label: "Orthopedics (Test)", route: "/orthopedics-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
   { key: "gynecology_workspace", label: "Gynecology (Test)", route: "/gynecology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
   { key: "cardiology_workspace", label: "Cardiology (Test)", route: "/cardiology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
-  { key: "services", label: "Services", route: "/services", visible: ({ role }) => role === "doctor", icon: ({ color, size }) => <Ionicons name="pricetag-outline" size={size} color={color} /> },
   { key: "reports", label: "Reports", route: "/reports", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
-  { key: "tasks", label: "Tasks", route: "/tasks", icon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} /> },
   { key: "inventory", label: "Inventory", route: "/inventory", icon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> },
   { key: "payments", label: "Billing", route: "/payments", visible: ({ role, isClinicAdmin }) => role === "assistant" || (role === "doctor" && isClinicAdmin), icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
   { key: "users", label: "Team", route: "/users", visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin, icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} /> },
-  { key: "settings", label: "Settings", route: "/settings", icon: ({ color, size }) => <MaterialCommunityIcons name="cog-outline" size={size} color={color} /> },
-  { key: "profile", label: "Profile", route: "/profile", icon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> },
 ];
 
 export default function Layout() {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Odontogram, type ToothDetail } from "react-odontogram";
 
 import { OdontogramState, PROCEDURES, ProcedureKey } from "./odontogram";
@@ -67,6 +67,7 @@ export function WebOdontogram({
   splitUpperLower?: boolean;
 }) {
   const styles = React.useMemo(() => createStyles(), []);
+  const [half, setHalf] = React.useState<"upper" | "lower">("upper");
 
   React.useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -81,6 +82,22 @@ export function WebOdontogram({
   const conditions = React.useMemo(() => buildConditions(odontogram), [odontogram]);
 
   const toFdi = (t: ToothDetail) => (t.id || "").replace(/^teeth-/, "");
+  const normalizeUpperFdi = (fdi: string) => {
+    if (fdi.length !== 2) return fdi;
+    const q = fdi[0];
+    const n = fdi[1];
+    if (q === "3") return `2${n}`;
+    if (q === "4") return `1${n}`;
+    return fdi;
+  };
+  const normalizeLowerFdi = (fdi: string) => {
+    if (fdi.length !== 2) return fdi;
+    const q = fdi[0];
+    const n = fdi[1];
+    if (q === "1") return `4${n}`;
+    if (q === "2") return `3${n}`;
+    return fdi;
+  };
 
   const handleChange = (selected: ToothDetail[]) => {
     onSelectionChange((selected ?? []).map(toFdi).filter(Boolean));
@@ -124,25 +141,18 @@ export function WebOdontogram({
   }, [upperDefault, lowerDefault]);
 
   const handleUpperChange = (selected: ToothDetail[]) => {
-    const upper = (selected ?? []).map(toFdi).filter(Boolean);
+    const upper = (selected ?? []).map(toFdi).filter(Boolean).map(normalizeUpperFdi);
     upperRef.current = upper;
-    onSelectionChange([...upper, ...lowerRef.current]);
+    onSelectionChange(Array.from(new Set([...upper, ...lowerRef.current])));
   };
 
   const handleLowerChange = (selected: ToothDetail[]) => {
     // react-odontogram reuses quadrant indices for showHalf="lower" (1/2 instead of 3/4).
     // Remap 1x->4x and 2x->3x to match real FDI.
     const raw = (selected ?? []).map(toFdi).filter(Boolean);
-    const remapped = raw.map((fdi) => {
-      if (fdi.length !== 2) return fdi;
-      const q = fdi[0];
-      const n = fdi[1];
-      if (q === "1") return `4${n}`;
-      if (q === "2") return `3${n}`;
-      return fdi;
-    });
+    const remapped = raw.map(normalizeLowerFdi);
     lowerRef.current = remapped;
-    onSelectionChange([...upperRef.current, ...remapped]);
+    onSelectionChange(Array.from(new Set([...upperRef.current, ...remapped])));
   };
 
   return (
@@ -152,41 +162,40 @@ export function WebOdontogram({
           style={{
             width: "100%",
             maxWidth: maxWidth ?? 760,
-            flexDirection: "row",
-            gap: 16,
-            flexWrap: "nowrap",
-            justifyContent: "space-between",
-            ...(Platform.OS === "web" ? ({ overflowX: "auto" } as any) : null),
+            gap: 10,
           }}
         >
-          <View style={{ flex: 1, minWidth: 420 }}>
-            <Text style={styles.archLabel}>Upper (Maxillary)</Text>
-            <Odontogram
-              key={`upper:${upperDefault.slice().sort().join("|")}`}
-              theme={themeMode}
-              showHalf="upper"
-              name="teeth-upper"
-              defaultSelected={upperDefault}
-              onChange={handleUpperChange}
-              teethConditions={conditions}
-              showLabels={false}
-              readOnly={!!readOnly}
-              styles={{ width: "100%", maxWidth: 520, margin: 0 }}
-            />
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => setHalf("upper")}
+              style={[styles.switchBtn, half === "upper" && styles.switchBtnActive]}
+            >
+              <Text style={[styles.switchText, half === "upper" && styles.switchTextActive]}>Upper</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setHalf("lower")}
+              style={[styles.switchBtn, half === "lower" && styles.switchBtnActive]}
+            >
+              <Text style={[styles.switchText, half === "lower" && styles.switchTextActive]}>Lower</Text>
+            </TouchableOpacity>
           </View>
-          <View style={{ flex: 1, minWidth: 420 }}>
-            <Text style={styles.archLabel}>Lower (Mandibular)</Text>
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <Text style={styles.archLabel}>{half === "upper" ? "Upper (Maxillary)" : "Lower (Mandibular)"}</Text>
             <Odontogram
-              key={`lower:${lowerDefault.slice().sort().join("|")}`}
+              key={
+                half === "upper"
+                  ? `upper:${upperDefault.slice().sort().join("|")}`
+                  : `lower:${lowerDefault.slice().sort().join("|")}`
+              }
               theme={themeMode}
-              showHalf="lower"
-              name="teeth-lower"
-              defaultSelected={lowerDefault}
-              onChange={handleLowerChange}
+              showHalf={half}
+              name={`teeth-${half}`}
+              defaultSelected={half === "upper" ? upperDefault : lowerDefault}
+              onChange={half === "upper" ? handleUpperChange : handleLowerChange}
               teethConditions={conditions}
               showLabels={false}
               readOnly={!!readOnly}
-              styles={{ width: "100%", maxWidth: 520, margin: 0 }}
+              styles={{ width: "100%", maxWidth: 500, margin: "0 auto" as any }}
             />
           </View>
         </View>
@@ -209,4 +218,24 @@ export function WebOdontogram({
 const createStyles = () =>
   StyleSheet.create({
     archLabel: { fontWeight: "900", opacity: 0.8, marginBottom: 8 },
+    switchBtn: {
+      borderWidth: 1,
+      borderColor: "rgba(0,0,0,0.15)",
+      backgroundColor: "#fff",
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+    },
+    switchBtnActive: {
+      borderColor: "#2563EB",
+      backgroundColor: "rgba(37,99,235,0.12)",
+    },
+    switchText: {
+      fontWeight: "900",
+      fontSize: 12,
+      color: "rgba(0,0,0,0.75)",
+    },
+    switchTextActive: {
+      color: "#1D4ED8",
+    },
   });

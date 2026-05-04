@@ -1,12 +1,12 @@
-import { PageShell } from "@/components/page_shell";
+﻿import { PageShell } from "@/components/page_shell";
 import { JointSelectorForm } from "@/components/orthopedics/JointSelectorForm";
 import { RangeOfMotionPanel } from "@/components/orthopedics/RangeOfMotionPanel";
 import { RomHistoryCards } from "@/components/orthopedics/RomHistoryCards";
 import type { OrthopedicsWorkspaceState } from "@/components/orthopedics/types";
-import { WorkspaceHero, WorkspaceSurface } from "@/components/workspaces/WorkspaceScaffold";
 import { useTheme } from "@/theme/theme_provider";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
+import { Text, View } from "react-native";
 
 export default function OrthopedicsWorkspacePage() {
   const { theme } = useTheme();
@@ -17,16 +17,31 @@ export default function OrthopedicsWorkspacePage() {
   const romValue = state.rom?.[selectedJoint] ?? null;
 
   return (
-    <PageShell>
-      <WorkspaceHero
-        theme={theme}
-        badge="Medical Lab Workspace"
-        icon={<MaterialCommunityIcons name="flask-outline" size={14} color={theme.colors.primary} />}
-        title="Orthopedics Workspace"
-        subtitle="ROM entry + card history with date filters."
-      />
+    <PageShell title="Orthopedics Workspace" subtitle="Simple ROM capture and history review.">
+      <View style={{ paddingBottom: 8 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 999,
+            alignSelf: "flex-start",
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <MaterialCommunityIcons name="medical-bag" size={14} color={theme.colors.primary} />
+          <Text style={{ fontWeight: "900", color: theme.colors.primary, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase" }}>
+            Orthopedics Workspace
+          </Text>
+        </View>
+      </View>
 
-      <WorkspaceSurface theme={theme} title="Joint Selection" subtitle="Select the joint to drive charting and ROM entries.">
+      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 2 }}>Joint Selection</Text>
+      <View style={{ marginTop: 12 }}>
         <JointSelectorForm
           theme={theme}
           selected={selectedJoint}
@@ -34,9 +49,10 @@ export default function OrthopedicsWorkspacePage() {
           onSelect={(next) => setState((s) => ({ ...s, selectedJoint: next }))}
           onChangeNote={setJointNote}
         />
-      </WorkspaceSurface>
+      </View>
 
-      <WorkspaceSurface theme={theme} title="ROM" subtitle="Enter ROM values then create an entry.">
+      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 16 }}>Range Of Motion</Text>
+      <View style={{ marginTop: 10 }}>
         <RangeOfMotionPanel
           theme={theme}
           joint={selectedJoint}
@@ -58,11 +74,12 @@ export default function OrthopedicsWorkspacePage() {
             }))
           }
         />
-      </WorkspaceSurface>
+      </View>
 
-      <WorkspaceSurface theme={theme} title="ROM History" subtitle="Cards + date filters for recorded ROM values.">
+      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 16 }}>ROM History</Text>
+      <View style={{ marginTop: 10 }}>
         <RomHistoryCards theme={theme} entries={state.romLog ?? []} />
-      </WorkspaceSurface>
+      </View>
     </PageShell>
   );
 }

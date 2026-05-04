@@ -3,6 +3,8 @@ import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 
 import { PROCEDURES, type ProcedureKey } from "./odontogram";
 
+const PICKER_KEYS: ProcedureKey[] = ["healthy", "caries", "filling", "crown", "root_canal", "extraction", "implant"];
+
 export function ProcedurePicker({
   theme,
   value,
@@ -14,7 +16,11 @@ export function ProcedurePicker({
 }) {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
   const [open, setOpen] = React.useState(false);
-  const current = PROCEDURES.find((p) => p.key === value) ?? PROCEDURES[0]!;
+  const pickerProcedures = React.useMemo(
+    () => PROCEDURES.filter((p) => PICKER_KEYS.includes(p.key)),
+    [],
+  );
+  const current = pickerProcedures.find((p) => p.key === value) ?? pickerProcedures[0]!;
 
   return (
     <>
@@ -34,7 +40,7 @@ export function ProcedurePicker({
           <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.title, { color: theme.colors.primary }]}>Select procedure</Text>
             <ScrollView contentContainerStyle={{ paddingVertical: 6 }}>
-              {PROCEDURES.map((p) => {
+              {pickerProcedures.map((p) => {
                 const active = p.key === value;
                 return (
                   <TouchableOpacity

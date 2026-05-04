@@ -135,10 +135,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                     </View>
                   </View>
                   <View style={styles.metaGrid}>
-                    <Text style={styles.metaValue}>Plan: {subscription?.tier_plan || clinic?.tier_plan || "basic"}</Text>
-                    <Text style={styles.metaValue}>
-                      Staff: {subscription?.current_doctors ?? 0}/{subscription?.max_doctors ?? "—"} doctors • {subscription?.current_assistants ?? 0}/{subscription?.max_assistants ?? "—"} assistants
-                    </Text>
+                
                   </View>
                 </View>
                 <Pressable style={styles.avatarMenuItem} onPress={() => { setMenuVisible(false); router.push("/profile"); }}>
