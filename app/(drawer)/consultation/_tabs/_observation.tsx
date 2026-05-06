@@ -167,6 +167,8 @@ export default function ObservationMedicalTab({
   observations,
   setObservations,
   onSave,
+  workspaceMode,
+  initialLeftTab,
 }: any) {
   const styles = createStyles(theme);
 
@@ -183,13 +185,22 @@ export default function ObservationMedicalTab({
   }, [doctorSpeciality]);
 
   const leftTabs = React.useMemo(() => {
-    return [
+    const specialtyOnly =
+      !!workspaceMode && enabledSpecialties.length > 0
+        ? enabledSpecialties.map((x) => ({ key: x.key as LeftTabKey, label: x.label }))
+        : null;
+
+    return specialtyOnly ?? [
       ...BASE_LEFT_TABS,
       ...enabledSpecialties.map((x) => ({ key: x.key as LeftTabKey, label: x.label })),
     ];
-  }, [enabledSpecialties]);
+  }, [enabledSpecialties, workspaceMode]);
 
-  const [leftTab, setLeftTab] = React.useState<LeftTabKey>("label");
+  const [leftTab, setLeftTab] = React.useState<LeftTabKey>(() => {
+    if (typeof initialLeftTab === "string") return initialLeftTab as any;
+    if (workspaceMode && enabledSpecialties.length > 0) return enabledSpecialties[0].key as any;
+    return "label";
+  });
   const [rightTab, setRightTab] = React.useState<RightTabKey>("current_parameters");
 
   // Modals

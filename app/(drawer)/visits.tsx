@@ -5,6 +5,7 @@ import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
+import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -387,8 +388,9 @@ export default function VisitsPage() {
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
       <TopBar theme={theme} />
 
-      <View style={styles.row}>
-        <View style={styles.left}>
+      <View style={styles.container}>
+        <View style={styles.row}>
+          <View style={styles.left}>
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
             <View style={styles.filterSection}>
               <View style={styles.searchBox}>
@@ -502,10 +504,10 @@ export default function VisitsPage() {
               </ScrollView>
             </View>
           </ScrollView>
-        </View>
+          </View>
 
-        <View style={styles.right}>
-          <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+          <View style={styles.right}>
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
             <ThemedCard>
               <Text style={styles.waitingTitle}>Salle d&apos;attente</Text>
               <Text style={styles.waitingSubtitle}>Patients en attente ou en consultation</Text>
@@ -528,7 +530,8 @@ export default function VisitsPage() {
                 )}
               </View>
             </ThemedCard>
-          </ScrollView>
+            </ScrollView>
+          </View>
         </View>
       </View>
 
@@ -641,9 +644,15 @@ function statusColor(status: string): ViewStyle {
 const createStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
+    container: {
+      paddingHorizontal: PAGE_GUTTER,
+      paddingTop: 18,
+      paddingBottom: 30,
+      ...getWebContainerFill(),
+    },
     row: { flexDirection: "row" },
-    left: { flex: 2, padding: 24 },
-    right: { flex: 1, padding: 20 },
+    left: { flex: 2, padding: 0 },
+    right: { flex: 1, padding: 0 },
 
     filterSection: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
     searchBox: {

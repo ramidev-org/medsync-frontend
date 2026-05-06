@@ -1,46 +1,50 @@
 import { PageShell } from "@/components/page_shell";
-import { DermatologyLesionLog } from "@/components/dermatology/DermatologyLesionLog";
-import type { DermatologyWorkspaceState } from "@/components/dermatology/types";
 import { useTheme } from "@/theme/theme_provider";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Text, View } from "react-native";
+import { Alert, View } from "react-native";
+import ObservationMedicalTab from "./consultation/_tabs/_observation";
+
+const initialVitals = {
+  taille_cm: "",
+  poids_kg: "",
+  tension: "",
+  temperature_c: "",
+};
+
+const initialParams = {
+  motif_consultation: "",
+  glycemie: "",
+  hba1c: "",
+  examen_clinique: "",
+  conclusion: "",
+};
 
 export default function DermatologyWorkspacePage() {
   const { theme } = useTheme();
-  const [state, setState] = React.useState<DermatologyWorkspaceState>({
-    side: "front",
-    lesions: [],
-  });
+  const [vitals, setVitals] = React.useState(initialVitals);
+  const [parameters, setParameters] = React.useState(initialParams);
+  const [observations, setObservations] = React.useState("");
 
   return (
-    <PageShell title="Dermatology Workspace" subtitle="Quick lesion entry and history review.">
-      <View style={{ paddingBottom: 8 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 999,
-            alignSelf: "flex-start",
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <MaterialCommunityIcons name="medical-bag" size={14} color={theme.colors.primary} />
-          <Text style={{ fontWeight: "900", color: theme.colors.primary, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase" }}>
-            Dermatology Workspace
-          </Text>
-        </View>
-      </View>
-
-      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 2 }}>Lesions</Text>
-      <View style={{ marginTop: 12 }}>
-        <DermatologyLesionLog theme={theme} value={state.lesions ?? []} onChange={(next) => setState((s) => ({ ...s, lesions: next }))} />
+    <PageShell title="Dermatology Workspace" subtitle="Observation capture (dermatology).">
+      <View style={{ marginTop: 10 }}>
+        <ObservationMedicalTab
+          theme={theme}
+          doctorSpeciality="dermatologie"
+          vitals={vitals}
+          setVitals={setVitals}
+          parameters={parameters}
+          setParameters={setParameters}
+          observations={observations}
+          setObservations={setObservations}
+          onSave={() =>
+            Alert.alert("Saved", "Workspace note saved locally (no appointment linked yet).")
+          }
+          workspaceMode
+          initialLeftTab="dermatology"
+        />
       </View>
     </PageShell>
   );
 }
+

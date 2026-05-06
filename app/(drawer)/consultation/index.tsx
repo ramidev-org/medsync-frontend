@@ -1,5 +1,6 @@
 ﻿// app/(drawer)/consultation/index.tsx
 import { TopBar } from "@/components/top_bar";
+import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -502,11 +503,10 @@ export default function ConsultationPage() {
       {/* Content */}
       <ScrollView
         contentContainerStyle={{
-          padding: 12,
+          paddingHorizontal: PAGE_GUTTER,
+          paddingTop: 12,
           paddingBottom: 30,
-          ...(Platform.OS === "web"
-            ? ({ maxWidth: 1280, width: "100%", alignSelf: "center" } as any)
-            : null),
+          ...getWebContainerFill(),
         }}
       >
         {activeMainTab === "observation" && (

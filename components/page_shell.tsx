@@ -1,6 +1,7 @@
 import React, { type ReactNode } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View, type ScrollViewProps, type ViewStyle } from "react-native";
 import { TopBar } from "@/components/top_bar";
+import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 
 type Props = {
@@ -47,16 +48,10 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
     container: {
-      paddingHorizontal: 20,
+      paddingHorizontal: PAGE_GUTTER,
       paddingTop: 18,
       paddingBottom: 34,
-      ...(Platform.OS === "web"
-        ? ({
-            maxWidth: 1280,
-            width: "100%",
-            alignSelf: "center",
-          } as any)
-        : null),
+      ...getWebContainerFill(),
     },
     headerCard: {
       borderWidth: 1,

@@ -1,22 +1,16 @@
+import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { StyleSheet } from "react-native";
-import { Platform } from "react-native";
 
 export const getDashboardStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
     container: {
-      paddingHorizontal: 20,
+      paddingHorizontal: PAGE_GUTTER,
       paddingTop: 18,
       paddingBottom: 30,
-      ...(Platform.OS === "web"
-        ? ({
-            maxWidth: 1280,
-            width: "100%",
-            alignSelf: "center",
-          } as any)
-        : null),
+      ...getWebContainerFill(),
     },
-    row: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
+    row: { flexDirection: "row", gap: 18, flexWrap: "wrap" },
     leftColumn: { flex: 2, gap: 14, minWidth: 360 },
     rightColumn: { flex: 1, minWidth: 320 },
 
@@ -35,9 +29,9 @@ export const getDashboardStyles = (theme: any) =>
       fontWeight: "700",
     },
 
-    statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 16 },
+    statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 14 },
 
-    tabs: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
+    tabs: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
     tab: {
       paddingHorizontal: 18,
       paddingVertical: 10,

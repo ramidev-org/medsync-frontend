@@ -2,6 +2,7 @@ import PatientForm from "@/components/new_patient";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
+import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -182,8 +183,8 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: 20,
-      ...(Platform.OS === "web" ? ({ maxWidth: 1280, width: "100%", alignSelf: "center" } as any) : null),
+      paddingHorizontal: PAGE_GUTTER,
+      ...getWebContainerFill(),
     },
     rightSection: { flexDirection: "row", alignItems: "center", gap: 10 },
     primaryBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: theme.colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
