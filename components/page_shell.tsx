@@ -11,9 +11,10 @@ type Props = {
   children: ReactNode;
   contentStyle?: ViewStyle;
   refreshControl?: ScrollViewProps["refreshControl"];
+  scrollable?: boolean;
 };
 
-export function PageShell({ title, subtitle, actions, children, contentStyle, refreshControl }: Props) {
+export function PageShell({ title, subtitle, actions, children, contentStyle, refreshControl, scrollable = true }: Props) {
   const { theme } = useTheme();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
@@ -21,25 +22,43 @@ export function PageShell({ title, subtitle, actions, children, contentStyle, re
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
       <TopBar theme={theme} />
 
-      <ScrollView
-        contentContainerStyle={[styles.container, contentStyle]}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={refreshControl}
-      >
-        {(!!title || !!subtitle || !!actions) && (
-          <View style={styles.headerCard}>
-            <View style={styles.headerRow}>
-            <View style={{ flex: 1 }}>
-              {!!title && <Text style={styles.title}>{title}</Text>}
-              {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      {scrollable ? (
+        <ScrollView
+          contentContainerStyle={[styles.container, contentStyle]}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
+        >
+          {(!!title || !!subtitle || !!actions) && (
+            <View style={styles.headerCard}>
+              <View style={styles.headerRow}>
+              <View style={{ flex: 1 }}>
+                {!!title && <Text style={styles.title}>{title}</Text>}
+                {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+              </View>
+              {!!actions && <View style={styles.actions}>{actions}</View>}
             </View>
-            {!!actions && <View style={styles.actions}>{actions}</View>}
-          </View>
-          </View>
-        )}
+            </View>
+          )}
 
-        {children}
-      </ScrollView>
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[styles.containerStatic, contentStyle]}>
+          {(!!title || !!subtitle || !!actions) && (
+            <View style={styles.headerCard}>
+              <View style={styles.headerRow}>
+              <View style={{ flex: 1 }}>
+                {!!title && <Text style={styles.title}>{title}</Text>}
+                {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+              </View>
+              {!!actions && <View style={styles.actions}>{actions}</View>}
+            </View>
+            </View>
+          )}
+
+          {children}
+        </View>
+      )}
     </View>
   );
 }
@@ -51,6 +70,13 @@ const createStyles = (theme: any) =>
       paddingHorizontal: PAGE_GUTTER,
       paddingTop: 18,
       paddingBottom: 34,
+      ...getWebContainerFill(),
+    },
+    containerStatic: {
+      flex: 1,
+      paddingHorizontal: PAGE_GUTTER,
+      paddingTop: 18,
+      paddingBottom: 14,
       ...getWebContainerFill(),
     },
     headerCard: {

@@ -1,10 +1,36 @@
 import { PageShell } from "@/components/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import type { InventoryItemRow } from "@/services/backend.types";
-import { getInventory } from "@/services/inventory.services";
+import { adjustInventory, getInventory, upsertInventoryItem } from "@/services/inventory.services";
 import { useTheme } from "@/theme/theme_provider";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+type AddItemForm = {
+  name: string;
+  sku: string;
+  unit: string;
+  threshold: string;
+  notes: string;
+};
+
+const emptyAddItemForm = (): AddItemForm => ({
+  name: "",
+  sku: "",
+  unit: "",
+  threshold: "0",
+  notes: "",
+});
 
 export default function InventoryPage() {
   const { theme } = useTheme();
@@ -14,13 +40,29 @@ export default function InventoryPage() {
   const [loading, setLoading] = React.useState(true);
   const [migrationMissing, setMigrationMissing] = React.useState(false);
   const [items, setItems] = React.useState<InventoryItemRow[]>([]);
+  const [search, setSearch] = React.useState("");
+
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [addSaving, setAddSaving] = React.useState(false);
+  const [addForm, setAddForm] = React.useState<AddItemForm>(emptyAddItemForm());
+
+  const [adjustOpen, setAdjustOpen] = React.useState(false);
+  const [adjustSaving, setAdjustSaving] = React.useState(false);
+  const [selected, setSelected] = React.useState<InventoryItemRow | null>(null);
+  const [adjustDelta, setAdjustDelta] = React.useState("1");
+  const [adjustReason, setAdjustReason] = React.useState("");
 
   const refresh = React.useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
       setMigrationMissing(false);
-      const res = await getInventory({ requesterId: user.id, page: 1, itemsPerPage: 100 });
+      const res = await getInventory({
+        requesterId: user.id,
+        search: search.trim() || undefined,
+        page: 1,
+        itemsPerPage: 120,
+      });
       setItems(res?.items ?? []);
     } catch (e: any) {
       const msg = String(e?.message ?? "");
@@ -34,14 +76,89 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [search, user?.id]);
 
   React.useEffect(() => {
     refresh();
   }, [refresh]);
 
+  const stats = React.useMemo(() => {
+    const totalItems = items.length;
+    const lowStock = items.filter(
+      (item) => Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0),
+    ).length;
+    const healthy = totalItems - lowStock;
+    return { totalItems, lowStock, healthy };
+  }, [items]);
+
+  const onOpenAdjust = (item: InventoryItemRow) => {
+    setSelected(item);
+    setAdjustDelta("1");
+    setAdjustReason("");
+    setAdjustOpen(true);
+  };
+
+  const onSaveAdd = async () => {
+    if (!user?.id) return;
+    if (!addForm.name.trim()) {
+      Alert.alert("Validation", "Item name is required.");
+      return;
+    }
+    setAddSaving(true);
+    try {
+      await upsertInventoryItem({
+        requesterId: user.id,
+        name: addForm.name.trim(),
+        sku: addForm.sku.trim() || null,
+        unit: addForm.unit.trim() || null,
+        reorderThreshold: toNumOrNull(addForm.threshold) ?? 0,
+        notes: addForm.notes.trim() || null,
+      });
+      setAddOpen(false);
+      setAddForm(emptyAddItemForm());
+      await refresh();
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to save item");
+    } finally {
+      setAddSaving(false);
+    }
+  };
+
+  const onApplyAdjust = async (sign: 1 | -1) => {
+    if (!user?.id || !selected?.id) return;
+    const value = Math.abs(toNumOrNull(adjustDelta) ?? 0);
+    if (value <= 0) {
+      Alert.alert("Validation", "Enter a quantity greater than 0.");
+      return;
+    }
+    setAdjustSaving(true);
+    try {
+      await adjustInventory({
+        requesterId: user.id,
+        itemId: selected.id,
+        delta: sign * value,
+        reason: adjustReason.trim() || null,
+      });
+      setAdjustOpen(false);
+      await refresh();
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to adjust stock");
+    } finally {
+      setAdjustSaving(false);
+    }
+  };
+
   return (
-    <PageShell title="Clinic Inventory" subtitle="Keep stock healthy and avoid interruptions in treatment flow.">
+    <PageShell
+      title="Clinic Inventory"
+      subtitle="Stock control, reorder safety, and item-level adjustments."
+      actions={
+        <TouchableOpacity style={styles.primaryBtn} onPress={() => setAddOpen(true)}>
+          <Ionicons name="add-outline" size={16} color="#fff" />
+          <Text style={styles.primaryBtnText}>Add Item</Text>
+        </TouchableOpacity>
+      }
+    >
       {migrationMissing && (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>
@@ -49,33 +166,190 @@ export default function InventoryPage() {
           </Text>
         </View>
       )}
-      <View style={styles.table}>
-        <View style={[styles.row, styles.header]}>
-          <Text style={styles.h}>Item</Text>
-          <Text style={styles.h}>Available</Text>
-          <Text style={styles.h}>Threshold</Text>
-          <Text style={styles.h}>Status</Text>
-        </View>
-        {!loading && items.length === 0 && (
-          <View style={styles.row}>
-            <Text style={[styles.cell, { flex: 4, color: theme.colors.textSecondary }]}>No inventory items yet.</Text>
-          </View>
-        )}
-        {items.map((row) => {
-          const low = Number(row.qty_on_hand ?? 0) < Number(row.reorder_threshold ?? 0);
-          return (
-            <View key={row.id} style={styles.row}>
-              <Text style={styles.cell}>{row.name}</Text>
-              <Text style={styles.cell}>{row.qty_on_hand}</Text>
-              <Text style={styles.cell}>{row.reorder_threshold}</Text>
-              <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "900" }]}>
-                {low ? "Low Stock" : "Healthy"}
-              </Text>
-            </View>
-          );
-        })}
+
+      <View style={styles.statsRow}>
+        <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
+        <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
+        <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
       </View>
+
+      <View style={styles.controlsRow}>
+        <View style={styles.searchWrap}>
+          <Ionicons name="search-outline" size={16} color={theme.colors.textSecondary} />
+          <TextInput
+            placeholder="Search by name or SKU"
+            placeholderTextColor={theme.colors.textSecondary}
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+          />
+        </View>
+        <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
+          <Ionicons name="refresh" size={16} color={theme.colors.text} />
+          <Text style={styles.secondaryBtnText}>{loading ? "Loading..." : "Refresh"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.listWrap}>
+        <View style={styles.headerRow}>
+          <Text style={styles.hCell}>Item</Text>
+          <Text style={styles.hCell}>Stock</Text>
+          <Text style={styles.hCell}>Threshold</Text>
+          <Text style={styles.hCell}>State</Text>
+          <Text style={styles.hCell}>Actions</Text>
+        </View>
+
+        <ScrollView>
+          {items.length === 0 && !loading && (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>No inventory items found.</Text>
+            </View>
+          )}
+          {items.map((item) => {
+            const low = Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0);
+            return (
+              <View key={item.id} style={styles.itemRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.itemTitle}>{item.name}</Text>
+                  <Text style={styles.itemSub}>
+                    {(item.sku && `SKU: ${item.sku}`) || "No SKU"}{item.unit ? ` • Unit: ${item.unit}` : ""}
+                  </Text>
+                </View>
+                <Text style={styles.cell}>{String(item.qty_on_hand ?? 0)}</Text>
+                <Text style={styles.cell}>{String(item.reorder_threshold ?? 0)}</Text>
+                <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "900" }]}>
+                  {low ? "Low" : "Healthy"}
+                </Text>
+                <TouchableOpacity style={styles.rowActionBtn} onPress={() => onOpenAdjust(item)}>
+                  <Ionicons name="swap-horizontal-outline" size={16} color={theme.colors.text} />
+                  <Text style={styles.rowActionText}>Adjust</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <Modal visible={addOpen} transparent animationType="fade" onRequestClose={() => setAddOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add Inventory Item</Text>
+            <Input label="Item Name *" value={addForm.name} onChangeText={(v) => setAddForm((p) => ({ ...p, name: v }))} theme={theme} />
+            <Input label="SKU" value={addForm.sku} onChangeText={(v) => setAddForm((p) => ({ ...p, sku: v }))} theme={theme} />
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Input label="Unit" value={addForm.unit} onChangeText={(v) => setAddForm((p) => ({ ...p, unit: v }))} theme={theme} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Input
+                  label="Reorder Threshold"
+                  value={addForm.threshold}
+                  onChangeText={(v) => setAddForm((p) => ({ ...p, threshold: v }))}
+                  theme={theme}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <Input label="Notes" value={addForm.notes} onChangeText={(v) => setAddForm((p) => ({ ...p, notes: v }))} theme={theme} multiline />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setAddOpen(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={onSaveAdd} disabled={addSaving}>
+                <Text style={styles.modalSaveText}>{addSaving ? "Saving..." : "Save Item"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={adjustOpen} transparent animationType="fade" onRequestClose={() => setAdjustOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Adjust Stock</Text>
+            <Text style={styles.adjustItemName}>{selected?.name || ""}</Text>
+            <Input label="Quantity" value={adjustDelta} onChangeText={setAdjustDelta} theme={theme} keyboardType="numeric" />
+            <Input label="Reason" value={adjustReason} onChangeText={setAdjustReason} theme={theme} />
+
+            <View style={styles.adjustActions}>
+              <TouchableOpacity
+                style={[styles.adjustBtn, { backgroundColor: theme.colors.error }]}
+                onPress={() => onApplyAdjust(-1)}
+                disabled={adjustSaving}
+              >
+                <Ionicons name="remove-outline" size={16} color="#fff" />
+                <Text style={styles.adjustBtnText}>{adjustSaving ? "Applying..." : "Subtract"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.adjustBtn, { backgroundColor: theme.colors.success }]}
+                onPress={() => onApplyAdjust(1)}
+                disabled={adjustSaving}
+              >
+                <Ionicons name="add-outline" size={16} color="#fff" />
+                <Text style={styles.adjustBtnText}>{adjustSaving ? "Applying..." : "Add"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </PageShell>
+  );
+}
+
+function toNumOrNull(value: string) {
+  const clean = String(value ?? "").trim();
+  if (!clean) return null;
+  const parsed = Number(clean);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function StatCard({ label, value, tone, theme }: { label: string; value: string; tone: string; theme: any }) {
+  return (
+    <View style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.surface, padding: 10 }}>
+      <Text style={{ color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11 }}>{label}</Text>
+      <Text style={{ color: tone, fontWeight: "900", fontSize: 20, marginTop: 4 }}>{value}</Text>
+    </View>
+  );
+}
+
+function Input({
+  label,
+  value,
+  onChangeText,
+  theme,
+  keyboardType,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  theme: any;
+  keyboardType?: any;
+  multiline?: boolean;
+}) {
+  return (
+    <View style={{ marginTop: 10 }}>
+      <Text style={{ color: theme.colors.textSecondary, fontWeight: "800", marginBottom: 6 }}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        style={{
+          minHeight: multiline ? 84 : 42,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
+          color: theme.colors.text,
+          backgroundColor: theme.colors.background,
+          textAlignVertical: multiline ? "top" : "center",
+          fontWeight: "700",
+        }}
+      />
+    </View>
   );
 }
 
@@ -90,23 +364,137 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.surface,
     },
     bannerText: { fontWeight: "800", color: theme.colors.text },
-    table: {
+    primaryBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 12,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: theme.colors.primary,
+    },
+    primaryBtnText: { color: "#fff", fontWeight: "900" },
+    statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+    controlsRow: { flexDirection: "row", gap: 10, marginBottom: 10, alignItems: "center" },
+    searchWrap: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      minHeight: 42,
+      backgroundColor: theme.colors.surface,
+    },
+    searchInput: { flex: 1, color: theme.colors.text, fontWeight: "700" },
+    secondaryBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      height: 42,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    secondaryBtnText: { color: theme.colors.text, fontWeight: "800" },
+    listWrap: {
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: 14,
       backgroundColor: theme.colors.surface,
       overflow: "hidden",
+      maxHeight: 520,
     },
-    row: {
+    headerRow: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      paddingHorizontal: 14,
-      paddingVertical: 12,
+      alignItems: "center",
+      backgroundColor: theme.colors.surfaceVariant,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      gap: 8,
     },
-    header: { backgroundColor: theme.colors.surfaceVariant },
-    h: { flex: 1, color: theme.colors.textSecondary, fontWeight: "900", fontSize: 12 },
+    hCell: { flex: 1, color: theme.colors.textSecondary, fontWeight: "900", fontSize: 12 },
+    itemRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      gap: 8,
+    },
+    itemTitle: { color: theme.colors.text, fontWeight: "900" },
+    itemSub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
     cell: { flex: 1, color: theme.colors.text, fontWeight: "700" },
+    rowActionBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      backgroundColor: theme.colors.background,
+    },
+    rowActionText: { color: theme.colors.text, fontWeight: "800", fontSize: 12 },
+    emptyRow: { padding: 16 },
+    emptyText: { color: theme.colors.textSecondary, fontWeight: "700" },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16,
+    },
+    modalCard: {
+      width: "100%",
+      maxWidth: 560,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 14,
+      padding: 14,
+    },
+    modalTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 17 },
+    modalActions: { marginTop: 14, flexDirection: "row", justifyContent: "flex-end", gap: 8 },
+    modalCancelBtn: {
+      height: 38,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.background,
+    },
+    modalCancelText: { color: theme.colors.text, fontWeight: "800" },
+    modalSaveBtn: {
+      height: 38,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.primary,
+    },
+    modalSaveText: { color: "#fff", fontWeight: "900" },
+    adjustItemName: { marginTop: 6, color: theme.colors.textSecondary, fontWeight: "700" },
+    adjustActions: { marginTop: 14, flexDirection: "row", gap: 8 },
+    adjustBtn: {
+      flex: 1,
+      height: 40,
+      borderRadius: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+    },
+    adjustBtnText: { color: "#fff", fontWeight: "900" },
   });
 
