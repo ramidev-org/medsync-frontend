@@ -37,7 +37,14 @@ export type RpcName =
   | "rpc_get_expenses"
   | "rpc_create_expense"
   | "rpc_get_inventory_items"
-  | "rpc_upsert_inventory_item";
+  | "rpc_get_inventory"
+  | "rpc_upsert_inventory_item"
+  | "rpc_adjust_inventory"
+  | "rpc_get_or_create_direct_conversation"
+  | "rpc_get_conversations"
+  | "rpc_get_messages"
+  | "rpc_send_message"
+  | "rpc_update_my_profile";
 
 const asErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;

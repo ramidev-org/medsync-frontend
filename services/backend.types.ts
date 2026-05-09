@@ -250,3 +250,66 @@ export type ClinicExpenseRow = {
   spent_at: string;
   created_at: string;
 };
+
+export type InventoryItemRow = {
+  id: string;
+  clinic_id: string;
+  sku: string | null;
+  name: string;
+  unit: string | null;
+  qty_on_hand: number;
+  reorder_threshold: number;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryListResponse = {
+  items: InventoryItemRow[];
+  total: number;
+  page: number;
+  itemsPerPage: number;
+};
+
+export type ConversationMemberMini = {
+  id: string;
+  full_name: string | null;
+  user_type: UserType;
+};
+
+export type ConversationLastMessageMini = {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+} | null;
+
+export type ConversationRow = {
+  id: string;
+  clinic_id: string;
+  kind: "direct" | "group" | string;
+  title: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  last_message: ConversationLastMessageMini;
+  members: ConversationMemberMini[];
+};
+
+export type ConversationsListResponse = {
+  conversations: ConversationRow[];
+  total: number;
+  page: number;
+  itemsPerPage: number;
+};
+
+export type ChatMessageRow = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  sender_name: string | null;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+};

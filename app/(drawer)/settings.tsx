@@ -1,351 +1,160 @@
 import { ThemedCard } from "@/components/default_card";
 import { PageShell } from "@/components/page_shell";
-import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
-
-// NOTE: This route is kept as "profile" for backward compatibility,
-// but it behaves as a role-based Settings page.
+import React from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function SettingsPage() {
   const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-  const { user } = useAuth();
-  const { isClinicAdmin, clinic, subscription } = useAppData();
+  const styles = React.useMemo(() => createStyles(theme), [theme]);
+  const { user, logout } = useAuth();
+  const { clinic, isClinicAdmin, subscription } = useAppData();
   const router = useRouter();
-  const role = (user?.user_type as any) ?? "assistant";
 
-  const expiresLabel = useMemo(() => {
+  const expiresAtLabel = React.useMemo(() => {
     const iso = subscription?.expires_at;
-    if (!iso) return "—";
+    if (!iso) return "-";
     try {
-      return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(iso));
+      return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(iso));
     } catch {
       return String(iso);
     }
   }, [subscription?.expires_at]);
 
   return (
-    <PageShell
-      title="Paramètres"
-      subtitle="Compte, clinique, abonnement et intégrations"
-      actions={
-        <View style={styles.rolePill}>
-          <Text style={styles.rolePillText}>{String(role).toUpperCase()}</Text>
-        </View>
-      }
-    >
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Clinique & Abonnement
-        </Text>
-        <Text style={{ marginTop: 4, color: theme.colors.muted, fontWeight: "700" }}>
-          {clinic?.name ? String(clinic.name) : "—"}
-        </Text>
-
-        <View style={{ marginTop: 12, gap: 8 }}>
-          <KeyVal k="Plan" v={subscription?.tier_plan || clinic?.tier_plan || "basic"} theme={theme} />
-          <KeyVal
-            k="Statut"
-            v={
-              subscription?.status === "active"
-                ? "Actif"
-                : subscription?.status === "expired"
-                  ? "Expiré"
-                  : subscription?.status === "revoked"
-                    ? "Révoqué"
-                    : "Non configuré"
-            }
-            theme={theme}
-          />
-          <KeyVal k="Expiration" v={expiresLabel} theme={theme} />
-          <KeyVal
-            k="Staff"
-            v={
-              typeof subscription?.current_doctors === "number"
-                ? `${subscription.current_doctors}/${subscription.max_doctors ?? "—"} médecins • ${subscription.current_assistants ?? 0}/${subscription.max_assistants ?? "—"} assistants`
-                : "—"
-            }
-            theme={theme}
-          />
-        </View>
-
-        {!!isClinicAdmin && (
-          <View style={{ marginTop: 14, flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            <PrimaryButton
-              label="Utilisateurs"
-              icon="people-outline"
+    <PageShell title="Settings" subtitle="Clinic operations, billing, integrations, and security controls">
+      <ScrollView contentContainerStyle={{ gap: 12 }}>
+        <ThemedCard style={styles.summaryCard}>
+          <View style={styles.summaryHead}>
+            <View>
+              <Text style={styles.summaryTitle}>{clinic?.name ? String(clinic.name) : "Clinic not configured"}</Text>
+              <Text style={styles.summarySub}>Current role: {String(user?.user_type ?? "assistant").toUpperCase()}</Text>
+            </View>
+            {!!isClinicAdmin && (
+              <View style={styles.adminBadge}>
+                <Text style={styles.adminBadgeText}>ADMIN</Text>
+              </View>
+            )}
+          </View>
+          <View style={{ marginTop: 12, gap: 8 }}>
+            <KeyVal label="Plan" value={subscription?.tier_plan || clinic?.tier_plan || "basic"} theme={theme} />
+            <KeyVal label="Subscription Status" value={subscription?.status || "missing"} theme={theme} />
+            <KeyVal label="Renewal / Expiry" value={expiresAtLabel} theme={theme} />
+            <KeyVal
+              label="Team Capacity"
+              value={`${subscription?.current_doctors ?? 0}/${subscription?.max_doctors ?? "-"} doctors, ${subscription?.current_assistants ?? 0}/${subscription?.max_assistants ?? "-"} assistants`}
               theme={theme}
-              onPress={() => router.push("/users")}
-              compact
-            />
-            <PrimaryButton
-              label="Imagerie Tools"
-              icon="settings-outline"
-              theme={theme}
-              onPress={() => router.push("/imaging-tools")}
-              compact
             />
           </View>
-        )}
-      </ThemedCard>
+        </ThemedCard>
 
-      {role === "doctor" && (
-        <>
-          <View style={{ height: 16 }} />
-          <DoctorSettings theme={theme} />
-          {isClinicAdmin && (
-            <>
-              <View style={{ height: 16 }} />
-              <ClinicAdminSettings theme={theme} />
-            </>
-          )}
-        </>
-      )}
-      {role === "assistant" && (
-        <>
-          <View style={{ height: 16 }} />
-          <AssistantSettings theme={theme} />
-        </>
-      )}
+        <ThemedCard style={styles.section}>
+          <SectionTitle title="Workspace" theme={theme} />
+          <ActionRow icon="person-circle-outline" label="Profile & Personal Info" subtitle="Edit your profile details and role fields" onPress={() => router.push("/profile")} theme={theme} />
+          <ActionRow icon="people-outline" label="Team Directory" subtitle="Manage clinic users, invites, and permissions" onPress={() => router.push("/users")} theme={theme} />
+          <ActionRow icon="chatbubbles-outline" label="Internal Chats" subtitle="Staff communication and handoff workflow" onPress={() => router.push("/chats")} theme={theme} />
+        </ThemedCard>
+
+        <ThemedCard style={styles.section}>
+          <SectionTitle title="Operations" theme={theme} />
+          <ActionRow icon="calendar-outline" label="Appointments & Visits" subtitle="Schedule flow, statuses, and consultation links" onPress={() => router.push("/visits")} theme={theme} />
+          <ActionRow icon="cube-outline" label="Inventory" subtitle="Stock levels, thresholds, and consumption tracking" onPress={() => router.push("/inventory")} theme={theme} />
+          <ActionRow icon="medical-outline" label="Services & Pricing" subtitle="Catalog, pricing matrix, active availability" onPress={() => router.push("/services")} theme={theme} />
+          <ActionRow icon="card-outline" label="Billing & Payments" subtitle="Invoices, payment tracking, and collections" onPress={() => router.push("/payments")} theme={theme} />
+        </ThemedCard>
+
+        <ThemedCard style={styles.section}>
+          <SectionTitle title="Integrations" theme={theme} />
+          <ActionRow icon="scan-outline" label="Imaging Tools" subtitle="OHIF and specialty tools routing by clinic" onPress={() => router.push("/imaging-tools")} theme={theme} />
+          <ActionRow icon="cloud-outline" label="Data Connections" subtitle="API endpoints, service health, and sync status" onPress={() => {}} theme={theme} />
+          <ActionRow icon="shield-checkmark-outline" label="Audit Trail" subtitle="Operational logs and safety checks" onPress={() => {}} theme={theme} />
+        </ThemedCard>
+
+        <ThemedCard style={styles.section}>
+          <SectionTitle title="Security & Access" theme={theme} />
+          <ActionRow icon="lock-closed-outline" label="Password & Session Policy" subtitle="Session behavior and account security baseline" onPress={() => {}} theme={theme} />
+          <ActionRow icon="notifications-outline" label="Notification Controls" subtitle="Configure alerts and signal priorities" onPress={() => router.push("/notifications")} theme={theme} />
+          <ActionRow icon="log-out-outline" label="Sign Out" subtitle="End current session on this device" onPress={logout} theme={theme} danger />
+        </ThemedCard>
+      </ScrollView>
     </PageShell>
   );
 }
 
-function DoctorSettings({ theme }: any) {
-  const { user } = useAuth();
-  const current = (user as any)?.doctorProfile?.speciality ?? "Médecine générale";
-
-  const [fullname, setFullname] = useState(user?.fullname ?? "");
-  const [speciality, setSpeciality] = useState(String(current));
-  const [fee, setFee] = useState(String((user as any)?.doctorProfile?.consultation_fee ?? 2000));
-
-  const key = normalizeSpeciality(speciality);
-
-  return (
-    <View style={{ gap: 16 }}>
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Profil médecin
-        </Text>
-        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
-          Ces champs sont en mode prototype (démo)
-        </Text>
-
-        <Field label="Nom complet" value={fullname} onChangeText={setFullname} theme={theme} />
-        <Field label="Spécialité" value={speciality} onChangeText={setSpeciality} theme={theme} />
-        <Text style={{ marginTop: 6, color: theme.colors.muted, fontWeight: "700" }}>
-          Détectée: {specialityLabelFr(key)}
-        </Text>
-        <Field label="Tarif consultation" value={fee} onChangeText={setFee} theme={theme} keyboardType="numeric" />
-
-        <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />
-      </ThemedCard>
-
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Préférences
-        </Text>
-        <View style={{ marginTop: 12, gap: 10 }}>
-          <SettingRow label="Notifications" value="Activées" theme={theme} />
-          <SettingRow label="Langue" value="Français" theme={theme} />
-        </View>
-      </ThemedCard>
-    </View>
-  );
+function SectionTitle({ title, theme }: { title: string; theme: any }) {
+  return <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>{title}</Text>;
 }
 
-function AssistantSettings({ theme }: any) {
-  const { user } = useAuth();
-  const [department, setDepartment] = useState(
-    String((user as any)?.assistantProfile?.department ?? "Accueil"),
-  );
-  const [shiftStart, setShiftStart] = useState(
-    String((user as any)?.assistantProfile?.shift_start ?? "08:00"),
-  );
-  const [shiftEnd, setShiftEnd] = useState(
-    String((user as any)?.assistantProfile?.shift_end ?? "16:00"),
-  );
-
-  return (
-    <View style={{ gap: 16 }}>
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Profil réception
-        </Text>
-        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
-          Ces champs sont en mode prototype (démo)
-        </Text>
-
-        <Field label="Département" value={department} onChangeText={setDepartment} theme={theme} />
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <View style={{ flex: 1 }}>
-            <Field label="Début" value={shiftStart} onChangeText={setShiftStart} theme={theme} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Field label="Fin" value={shiftEnd} onChangeText={setShiftEnd} theme={theme} />
-          </View>
-        </View>
-        <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />
-      </ThemedCard>
-
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Préférences
-        </Text>
-        <View style={{ marginTop: 12, gap: 10 }}>
-          <SettingRow label="Notifications" value="Activées" theme={theme} />
-          <SettingRow label="Langue" value="Français" theme={theme} />
-        </View>
-      </ThemedCard>
-    </View>
-  );
-}
-
-function ClinicAdminSettings({ theme }: any) {
-  const { clinic } = useAppData();
-  const clinics = clinic ? [clinic] : [];
-  const [orgName, setOrgName] = useState("Mon Organisation");
-
-  return (
-    <View style={{ gap: 16 }}>
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Organisation
-        </Text>
-        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
-          Paramètres admin clinique (prototype)
-        </Text>
-        <Field label="Nom" value={orgName} onChangeText={setOrgName} theme={theme} />
-        <PrimaryButton label="Enregistrer" icon="save-outline" theme={theme} onPress={() => {}} />
-      </ThemedCard>
-
-      <ThemedCard style={{ padding: 18 }}>
-        <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.text }}>
-          Cliniques
-        </Text>
-        <Text style={{ marginTop: 4, color: theme.colors.muted }}>
-          {clinics.length} clinique(s)
-        </Text>
-        <View style={{ marginTop: 12, gap: 10 }}>
-          {clinics.slice(0, 4).map((c: any) => (
-            <View
-              key={c.id}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: 14,
-                padding: 14,
-                backgroundColor: theme.colors.surface,
-              }}
-            >
-              <Text style={{ fontWeight: "900", color: theme.colors.text }}>{c.name}</Text>
-              <Text style={{ marginTop: 3, color: theme.colors.muted }}>
-                {[c.street, c.city, c.state].filter(Boolean).join(", ") || "—"}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </ThemedCard>
-    </View>
-  );
-}
-
-function Field({ label, value, onChangeText, theme, keyboardType }: any) {
-  return (
-    <View style={{ marginTop: 14 }}>
-      <Text style={{ fontWeight: "800", color: theme.colors.text, marginBottom: 6 }}>
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        style={{
-          backgroundColor: theme.colors.surface,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          borderRadius: 12,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-          color: theme.colors.text,
-        }}
-      />
-    </View>
-  );
-}
-
-function SettingRow({ label, value, theme }: any) {
-  return (
-    <View style={{
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingVertical: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    }}>
-      <Text style={{ fontWeight: "800", color: theme.colors.text }}>{label}</Text>
-      <Text style={{ color: theme.colors.muted, fontWeight: "700" }}>{value}</Text>
-    </View>
-  );
-}
-
-function KeyVal({ k, v, theme }: { k: string; v: string; theme: any }) {
+function KeyVal({ label, value, theme }: { label: string; value: string; theme: any }) {
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
-      <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>{k}</Text>
-      <Text style={{ color: theme.colors.text, fontWeight: "900" }}>{v}</Text>
+      <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>{label}</Text>
+      <Text style={{ color: theme.colors.text, fontWeight: "900", maxWidth: "58%", textAlign: "right" }}>{value}</Text>
     </View>
   );
 }
 
-function PrimaryButton({ label, icon, onPress, theme, compact }: any) {
+function ActionRow({
+  icon,
+  label,
+  subtitle,
+  onPress,
+  theme,
+  danger = false,
+}: {
+  icon: any;
+  label: string;
+  subtitle: string;
+  onPress: () => void | Promise<void>;
+  theme: any;
+  danger?: boolean;
+}) {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={{
-        marginTop: compact ? 0 : 16,
+        marginTop: 10,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: 12,
+        backgroundColor: theme.colors.background,
+        padding: 12,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        backgroundColor: theme.colors.primary,
-        paddingVertical: compact ? 10 : 12,
-        paddingHorizontal: compact ? 12 : 14,
-        borderRadius: 14,
+        gap: 10,
       }}
     >
-      <Ionicons name={icon} size={18} color="#fff" />
-      <Text style={{ color: "#fff", fontWeight: "900" }}>{label}</Text>
+      <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: danger ? "rgba(220,38,38,0.10)" : theme.colors.primarySoft }}>
+        <Ionicons name={icon} size={18} color={danger ? theme.colors.error : theme.colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: danger ? theme.colors.error : theme.colors.text, fontWeight: "900" }}>{label}</Text>
+        <Text style={{ marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700" }}>{subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
     </TouchableOpacity>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    rolePill: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+    summaryCard: { padding: 16 },
+    summaryHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10 },
+    summaryTitle: { fontSize: 18, fontWeight: "900", color: theme.colors.text },
+    summarySub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700" },
+    adminBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
       borderRadius: 999,
-      backgroundColor: theme.colors.primarySoft,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      backgroundColor: theme.colors.primarySoft,
     },
-    rolePillText: {
-      fontWeight: "900",
-      color: theme.colors.primary,
-      fontSize: 12,
-    },
+    adminBadgeText: { color: theme.colors.primary, fontWeight: "900", fontSize: 11 },
+    section: { padding: 16 },
   });
+

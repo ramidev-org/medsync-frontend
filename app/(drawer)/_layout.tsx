@@ -9,49 +9,50 @@ import { Drawer } from "expo-router/drawer";
 import { useEffect, useState, type ReactElement } from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
-type AppRoute =
-  | "/dashboard"
-  | "/calendar"
-  | "/patients"
-  | "/visits"
-  | "/consultations"
-  | "/dentistry-workspace"
-  | "/dermatology-workspace"
-  | "/orthopedics-workspace"
-  | "/gynecology-workspace"
-  | "/cardiology-workspace"
-  | "/payments"
-  | "/services"
-  | "/reports"
-  | "/tasks"
-  | "/inventory"
-  | "/users"
-  | "/settings"
-  | "/profile";
+type AppRoute = string;
+
+type NavSection = "main" | "workspaces" | "management" | "tools" | "account";
 
 type NavItem = {
   key: string;
   label: string;
   route: AppRoute;
+  section: NavSection;
   icon: (opts: { color: string; size: number }) => ReactElement;
   visible?: (ctx: { role: AppRole; isClinicAdmin: boolean }) => boolean;
 };
 
 const NAV: NavItem[] = [
-  { key: "dashboard", label: "Dashboard", route: "/dashboard", icon: ({ color, size }) => <MaterialIcons name="space-dashboard" size={size} color={color} /> },
-  { key: "calendar", label: "Calendar", route: "/calendar", icon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} /> },
-  { key: "patients", label: "Patients", route: "/patients", icon: ({ color, size }) => <MaterialIcons name="personal-injury" size={size} color={color} /> },
-  { key: "visits", label: "Visits", route: "/visits", icon: ({ color, size }) => <Ionicons name="clipboard-outline" size={size} color={color} /> },
-  { key: "consultations", label: "Consultations", route: "/consultations", icon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> },
-  { key: "dentistry_workspace", label: "Dentistry (Test)", route: "/dentistry-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
-  { key: "dermatology_workspace", label: "Dermatology (Test)", route: "/dermatology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
-  { key: "orthopedics_workspace", label: "Orthopedics (Test)", route: "/orthopedics-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
-  { key: "gynecology_workspace", label: "Gynecology (Test)", route: "/gynecology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
-  { key: "cardiology_workspace", label: "Cardiology (Test)", route: "/cardiology-workspace", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
-  { key: "reports", label: "Reports", route: "/reports", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
-  { key: "inventory", label: "Inventory", route: "/inventory", icon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> },
-  { key: "payments", label: "Billing", route: "/payments", visible: ({ role, isClinicAdmin }) => role === "assistant" || (role === "doctor" && isClinicAdmin), icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
-  { key: "users", label: "Team", route: "/users", visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin, icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} /> },
+  { key: "dashboard", label: "Dashboard", route: "/dashboard", section: "main", icon: ({ color, size }) => <MaterialIcons name="space-dashboard" size={size} color={color} /> },
+  { key: "calendar", label: "Calendar", route: "/calendar", section: "main", icon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} /> },
+  { key: "patients", label: "Patients", route: "/patients", section: "main", icon: ({ color, size }) => <MaterialIcons name="personal-injury" size={size} color={color} /> },
+  { key: "visits", label: "Visits", route: "/visits", section: "main", icon: ({ color, size }) => <Ionicons name="clipboard-outline" size={size} color={color} /> },
+  { key: "consultations", label: "Consultations", route: "/consultations", section: "main", icon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> },
+
+  { key: "dentistry_workspace", label: "Dentistry (Test)", route: "/dentistry-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
+  { key: "dermatology_workspace", label: "Dermatology (Test)", route: "/dermatology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
+  { key: "orthopedics_workspace", label: "Orthopedics (Test)", route: "/orthopedics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
+  { key: "gynecology_workspace", label: "Gynecology (Test)", route: "/gynecology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
+  { key: "cardiology_workspace", label: "Cardiology (Test)", route: "/cardiology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
+  { key: "obs_dentistry", label: "Obs • Dentistry", route: "/observation-specialities/dentistry", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
+  { key: "obs_dermatology", label: "Obs • Dermatology", route: "/observation-specialities/dermatology", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
+  { key: "obs_gynecology", label: "Obs • Gynecology", route: "/observation-specialities/gynecology", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
+  { key: "obs_cardiology", label: "Obs • Cardiology", route: "/observation-specialities/cardiology", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
+
+  { key: "payments", label: "Billing", route: "/payments", section: "management", visible: ({ role, isClinicAdmin }) => role === "assistant" || (role === "doctor" && isClinicAdmin), icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
+  { key: "services", label: "Services", route: "/services", section: "management", icon: ({ color, size }) => <MaterialIcons name="medical-services" size={size} color={color} /> },
+  { key: "reports", label: "Reports", route: "/reports", section: "management", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
+  { key: "tasks", label: "Tasks", route: "/tasks", section: "management", icon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} /> },
+  { key: "inventory", label: "Inventory", route: "/inventory", section: "management", icon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> },
+  { key: "users", label: "Team", route: "/users", section: "management", visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin, icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} /> },
+
+  { key: "chats", label: "Chats", route: "/chats", section: "tools", icon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} /> },
+  { key: "imaging_tools", label: "Imaging Tools", route: "/imaging-tools", section: "tools", icon: ({ color, size }) => <Ionicons name="scan-outline" size={size} color={color} /> },
+  { key: "notifications", label: "Notifications (Test)", route: "/notifications", section: "tools", icon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} /> },
+  { key: "imaging_legacy", label: "Imaging (Legacy)", route: "/imaging", section: "tools", icon: ({ color, size }) => <Ionicons name="images-outline" size={size} color={color} /> },
+
+  { key: "settings", label: "Settings", route: "/settings", section: "account", icon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> },
+  { key: "profile", label: "Profile", route: "/profile", section: "account", icon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} /> },
 ];
 
 export default function Layout() {
@@ -90,6 +91,10 @@ export default function Layout() {
       <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics (Test)" }} />
       <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology (Test)" }} />
       <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology (Test)" }} />
+      <Drawer.Screen name="observation-specialities/dentistry" options={{ drawerLabel: "Obs • Dentistry" }} />
+      <Drawer.Screen name="observation-specialities/dermatology" options={{ drawerLabel: "Obs • Dermatology" }} />
+      <Drawer.Screen name="observation-specialities/gynecology" options={{ drawerLabel: "Obs • Gynecology" }} />
+      <Drawer.Screen name="observation-specialities/cardiology" options={{ drawerLabel: "Obs • Cardiology" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
       <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />
@@ -100,6 +105,8 @@ export default function Layout() {
       <Drawer.Screen name="profile" options={{ drawerLabel: "Profile" }} />
       <Drawer.Screen name="chats" options={{ drawerLabel: "Chats" }} />
       <Drawer.Screen name="imaging-tools" options={{ drawerLabel: "Imaging Tools" }} />
+      <Drawer.Screen name="notifications" options={{ drawerLabel: "Notifications (Test)" }} />
+      <Drawer.Screen name="imaging" options={{ drawerLabel: "Imaging (Legacy)" }} />
       <Drawer.Screen name="patient_medical_info" options={{ drawerItemStyle: { display: "none" } }} />
       <Drawer.Screen name="consultation/index" options={{ drawerItemStyle: { display: "none" } }} />
     </Drawer>
@@ -112,6 +119,14 @@ function CustomDrawerContent({ expanded, setExpanded, theme, state, role, isClin
   const items = NAV.filter((item) => (item.visible ? item.visible({ role, isClinicAdmin }) : true));
   const activeColor = theme.colors.primary;
   const inactiveColor = theme.colors.textSecondary;
+  const sectionOrder: NavSection[] = ["main", "workspaces", "management", "tools", "account"];
+  const sectionLabels: Record<NavSection, string> = {
+    main: "Main",
+    workspaces: "Medical Workspaces",
+    management: "Management",
+    tools: "Tools",
+    account: "Account",
+  };
 
   return (
     <DrawerContentScrollView contentContainerStyle={{ flex: 1, paddingTop: 16, paddingHorizontal: 10 }}>
@@ -128,19 +143,29 @@ function CustomDrawerContent({ expanded, setExpanded, theme, state, role, isClin
           <Ionicons name="menu" size={20} color={theme.colors.textSecondary} />
         </TouchableOpacity>
       </View>
-      {items.map((item) => {
-        const routeName = item.route.replace(/^\//, "");
-        const active = currentRoute === routeName || currentRoute.startsWith(routeName + "/");
-        const tint = active ? activeColor : inactiveColor;
+      {sectionOrder.map((section) => {
+        const sectionItems = items.filter((item) => item.section === section);
+        if (sectionItems.length === 0) return null;
+
         return (
-          <View key={item.key} style={{ borderRadius: 14, overflow: "hidden", marginBottom: 6, backgroundColor: active ? theme.colors.primarySoft : "transparent" }}>
-            <DrawerItem
-              label={expanded ? item.label : ""}
-              labelStyle={{ marginLeft: expanded ? -10 : -999, fontSize: 14, fontWeight: active ? "800" : "600", color: tint }}
-              icon={() => item.icon({ color: tint, size: 21 })}
-              onPress={() => router.push(item.route)}
-              style={styles.drawerItem}
-            />
+          <View key={section} style={{ marginTop: section === "main" ? 2 : 10 }}>
+            {expanded && <Text style={styles.sectionTitle}>{sectionLabels[section]}</Text>}
+            {sectionItems.map((item) => {
+              const routeName = item.route.replace(/^\//, "");
+              const active = currentRoute === routeName || currentRoute.startsWith(routeName + "/");
+              const tint = active ? activeColor : inactiveColor;
+              return (
+                <View key={item.key} style={{ borderRadius: 14, overflow: "hidden", marginBottom: 6, backgroundColor: active ? theme.colors.primarySoft : "transparent" }}>
+                  <DrawerItem
+                    label={expanded ? item.label : ""}
+                    labelStyle={{ marginLeft: expanded ? -10 : -999, fontSize: 14, fontWeight: active ? "800" : "600", color: tint }}
+                    icon={() => item.icon({ color: tint, size: 21 })}
+                    onPress={() => router.push(item.route as any)}
+                    style={styles.drawerItem}
+                  />
+                </View>
+              );
+            })}
           </View>
         );
       })}
@@ -150,4 +175,5 @@ function CustomDrawerContent({ expanded, setExpanded, theme, state, role, isClin
 
 const styles = StyleSheet.create({
   drawerItem: { borderRadius: 14 },
+  sectionTitle: { marginBottom: 6, marginTop: 4, paddingHorizontal: 10, fontSize: 12, fontWeight: "900", opacity: 0.7 },
 });

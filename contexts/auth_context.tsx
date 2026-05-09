@@ -11,6 +11,7 @@ type AuthContextType = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -154,9 +155,17 @@ export const AuthProvider = ({ children }: any) => {
     globalLoadedUserId = null;
   };
 
+  const refreshUser = async () => {
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) return;
+    globalLoadedUserId = null;
+    setLoading(true);
+    await loadUser(sessionUserId);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, session, loading, login, logout }}
+      value={{ user, session, loading, login, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>
