@@ -34,10 +34,6 @@ const NAV: NavItem[] = [
   { key: "orthopedics_workspace", label: "Orthopedics (Test)", route: "/orthopedics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
   { key: "gynecology_workspace", label: "Gynecology (Test)", route: "/gynecology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
   { key: "cardiology_workspace", label: "Cardiology (Test)", route: "/cardiology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
-  { key: "obs_dentistry", label: "Obs • Dentistry", route: "/observation-specialities/dentistry", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
-  { key: "obs_dermatology", label: "Obs • Dermatology", route: "/observation-specialities/dermatology", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
-  { key: "obs_gynecology", label: "Obs • Gynecology", route: "/observation-specialities/gynecology", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
-  { key: "obs_cardiology", label: "Obs • Cardiology", route: "/observation-specialities/cardiology", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
 
   { key: "payments", label: "Billing", route: "/payments", section: "management", visible: ({ role, isClinicAdmin }) => role === "assistant" || (role === "doctor" && isClinicAdmin), icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
   { key: "services", label: "Services", route: "/services", section: "management", icon: ({ color, size }) => <MaterialIcons name="medical-services" size={size} color={color} /> },
@@ -91,10 +87,6 @@ export default function Layout() {
       <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics (Test)" }} />
       <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology (Test)" }} />
       <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology (Test)" }} />
-      <Drawer.Screen name="observation-specialities/dentistry" options={{ drawerLabel: "Obs • Dentistry" }} />
-      <Drawer.Screen name="observation-specialities/dermatology" options={{ drawerLabel: "Obs • Dermatology" }} />
-      <Drawer.Screen name="observation-specialities/gynecology" options={{ drawerLabel: "Obs • Gynecology" }} />
-      <Drawer.Screen name="observation-specialities/cardiology" options={{ drawerLabel: "Obs • Cardiology" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
       <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />

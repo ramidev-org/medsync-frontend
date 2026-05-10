@@ -1,6 +1,7 @@
 import { PageShell } from "@/components/page_shell";
 import { useTheme } from "@/theme/theme_provider";
 import React from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Alert, View } from "react-native";
 import ObservationMedicalTab from "./consultation/_tabs/_observation";
 
@@ -26,7 +27,11 @@ export default function OrthopedicsWorkspacePage() {
   const [observations, setObservations] = React.useState("");
 
   return (
-    <PageShell title="Orthopedics Workspace" subtitle="Observation capture (generic).">
+    <PageShell
+      title="Orthopedics Workspace"
+      subtitle="Observation capture (generic)."
+      actions={<MaterialCommunityIcons name="bone" size={24} color={theme.colors.primary} />}
+    >
       <View style={{ marginTop: 10 }}>
         <ObservationMedicalTab
           theme={theme}

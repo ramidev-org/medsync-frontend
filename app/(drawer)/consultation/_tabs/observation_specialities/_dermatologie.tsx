@@ -13,17 +13,19 @@ export function DermatologyTab({
   theme,
   value,
   onChange,
+  showTitle = true,
 }: {
   theme: any;
   value: DermatologyState;
   onChange: (next: DermatologyState) => void;
+  showTitle?: boolean;
 }) {
   const styles = createStyles(theme);
   const set = (p: Partial<DermatologyState>) => onChange({ ...value, ...p });
 
   return (
     <View style={{ gap: 12 }}>
-      <Text style={styles.title}>DERMATOLOGIE</Text>
+      {showTitle ? <Text style={styles.title}>DERMATOLOGIE</Text> : null}
 
       <BlueField theme={theme} label="Plainte / Motif" value={value.plainte ?? ""} onChange={(v: string) => set({ plainte: v })} multiline minHeight={80} />
 

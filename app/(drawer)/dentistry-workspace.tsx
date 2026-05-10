@@ -1,24 +1,114 @@
 import { PageShell } from "@/components/page_shell";
-import { useTheme } from "@/theme/theme_provider";
-import React from "react";
 import { ToothTreatmentPanel } from "@/components/dentistry/ToothTreatmentPanel";
 import { DentistryHistoryFilters, DentistryTreatmentHistoryCards } from "@/components/dentistry/DentistryTreatmentHistoryCards";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Text, View } from "react-native";
+import React from "react";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { BlueField } from "./consultation/_tabs/_ui";
+import { useTheme } from "@/theme/theme_provider";
+
+type MainPage = "workspace" | "current_parameters" | "previous_parameters";
+type DentistryWorkspaceTab = "tooth_treatment" | "history_filters" | "general_treatment";
+
+type PreviousParamsRow = {
+  visitLabel: string;
+  motif: string;
+  glycemie: string;
+  hba1c: string;
+  examen: string;
+  conclusion: string;
+};
+
+const MAIN_PAGE_TABS: Array<{ key: MainPage; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = [
+  { key: "workspace", label: "Workspace Page", icon: "stethoscope" },
+  { key: "current_parameters", label: "Current Parameters", icon: "clipboard-text-outline" },
+  { key: "previous_parameters", label: "Parameters History", icon: "history" },
+];
+
+const PROTO_PREVIOUS_PARAMS: PreviousParamsRow[] = [
+  { visitLabel: "Visit #6 - 31.05.2022", motif: "Control pain", glycemie: "-", hba1c: "-", examen: "Post-treatment dental check", conclusion: "Improved, follow-up in 1 month" },
+  { visitLabel: "Visit #5 - 28.04.2022", motif: "-", glycemie: "-", hba1c: "-", examen: "-", conclusion: "-" },
+  { visitLabel: "Visit #4 - 10.04.2022", motif: "-", glycemie: "-", hba1c: "-", examen: "-", conclusion: "-" },
+];
+
+function FlatTabs<T extends string>({
+  theme,
+  tabs,
+  activeKey,
+  onChange,
+}: {
+  theme: any;
+  tabs: { key: T; label: string; icon?: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }[];
+  activeKey: T;
+  onChange: (k: T) => void;
+}) {
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingBottom: 8, marginBottom: 10, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+      {tabs.map((t) => {
+        const active = t.key === activeKey;
+        return (
+          <TouchableOpacity
+            key={t.key}
+            onPress={() => onChange(t.key)}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderRadius: 6,
+              borderWidth: 1,
+              backgroundColor: active ? theme.colors.surface : theme.colors.surfaceVariant,
+              borderColor: active ? theme.colors.border : "transparent",
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              {t.icon ? <MaterialCommunityIcons name={t.icon} size={15} color={active ? theme.colors.primary : theme.colors.textSecondary} /> : null}
+              <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{t.label}</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function ReadOnlyBlueBox({ theme, label, value, multiline }: { theme: any; label: string; value: string; multiline?: boolean }) {
+  return (
+    <View style={{ marginTop: 12, flex: 1 }}>
+      <Text style={{ color: theme.colors.primary, fontWeight: "900", marginBottom: 6 }}>{label}</Text>
+      <View style={{ borderWidth: 2, borderColor: "rgba(0, 140, 255, 0.35)", borderRadius: 10, padding: 12, minHeight: multiline ? 88 : 56, backgroundColor: theme.colors.background, justifyContent: "center" }}>
+        <Text style={{ fontWeight: "900", opacity: 0.75 }}>{value}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function DentistryWorkspacePage() {
   const { theme } = useTheme();
-  const [state, setState] = React.useState<{
-    activeProcedure?: any;
-    selectedTeeth?: string[];
-    odontogram?: any;
-  }>({});
+  const [mainPage, setMainPage] = React.useState<MainPage>("workspace");
+  const [workspaceTab, setWorkspaceTab] = React.useState<DentistryWorkspaceTab>("tooth_treatment");
+  const [isEditingCurrentParams, setIsEditingCurrentParams] = React.useState(false);
+  const [draftCurrentParams, setDraftCurrentParams] = React.useState<any | null>(null);
+  const [previousModalOpen, setPreviousModalOpen] = React.useState(false);
+  const [selectedPrevIndex, setSelectedPrevIndex] = React.useState(0);
+  const selectedPrev = PROTO_PREVIOUS_PARAMS[selectedPrevIndex];
+
+  const [state, setState] = React.useState<{ activeProcedure?: any; selectedTeeth?: string[]; odontogram?: any }>({});
+  const [generalTreatmentType, setGeneralTreatmentType] = React.useState("full_cleanup");
+  const [generalTreatmentNote, setGeneralTreatmentNote] = React.useState("");
+  const [generalTreatmentHistory, setGeneralTreatmentHistory] = React.useState<Array<{ id: string; type: string; note: string; createdAt: string }>>([]);
   const [from, setFrom] = React.useState<Date>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
     return d;
   });
   const [to, setTo] = React.useState<Date>(() => new Date());
+
+  const [parameters, setParameters] = React.useState({
+    motif_consultation: "",
+    glycemie: "",
+    hba1c: "",
+    examen_clinique: "",
+    conclusion: "",
+  });
 
   const resetFilters = React.useCallback(() => {
     const d = new Date();
@@ -29,63 +119,269 @@ export default function DentistryWorkspacePage() {
   }, []);
 
   return (
-    <PageShell title="Dentistry Workspace" subtitle="Treatment entry + card history with date filters.">
-      <View style={{ paddingBottom: 8 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 999,
-            alignSelf: "flex-start",
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <MaterialCommunityIcons name="tooth-outline" size={14} color={theme.colors.primary} />
-          <Text style={{ fontWeight: "900", color: theme.colors.primary, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase" }}>
-            Dentistry Workspace
-          </Text>
-        </View>
-      </View>
+    <PageShell
+      title="Dentistry Workspace"
+      subtitle="Treatment entry + card history with date filters."
+      actions={<MaterialCommunityIcons name="tooth-outline" size={24} color={theme.colors.primary} />}
+    >
+      <View style={{ marginTop: 10 }}>
+        <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 18, backgroundColor: theme.colors.surface, padding: 14 }}>
+          <FlatTabs theme={theme} tabs={MAIN_PAGE_TABS} activeKey={mainPage} onChange={setMainPage} />
 
-      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 2 }}>Treatment</Text>
-
-      <View style={{ marginTop: 12, gap: 18 }}>
-        <View style={{ padding: 2 }}>
-          <ToothTreatmentPanel
-            theme={theme}
-            selectedTeeth={state.selectedTeeth ?? []}
-            onChangeSelectedTeeth={(next) => setState((s) => ({ ...s, selectedTeeth: next }))}
-            activeProcedure={state.activeProcedure ?? "caries"}
-            onChangeActiveProcedure={(next) => setState((s) => ({ ...s, activeProcedure: next }))}
-            odontogram={state.odontogram ?? {}}
-            onChangeOdontogram={(next) => setState((s) => ({ ...s, odontogram: next }))}
-            filterSection={
-              <DentistryHistoryFilters
+          {mainPage === "workspace" && (
+            <View style={{ marginTop: 12, gap: 18 }}>
+              <FlatTabs
                 theme={theme}
-                from={from}
-                to={to}
-                onFromChange={setFrom}
-                onToChange={setTo}
-                onReset={resetFilters}
+                tabs={[
+                  { key: "tooth_treatment", label: "Tooth Treatment", icon: "tooth-outline" },
+                  { key: "history_filters", label: "History & Filters", icon: "history" },
+                  { key: "general_treatment", label: "General Treatment", icon: "medical-bag" },
+                ]}
+                activeKey={workspaceTab}
+                onChange={setWorkspaceTab}
               />
-            }
-          />
-        </View>
-        <View style={{ marginTop: 4 }}>
-          <DentistryTreatmentHistoryCards
-            theme={theme}
-            odontogram={state.odontogram ?? {}}
-            from={from}
-            to={to}
-            maxHeight={340}
-          />
+
+              {workspaceTab === "tooth_treatment" && (
+                <View style={{ padding: 2 }}>
+                  <ToothTreatmentPanel
+                    theme={theme}
+                    selectedTeeth={state.selectedTeeth ?? []}
+                    onChangeSelectedTeeth={(next) => setState((s) => ({ ...s, selectedTeeth: next }))}
+                    activeProcedure={state.activeProcedure ?? "caries"}
+                    onChangeActiveProcedure={(next) => setState((s) => ({ ...s, activeProcedure: next }))}
+                    odontogram={state.odontogram ?? {}}
+                    onChangeOdontogram={(next) => setState((s) => ({ ...s, odontogram: next }))}
+                  />
+                </View>
+              )}
+
+              {workspaceTab === "history_filters" && (
+                <>
+                  <DentistryHistoryFilters
+                    theme={theme}
+                    from={from}
+                    to={to}
+                    onFromChange={setFrom}
+                    onToChange={setTo}
+                    onReset={resetFilters}
+                  />
+                  <View style={{ marginTop: 4 }}>
+                    <DentistryTreatmentHistoryCards
+                      theme={theme}
+                      odontogram={state.odontogram ?? {}}
+                      from={from}
+                      to={to}
+                      maxHeight={340}
+                    />
+                  </View>
+                </>
+              )}
+
+              {workspaceTab === "general_treatment" && (
+                <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface, padding: 12, gap: 12 }}>
+                  <Text style={{ fontWeight: "900", color: theme.colors.primary }}>Treatments without teeth selection</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    {[
+                      { key: "full_cleanup", label: "Full Cleanup" },
+                      { key: "braces", label: "Braces" },
+                      { key: "whitening", label: "Whitening" },
+                      { key: "retainer", label: "Retainer Check" },
+                      { key: "other", label: "Other Treatment" },
+                    ].map((t) => {
+                      const active = generalTreatmentType === t.key;
+                      return (
+                        <TouchableOpacity
+                          key={t.key}
+                          onPress={() => setGeneralTreatmentType(t.key)}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: active ? theme.colors.primary : theme.colors.border,
+                            backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
+                            borderRadius: 999,
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                          }}
+                        >
+                          <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.textSecondary, fontSize: 12 }}>
+                            {t.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <BlueField
+                    theme={theme}
+                    label="Treatment note"
+                    value={generalTreatmentNote}
+                    onChange={setGeneralTreatmentNote}
+                    multiline
+                    minHeight={88}
+                  />
+
+                  <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const typeLabel =
+                          generalTreatmentType === "full_cleanup"
+                            ? "Full Cleanup"
+                            : generalTreatmentType === "braces"
+                              ? "Braces"
+                              : generalTreatmentType === "whitening"
+                                ? "Whitening"
+                                : generalTreatmentType === "retainer"
+                                  ? "Retainer Check"
+                                  : "Other Treatment";
+                        setGeneralTreatmentHistory((rows) => [
+                          { id: `${Date.now()}`, type: typeLabel, note: generalTreatmentNote.trim(), createdAt: new Date().toLocaleString() },
+                          ...rows,
+                        ]);
+                        setGeneralTreatmentNote("");
+                      }}
+                      style={{ backgroundColor: theme.colors.primary, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10 }}
+                    >
+                      <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 12 }}>Add treatment</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.background, padding: 10, gap: 8 }}>
+                    <Text style={{ fontWeight: "900", color: theme.colors.text }}>General treatment history</Text>
+                    {generalTreatmentHistory.length === 0 ? (
+                      <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>No general treatments yet.</Text>
+                    ) : (
+                      generalTreatmentHistory.map((r) => (
+                        <View key={r.id} style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface }}>
+                          <Text style={{ fontWeight: "900", color: theme.colors.text }}>{r.type}</Text>
+                          <Text style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>{r.createdAt}</Text>
+                          {!!r.note && <Text style={{ marginTop: 6, fontWeight: "700", color: theme.colors.textSecondary }}>{r.note}</Text>}
+                        </View>
+                      ))
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {mainPage === "current_parameters" && (
+            <>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 4 }}>
+                {!isEditingCurrentParams ? (
+                  <TouchableOpacity
+                    style={{ backgroundColor: theme.colors.warning, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 }}
+                    onPress={() => {
+                      setDraftCurrentParams({ ...parameters });
+                      setIsEditingCurrentParams(true);
+                    }}
+                  >
+                    <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>MODIFIER PARAMÃˆTRES</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <TouchableOpacity
+                      style={{ backgroundColor: theme.colors.success, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 }}
+                      onPress={() => {
+                        if (draftCurrentParams) setParameters(draftCurrentParams);
+                        setDraftCurrentParams(null);
+                        setIsEditingCurrentParams(false);
+                      }}
+                    >
+                      <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>CONFIRMER</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ backgroundColor: theme.colors.textSecondary, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 }}
+                      onPress={() => {
+                        setDraftCurrentParams(null);
+                        setIsEditingCurrentParams(false);
+                      }}
+                    >
+                      <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>ANNULER</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {isEditingCurrentParams ? (
+                <>
+                  <BlueField theme={theme} label="Motif de consultation :" value={draftCurrentParams?.motif_consultation ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), motif_consultation: v }))} minHeight={56} />
+                  <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                    <View style={{ flex: 1, minWidth: 230 }}>
+                      <BlueField theme={theme} label="glycÃ©mie :" value={draftCurrentParams?.glycemie ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), glycemie: v }))} minHeight={56} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 230 }}>
+                      <BlueField theme={theme} label="HbA1c :" value={draftCurrentParams?.hba1c ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), hba1c: v }))} minHeight={56} />
+                    </View>
+                  </View>
+                  <BlueField theme={theme} label="Examen clinique :" value={draftCurrentParams?.examen_clinique ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), examen_clinique: v }))} multiline minHeight={88} />
+                  <BlueField theme={theme} label="Conclusion :" value={draftCurrentParams?.conclusion ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), conclusion: v }))} multiline minHeight={88} />
+                </>
+              ) : (
+                <>
+                  <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={parameters.motif_consultation || "-"} />
+                  <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                    <View style={{ flex: 1, minWidth: 230 }}>
+                      <ReadOnlyBlueBox theme={theme} label="glycÃ©mie :" value={parameters.glycemie || "-"} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 230 }}>
+                      <ReadOnlyBlueBox theme={theme} label="HbA1c :" value={parameters.hba1c || "-"} />
+                    </View>
+                  </View>
+                  <ReadOnlyBlueBox theme={theme} label="Examen clinique :" value={parameters.examen_clinique || "-"} multiline />
+                  <ReadOnlyBlueBox theme={theme} label="Conclusion :" value={parameters.conclusion || "-"} multiline />
+                </>
+              )}
+            </>
+          )}
+
+          {mainPage === "previous_parameters" && (
+            <View style={{ marginTop: 10, borderWidth: 1, borderColor: "rgba(0,0,0,0.10)", borderRadius: 10, overflow: "hidden" }}>
+              {PROTO_PREVIOUS_PARAMS.map((p, idx) => {
+                const active = idx === selectedPrevIndex;
+                return (
+                  <View key={p.visitLabel} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: active ? "rgba(245, 179, 1, 0.08)" : "#fff", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)" }}>
+                    <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={{ flex: 1, flexDirection: "row", alignItems: "center" }} activeOpacity={0.8}>
+                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: active ? "#F5B301" : "rgba(0,0,0,0.08)" }} />
+                      <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setSelectedPrevIndex(idx); setPreviousModalOpen(true); }} style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}>
+                      <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
       </View>
+
+      <Modal visible={previousModalOpen} transparent animationType="fade" onRequestClose={() => setPreviousModalOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center", padding: 18 }}>
+          <View style={{ width: "100%", maxWidth: 920, borderRadius: 10, overflow: "hidden", backgroundColor: theme.colors.surface }}>
+            <View style={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primary }}>
+              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 0.5 }}>PARAMETRES PRECEDENTS</Text>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+              <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{selectedPrev.visitLabel}</Text>
+              <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={selectedPrev.motif || "-"} />
+              <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                <View style={{ flex: 1, minWidth: 230 }}>
+                  <ReadOnlyBlueBox theme={theme} label="glycÃ©mie :" value={selectedPrev.glycemie || "-"} />
+                </View>
+                <View style={{ flex: 1, minWidth: 230 }}>
+                  <ReadOnlyBlueBox theme={theme} label="HbA1c :" value={selectedPrev.hba1c || "-"} />
+                </View>
+              </View>
+              <ReadOnlyBlueBox theme={theme} label="Examen clinique :" value={selectedPrev.examen || "-"} multiline />
+              <ReadOnlyBlueBox theme={theme} label="Conclusion :" value={selectedPrev.conclusion || "-"} multiline />
+            </ScrollView>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.02)" }}>
+              <TouchableOpacity onPress={() => setPreviousModalOpen(false)} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
+                <Text style={{ color: "#fff", fontWeight: "900" }}>FERMER</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </PageShell>
   );
 }

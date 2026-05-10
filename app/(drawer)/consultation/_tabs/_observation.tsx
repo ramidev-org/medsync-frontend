@@ -1,7 +1,7 @@
 import { BlueField, MetricCard } from "./_ui";
 import { ThemedCard } from "@/components/default_card";
 import { normalizeSpeciality } from "@/config/speciality";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
   Modal,
@@ -46,7 +46,7 @@ type LeftTabKey =
   | "previous_labels"
   | SpecialtyKey;
 
-type RightTabKey = "current_parameters" | "previous_parameters";
+type MainPageKey = "workspace" | "current_parameters" | "previous_parameters";
 
 // Dynamic: specialty subtabs depend on the doctor's speciality.
 const BASE_LEFT_TABS: Array<{ key: Exclude<LeftTabKey, SpecialtyKey>; label: string }> = [
@@ -66,9 +66,14 @@ const SPECIALTY_TABS: Array<{
 ];
 
 
-const RIGHT_TABS: Array<{ key: RightTabKey; label: string }> = [
-  { key: "current_parameters", label: "Paramètres de consultation" },
-  { key: "previous_parameters", label: "Paramètres précédents" },
+const MAIN_PAGE_TABS: Array<{
+  key: MainPageKey;
+  label: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+}> = [
+  { key: "workspace", label: "Workspace Page", icon: "stethoscope" },
+  { key: "current_parameters", label: "Current Parameters", icon: "clipboard-text-outline" },
+  { key: "previous_parameters", label: "Parameters History", icon: "history" },
 ];
 
 /* ==========================
@@ -201,11 +206,14 @@ export default function ObservationMedicalTab({
     if (workspaceMode && enabledSpecialties.length > 0) return enabledSpecialties[0].key as any;
     return "label";
   });
-  const [rightTab, setRightTab] = React.useState<RightTabKey>("current_parameters");
+  const [mainPage, setMainPage] = React.useState<MainPageKey>("workspace");
 
   // Modals
   const [labelModalOpen, setLabelModalOpen] = React.useState(false);
   const [antecedentsModalOpen, setAntecedentsModalOpen] = React.useState(false);
+  const [isEditingCurrentParams, setIsEditingCurrentParams] = React.useState(false);
+  const [draftCurrentParams, setDraftCurrentParams] = React.useState<any | null>(null);
+  const [previousParamsModalOpen, setPreviousParamsModalOpen] = React.useState(false);
 
   // Label modal fields (prototype)
   const [labelPrintDate, setLabelPrintDate] = React.useState("31/05/2022");
@@ -273,18 +281,26 @@ export default function ObservationMedicalTab({
 
 
   return (
-    
-    <View style={styles.twoColWrap}>
-      {/* ================= LEFT COLUMN ================= */}
-      <View style={styles.col}>
+    <View style={styles.singlePaneWrap}>
       <ThemedCard>
-        {/* Flat sub-tabs like the screenshots */}
         <FlatTabs
           theme={theme}
-          tabs={leftTabs}
-          activeKey={leftTab}
-          onChange={setLeftTab}
+          tabs={MAIN_PAGE_TABS}
+          activeKey={mainPage}
+          onChange={setMainPage}
         />
+
+      {mainPage === "workspace" && (
+      <>
+        {/* Workspace sub-tabs */}
+        {(!workspaceMode || leftTabs.length > 1) && (
+          <FlatTabs
+            theme={theme}
+            tabs={leftTabs}
+            activeKey={leftTab}
+            onChange={setLeftTab}
+          />
+        )}
 
 
 
@@ -399,7 +415,7 @@ export default function ObservationMedicalTab({
                   onPress={() => {
                     const newIdx = findPrevIndexByDate(r.date);
                     setSelectedPrevIndex(newIdx);
-                    setRightTab("previous_parameters"); // ✅ auto open right tab
+                    setMainPage("previous_parameters");
                   }}
                   style={[
                     styles.tr,
@@ -474,6 +490,7 @@ export default function ObservationMedicalTab({
         theme={theme}
         value={specialities.dermatology}
         onChange={(next) => setSpecialities((s) => ({ ...s, dermatology: next }))}
+        showTitle={!workspaceMode}
         />
       )}
 
@@ -485,89 +502,120 @@ export default function ObservationMedicalTab({
         />
       )}
 
+      </>
+      )}
 
-      </ThemedCard>
-      </View>
-
-      {/* ================= RIGHT COLUMN ================= */}
-      <View style={styles.col}>
-      <ThemedCard>
+      {mainPage === "current_parameters" && (
+      <>
         <View style={styles.rightTopRow}>
-          <View style={{ flex: 1 }}>
-            <FlatTabs
-              theme={theme}
-              tabs={RIGHT_TABS}
-              activeKey={rightTab}
-              onChange={setRightTab}
-              // Right tabs are shown in a single line in the screenshots; our layout wraps if needed.
-            />
-          </View>
-
-          <TouchableOpacity style={styles.yellowBtn}>
-            <Text style={styles.yellowBtnText}>MODIFIER PARAMÈTRES</Text>
-          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+          {!isEditingCurrentParams ? (
+            <TouchableOpacity
+              style={styles.yellowBtn}
+              onPress={() => {
+                setDraftCurrentParams({ ...parameters });
+                setIsEditingCurrentParams(true);
+              }}
+            >
+              <Text style={styles.yellowBtnText}>MODIFIER PARAMETRES</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TouchableOpacity
+                style={[styles.yellowBtn, { backgroundColor: theme.colors.success }]}
+                onPress={() => {
+                  if (draftCurrentParams) setParameters(draftCurrentParams);
+                  setDraftCurrentParams(null);
+                  setIsEditingCurrentParams(false);
+                  onSave?.();
+                }}
+              >
+                <Text style={styles.yellowBtnText}>CONFIRMER</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.yellowBtn, { backgroundColor: theme.colors.textSecondary }]}
+                onPress={() => {
+                  setDraftCurrentParams(null);
+                  setIsEditingCurrentParams(false);
+                }}
+              >
+                <Text style={styles.yellowBtnText}>ANNULER</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        {rightTab === "current_parameters" && (
-          <>
-            {/* Editable fields (current visit) */}
-            <BlueField
-              theme={theme}
-              label="Motif de consultation :"
-              value={parameters.motif_consultation}
-              onChange={(v: string) =>
-                setParameters((s: any) => ({ ...s, motif_consultation: v }))
-              }
-              minHeight={56}
-            />
+        {isEditingCurrentParams ? (
+          <BlueField
+            theme={theme}
+            label="Motif de consultation :"
+            value={draftCurrentParams?.motif_consultation ?? ""}
+            onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), motif_consultation: v }))}
+            minHeight={56}
+          />
+        ) : (
+          <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={parameters.motif_consultation || "-"} />
+        )}
 
-            <View style={styles.row}>
+        <View style={styles.row}>
+          <View style={styles.paramHalf}>
+            {isEditingCurrentParams ? (
               <BlueField
                 theme={theme}
                 label="glycémie :"
-                value={parameters.glycemie}
-                onChange={(v: string) => setParameters((s: any) => ({ ...s, glycemie: v }))}
+                value={draftCurrentParams?.glycemie ?? ""}
+                onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), glycemie: v }))}
                 minHeight={56}
               />
+            ) : (
+              <ReadOnlyBlueBox theme={theme} label="glycémie :" value={parameters.glycemie || "-"} />
+            )}
+          </View>
+          <View style={styles.paramHalf}>
+            {isEditingCurrentParams ? (
               <BlueField
                 theme={theme}
                 label="HbA1c :"
-                value={parameters.hba1c}
-                onChange={(v: string) => setParameters((s: any) => ({ ...s, hba1c: v }))}
+                value={draftCurrentParams?.hba1c ?? ""}
+                onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), hba1c: v }))}
                 minHeight={56}
               />
-            </View>
+            ) : (
+              <ReadOnlyBlueBox theme={theme} label="HbA1c :" value={parameters.hba1c || "-"} />
+            )}
+          </View>
+        </View>
 
-            <BlueField
-              theme={theme}
-              label="Examen clinique :"
-              value={parameters.examen_clinique}
-              onChange={(v: string) =>
-                setParameters((s: any) => ({ ...s, examen_clinique: v }))
-              }
-              multiline
-              minHeight={88}
-            />
-
-            <BlueField
-              theme={theme}
-              label="Conclusion :"
-              value={parameters.conclusion}
-              onChange={(v: string) =>
-                setParameters((s: any) => ({ ...s, conclusion: v }))
-              }
-              multiline
-              minHeight={88}
-            />
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={onSave}>
-              <Ionicons name="save-outline" size={18} color="#fff" />
-              <Text style={styles.primaryBtnText}>SAUVEGARDER</Text>
-            </TouchableOpacity>
-          </>
+        {isEditingCurrentParams ? (
+          <BlueField
+            theme={theme}
+            label="Examen clinique :"
+            value={draftCurrentParams?.examen_clinique ?? ""}
+            onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), examen_clinique: v }))}
+            multiline
+            minHeight={88}
+          />
+        ) : (
+          <ReadOnlyBlueBox theme={theme} label="Examen clinique :" value={parameters.examen_clinique || "-"} multiline />
         )}
 
-        {rightTab === "previous_parameters" && (
+        {isEditingCurrentParams ? (
+          <BlueField
+            theme={theme}
+            label="Conclusion :"
+            value={draftCurrentParams?.conclusion ?? ""}
+            onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), conclusion: v }))}
+            multiline
+            minHeight={88}
+          />
+        ) : (
+          <ReadOnlyBlueBox theme={theme} label="Conclusion :" value={parameters.conclusion || "-"} multiline />
+        )}
+      </>
+      )}
+
+      {mainPage === "previous_parameters" && (
+      <>
         <View style={{ marginTop: 10 }}>
           <View style={styles.prevList}>
             {PROTO_PREVIOUS_PARAMS.map((p, idx) => {
@@ -575,41 +623,35 @@ export default function ObservationMedicalTab({
 
               return (
                 <View key={p.visitLabel}>
-                  <TouchableOpacity
-                    onPress={() => setSelectedPrevIndex(idx)}
-                    style={[styles.prevItem, active && styles.prevItemActive]}
-                    activeOpacity={0.8}
-                  >
-                    <View
-                      style={[
-                        styles.prevBar,
-                        { backgroundColor: active ? "#F5B301" : "rgba(0,0,0,0.08)" },
-                      ]}
-                    />
-                    <Text style={[styles.prevItemText, active && styles.prevItemTextActive]}>
-                      {p.visitLabel}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* ✅ Expanded content INSIDE the selected item (video behavior) */}
-                  {active && (
-                    <View style={styles.prevExpanded}>
-                      <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={p.motif} />
-                      <View style={styles.row}>
-                        <ReadOnlyBlueBox theme={theme} label="glycémie :" value={p.glycemie} />
-                        <ReadOnlyBlueBox theme={theme} label="HbA1c :" value={p.hba1c} />
-                      </View>
-                      <ReadOnlyBlueBox theme={theme} label="Examen clinique :" value={p.examen} multiline />
-                      <ReadOnlyBlueBox theme={theme} label="Conclusion :" value={p.conclusion} multiline />
-                    </View>
-                  )}
+                  <View style={[styles.prevItem, active && styles.prevItemActive]}>
+                    <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={styles.prevMainBtn} activeOpacity={0.8}>
+                      <View
+                        style={[
+                          styles.prevBar,
+                          { backgroundColor: active ? "#F5B301" : "rgba(0,0,0,0.08)" },
+                        ]}
+                      />
+                      <Text style={[styles.prevItemText, active && styles.prevItemTextActive]}>
+                        {p.visitLabel}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedPrevIndex(idx);
+                        setPreviousParamsModalOpen(true);
+                      }}
+                      style={styles.viewBtn}
+                    >
+                      <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               );
             })}
           </View>
         </View>
+      </>
       )}
-
       </ThemedCard>
 
       {/* ================= MODALS ================= */}
@@ -638,6 +680,14 @@ export default function ObservationMedicalTab({
         setObservations={setObservations}
       />
 
+
+      <PreviousParametersModal
+        theme={theme}
+        visible={previousParamsModalOpen}
+        onClose={() => setPreviousParamsModalOpen(false)}
+        row={selectedPrev}
+      />
+
       {/* "MODIFIER LE PATIENT" modal (matches the antecedents screenshot) */}
       <AntecedentsModal
         theme={theme}
@@ -658,7 +708,6 @@ export default function ObservationMedicalTab({
         setCommentaire={setCommentaire}
       />
     </View>
-    </View>
   );
 }
 
@@ -673,7 +722,11 @@ function FlatTabs<T extends string>({
   onChange,
 }: {
   theme: any;
-  tabs: { key: T; label: string }[];
+  tabs: {
+    key: T;
+    label: string;
+    icon?: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  }[];
   activeKey: T;
   onChange: (k: T) => void;
 }) {
@@ -698,9 +751,18 @@ function FlatTabs<T extends string>({
               },
             ]}
           >
-            <Text style={[flatTabStyles.tabText, { opacity: active ? 1 : 0.75 }]}>
-              {t.label}
-            </Text>
+            <View style={flatTabStyles.tabInner}>
+              {t.icon ? (
+                <MaterialCommunityIcons
+                  name={t.icon}
+                  size={15}
+                  color={active ? theme.colors.primary : theme.colors.textSecondary}
+                />
+              ) : null}
+              <Text style={[flatTabStyles.tabText, { opacity: active ? 1 : 0.75 }]}>
+                {t.label}
+              </Text>
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -722,6 +784,11 @@ const flatTabStyles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 6,
     borderWidth: 1,
+  },
+  tabInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   tabText: {
     fontWeight: "900",
@@ -837,6 +904,45 @@ function ReadOnlyBlueBox({
         <Text style={{ fontWeight: "900", opacity: 0.75 }}>{value}</Text>
       </View>
     </View>
+  );
+}
+
+
+function PreviousParametersModal({
+  theme,
+  visible,
+  onClose,
+  row,
+}: any) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center", padding: 18 }}>
+        <View style={{ width: "100%", maxWidth: 920, borderRadius: 10, overflow: "hidden", backgroundColor: theme.colors.surface }}>
+          <View style={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primary }}>
+            <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 0.5 }}>PARAMETRES PRECEDENTS</Text>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16 }}>
+            <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
+            <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={row?.motif || "-"} />
+            <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+              <View style={{ flex: 1, minWidth: 230 }}>
+                <ReadOnlyBlueBox theme={theme} label="glycémie :" value={row?.glycemie || "-"} />
+              </View>
+              <View style={{ flex: 1, minWidth: 230 }}>
+                <ReadOnlyBlueBox theme={theme} label="HbA1c :" value={row?.hba1c || "-"} />
+              </View>
+            </View>
+            <ReadOnlyBlueBox theme={theme} label="Examen clinique :" value={row?.examen || "-"} multiline />
+            <ReadOnlyBlueBox theme={theme} label="Conclusion :" value={row?.conclusion || "-"} multiline />
+          </ScrollView>
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.02)" }}>
+            <TouchableOpacity onPress={onClose} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
+              <Text style={{ color: "#fff", fontWeight: "900" }}>FERMER</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -1150,6 +1256,11 @@ function ModalTextarea({
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    singlePaneWrap: {
+      width: "100%",
+      alignSelf: "stretch",
+      gap: 12,
+    },
     twoColWrap: {
       flexDirection: "row",
       gap: 12,
@@ -1181,13 +1292,15 @@ const createStyles = (theme: any) =>
     yellowBtnText: { fontWeight: "900", color: "#fff", fontSize: 12 },
 
     grid2: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-    row: { flexDirection: "row", gap: 12 },
+    row: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
+    paramHalf: { flex: 1, minWidth: 230 },
 
     rightTopRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
       gap: 10,
+      flexWrap: "wrap",
     },
 
     /* ===== Label tab visuals ===== */
@@ -1315,8 +1428,10 @@ const createStyles = (theme: any) =>
       backgroundColor: "rgba(245, 179, 1, 0.08)",
     },
     prevBar: { width: 6, height: 22, borderRadius: 6, marginRight: 10 },
+    prevMainBtn: { flex: 1, flexDirection: "row", alignItems: "center" },
     prevItemText: { fontWeight: "900", opacity: 0.75 },
     prevItemTextActive: { opacity: 1 },
+    viewBtn: { marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 },
 
     primaryBtn: {
       marginTop: 14,
@@ -1400,3 +1515,5 @@ const createStyles = (theme: any) =>
     },
 
   });
+
+
