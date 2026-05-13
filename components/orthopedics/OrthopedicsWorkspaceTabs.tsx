@@ -5,12 +5,12 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 export type OrthopedicsWorkspaceTool =
   | "joint"
   | "range-of-motion"
-  | "imaging";
+  | "history";
 
 const TABS = [
   { key: "joint", label: "Joint" },
   { key: "range-of-motion", label: "ROM" },
-  { key: "imaging", label: "Imaging" },
+  { key: "history", label: "History" },
 ] as const;
 
 export function OrthopedicsWorkspaceTabs({
@@ -28,7 +28,7 @@ export function OrthopedicsWorkspaceTabs({
         ...t,
         icon: (
           <MaterialCommunityIcons
-            name={t.key === "joint" ? "human-handsup" : t.key === "range-of-motion" ? "angle-acute" : "flask-outline"}
+            name={t.key === "joint" ? "human-handsup" : t.key === "range-of-motion" ? "angle-acute" : "history"}
             size={16}
             color={t.key === active ? "#fff" : theme.colors.textSecondary}
           />

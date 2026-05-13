@@ -29,13 +29,13 @@ const NAV: NavItem[] = [
   { key: "visits", label: "Visits", route: "/visits", section: "main", icon: ({ color, size }) => <Ionicons name="clipboard-outline" size={size} color={color} /> },
   { key: "consultations", label: "Consultations", route: "/consultations", section: "main", icon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> },
 
-  { key: "dentistry_workspace", label: "Dentistry (Test)", route: "/dentistry-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
-  { key: "dermatology_workspace", label: "Dermatology (Test)", route: "/dermatology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
-  { key: "orthopedics_workspace", label: "Orthopedics (Test)", route: "/orthopedics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
-  { key: "gynecology_workspace", label: "Gynecology (Test)", route: "/gynecology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
-  { key: "cardiology_workspace", label: "Cardiology (Test)", route: "/cardiology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
+  { key: "dentistry_workspace", label: "Dentistry", route: "/dentistry-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
+  { key: "dermatology_workspace", label: "Dermatology", route: "/dermatology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
+  { key: "orthopedics_workspace", label: "Orthopedics", route: "/orthopedics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
+  { key: "gynecology_workspace", label: "Gynecology", route: "/gynecology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
+  { key: "cardiology_workspace", label: "Cardiology", route: "/cardiology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
 
-  { key: "payments", label: "Billing", route: "/payments", section: "management", visible: ({ role, isClinicAdmin }) => role === "assistant" || (role === "doctor" && isClinicAdmin), icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
+  { key: "payments", label: "Billing", route: "/payments", section: "management", icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
   { key: "services", label: "Services", route: "/services", section: "management", icon: ({ color, size }) => <MaterialIcons name="medical-services" size={size} color={color} /> },
   { key: "reports", label: "Reports", route: "/reports", section: "management", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
   { key: "tasks", label: "Tasks", route: "/tasks", section: "management", icon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} /> },
@@ -43,9 +43,7 @@ const NAV: NavItem[] = [
   { key: "users", label: "Team", route: "/users", section: "management", visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin, icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} /> },
 
   { key: "chats", label: "Chats", route: "/chats", section: "tools", icon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} /> },
-  { key: "imaging_tools", label: "Imaging Tools", route: "/imaging-tools", section: "tools", icon: ({ color, size }) => <Ionicons name="scan-outline" size={size} color={color} /> },
-  { key: "notifications", label: "Notifications (Test)", route: "/notifications", section: "tools", icon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} /> },
-  { key: "imaging_legacy", label: "Imaging (Legacy)", route: "/imaging", section: "tools", icon: ({ color, size }) => <Ionicons name="images-outline" size={size} color={color} /> },
+  { key: "notifications", label: "Notifications", route: "/notifications", section: "tools", icon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} /> },
 
   { key: "settings", label: "Settings", route: "/settings", section: "account", icon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> },
   { key: "profile", label: "Profile", route: "/profile", section: "account", icon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} /> },
@@ -82,11 +80,11 @@ export default function Layout() {
       <Drawer.Screen name="patients" options={{ drawerLabel: "Patients" }} />
       <Drawer.Screen name="visits" options={{ drawerLabel: "Visits" }} />
       <Drawer.Screen name="consultations" options={{ drawerLabel: "Consultations" }} />
-      <Drawer.Screen name="dentistry-workspace" options={{ drawerLabel: "Dentistry (Test)" }} />
-      <Drawer.Screen name="dermatology-workspace" options={{ drawerLabel: "Dermatology (Test)" }} />
-      <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics (Test)" }} />
-      <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology (Test)" }} />
-      <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology (Test)" }} />
+      <Drawer.Screen name="dentistry-workspace" options={{ drawerLabel: "Dentistry" }} />
+      <Drawer.Screen name="dermatology-workspace" options={{ drawerLabel: "Dermatology" }} />
+      <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics" }} />
+      <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology" }} />
+      <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
       <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />
@@ -96,9 +94,11 @@ export default function Layout() {
       <Drawer.Screen name="settings" options={{ drawerLabel: "Settings" }} />
       <Drawer.Screen name="profile" options={{ drawerLabel: "Profile" }} />
       <Drawer.Screen name="chats" options={{ drawerLabel: "Chats" }} />
-      <Drawer.Screen name="imaging-tools" options={{ drawerLabel: "Imaging Tools" }} />
-      <Drawer.Screen name="notifications" options={{ drawerLabel: "Notifications (Test)" }} />
-      <Drawer.Screen name="imaging" options={{ drawerLabel: "Imaging (Legacy)" }} />
+      <Drawer.Screen name="notifications" options={{ drawerLabel: "Notifications" }} />
+      <Drawer.Screen name="settings-practice" options={{ drawerItemStyle: { display: "none" } }} />
+      <Drawer.Screen name="settings-subscription" options={{ drawerItemStyle: { display: "none" } }} />
+      <Drawer.Screen name="settings-security" options={{ drawerItemStyle: { display: "none" } }} />
+      <Drawer.Screen name="settings-data" options={{ drawerItemStyle: { display: "none" } }} />
       <Drawer.Screen name="patient_medical_info" options={{ drawerItemStyle: { display: "none" } }} />
       <Drawer.Screen name="consultation/index" options={{ drawerItemStyle: { display: "none" } }} />
     </Drawer>

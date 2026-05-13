@@ -1,5 +1,3 @@
-import { getOhifBaseUrlWithOverrides, normalizeOhifBaseUrl } from "@/config/ohif";
-import type { SpecialityKey } from "@/config/speciality";
 import { db } from "@/database/database_conn";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./auth_context";
@@ -21,8 +19,6 @@ export type SubscriptionInfo = {
 type AppData = {
   clinic: any | null;
   isClinicAdmin: boolean;
-  ohifBaseUrlBySpeciality: Partial<Record<SpecialityKey, string>>;
-  getOhifBaseUrlFor: (speciality?: SpecialityKey | null) => string;
   subscription: SubscriptionInfo;
   loading: boolean;
 };
@@ -54,9 +50,6 @@ const DEFAULT_SUBSCRIPTION: SubscriptionInfo = {
 export const AppDataProvider = ({ children }: any) => {
   const [clinic, setClinic] = useState<any | null>(null);
   const [isClinicAdmin, setIsClinicAdmin] = useState(false);
-  const [ohifBaseUrlBySpeciality, setOhifBaseUrlBySpeciality] = useState<
-    Partial<Record<SpecialityKey, string>>
-  >({});
   const [subscription, setSubscription] = useState<SubscriptionInfo>(DEFAULT_SUBSCRIPTION);
   const [loading, setLoading] = useState(true);
 
@@ -141,35 +134,9 @@ export const AppDataProvider = ({ children }: any) => {
           if (!cancelled) setSubscription(DEFAULT_SUBSCRIPTION);
         }
 
-        // Optional: load per-speciality OHIF base URLs (requires SQL migration).
-        try {
-          const { data: toolsData, error } = await db
-            .from("clinic_speciality_tools")
-            .select("speciality_key, base_url, tool_type, active")
-            .eq("clinic_id", clinicId)
-            .eq("tool_type", "ohif")
-            .eq("active", true);
-
-          if (!cancelled) {
-            if (error) {
-              setOhifBaseUrlBySpeciality({});
-            } else {
-              const next: Partial<Record<SpecialityKey, string>> = {};
-              for (const row of (toolsData as any[]) || []) {
-                const key = String((row as any)?.speciality_key || "").toLowerCase() as SpecialityKey;
-                const normalized = normalizeOhifBaseUrl((row as any)?.base_url);
-                if (normalized) next[key] = normalized;
-              }
-              setOhifBaseUrlBySpeciality(next);
-            }
-          }
-        } catch {
-          if (!cancelled) setOhifBaseUrlBySpeciality({});
-        }
       } else if (!cancelled) {
         setClinic(null);
         setIsClinicAdmin(false);
-        setOhifBaseUrlBySpeciality({});
         setSubscription(DEFAULT_SUBSCRIPTION);
       }
 
@@ -187,9 +154,6 @@ export const AppDataProvider = ({ children }: any) => {
       value={{
         clinic,
         isClinicAdmin,
-        ohifBaseUrlBySpeciality,
-        getOhifBaseUrlFor: (speciality?: SpecialityKey | null) =>
-          getOhifBaseUrlWithOverrides(speciality, ohifBaseUrlBySpeciality),
         subscription,
         loading,
       }}

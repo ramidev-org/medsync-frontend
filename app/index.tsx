@@ -29,19 +29,21 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 
 /**
  * Cal.com-ish feel:
  * - sticky header w/ subtle blur
- * - hero = animated “scheduling UI” illustration (no static image)
+ * - hero = animated scheduling UI illustration (no static image)
  * - section spacing + cards
  * - consistent reveal animations across sections
  * - click nav items -> smooth scroll to section
  */
 
 const navItems = [
-  { label: "Features", id: "features" },
-  { label: "Testimonials", id: "testimonials" },
+  { label: "Fonctionnalites", id: "features" },
+  { label: "Avis medecins", id: "testimonials" },
+  { label: "Tarifs", id: "pricing" },
   { label: "FAQ", id: "faq" },
   { label: "Contact", id: "contact" },
 ];
@@ -52,26 +54,30 @@ const DASHBOARD_IMAGE =
 
 const features = [
   {
-    title: "Appointment Management",
-    description: "Smart scheduling with automated reminders",
+    title: "Agenda du medecin",
+    description: "Une vue claire pour les rendez-vous, les passages spontanes et les suivis.",
+    icon: "calendar-outline",
     image:
       "https://images.unsplash.com/photo-1633526543814-9718c8922b7a?auto=format&fit=crop&w=1600&q=80",
   },
   {
-    title: "Patient Records",
-    description: "Complete digital medical files",
+    title: "Dossiers patients",
+    description: "Historique, constantes, consultations et documents retrouves rapidement.",
+    icon: "folder-open-outline",
     image:
       "https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&w=1600&q=80",
   },
   {
-    title: "Billing & Payments",
-    description: "Invoicing and payment tracking",
+    title: "Facturation simple",
+    description: "Suivez les actes, factures, paiements recus et montants en attente.",
+    icon: "card-outline",
     image:
       "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1600&q=80",
   },
   {
-    title: "Prescription Printing",
-    description: "Quick prescription generation",
+    title: "Ordonnances PDF",
+    description: "Imprimez ordonnances, lettres et documents avec en-tete du cabinet.",
+    icon: "document-text-outline",
     image:
       "https://images.unsplash.com/photo-1584362917165-526a968579e8?auto=format&fit=crop&w=1600&q=80",
   },
@@ -79,72 +85,102 @@ const features = [
 
 const testimonials = [
   {
-    name: "Dr. Sarah Mitchell",
-    specialty: "General Practitioner",
-    text: "For 2 years the software has made my work and consultations easier. Professional team.",
+    name: "Dr. Amina B.",
+    specialty: "Medecine generale",
+    text: "Le workflow reste simple pour un cabinet solo tout en gardant les notes, paiements et suivis bien organises.",
     avatar: "https://randomuser.me/api/portraits/women/44.jpg",
   },
   {
-    name: "Dr. James Parker",
-    specialty: "Pediatrics",
-    text: "Ergonomic software with the most useful features, plus a technical team that listens and is very available.",
+    name: "Dr. Karim M.",
+    specialty: "Dentisterie",
+    text: "Les rendez-vous, traitements et paiements sont plus faciles a suivre sans passer par plusieurs carnets papier.",
     avatar: "https://randomuser.me/api/portraits/men/32.jpg",
   },
   {
-    name: "Dr. Emily Roberts",
-    specialty: "Neurophysiology",
-    text: "Facilitates many tasks and a dynamic, professional team. Congratulations.",
+    name: "Dr. Lina H.",
+    specialty: "Dermatologie",
+    text: "Le dossier patient est pratique. Les observations et les taches de suivi restent au meme endroit.",
     avatar: "https://randomuser.me/api/portraits/women/65.jpg",
   },
   {
-    name: "Dr. Michael Chen",
+    name: "Dr. Samir A.",
     specialty: "Urology",
-    text: "Always listening, efficient support. Facilitates management and good patient care.",
+    text: "Une alternative moderne aux logiciels locaux, surtout quand on veut acces web et sauvegarde.",
     avatar: "https://randomuser.me/api/portraits/men/76.jpg",
   },
     {
-    name: "Dr. Samir Ahmed",
-    specialty: "Urology",
-    text: "Always listening, efficient support. Facilitates management and good patient care.",
+    name: "Dr. Nesrine T.",
+    specialty: "Cardiology",
+    text: "Le tableau de bord rend la journee plus lisible : visites, taches, paiements et actions patient.",
     avatar: "https://randomuser.me/api/portraits/men/74.jpg",
   },
 ];
 
 const specialties = [
-  "General Practitioner",
-  "Pediatrics",
-  "Orthopedist",
-  "Ophthalmologist",
-  "Cardiology",
-  "Urology",
-  "Dermatology",
-  "Neurology",
+  "Medecine generale",
+  "Pediatrie",
+  "Orthopedie",
+  "Ophtalmologie",
+  "Cardiologie",
+  "Urologie",
+  "Dermatologie",
+  "Neurologie",
 ];
 
 const stats = [
-  { number: "900+", label: "Doctors" },
-  { number: "4.35M+", label: "Patients" },
-  { number: "32+", label: "Regions" },
+  { number: "120+", label: "Cabinets cibles" },
+  { number: "35k+", label: "Patients organises" },
+  { number: "300+", label: "Medecins a servir" },
+];
+
+const pricingPlans = [
+  {
+    name: "Medecin solo",
+    price: "4 900 DA",
+    cadence: "/ mois",
+    description: "Pour un cabinet prive gere par un seul medecin.",
+    icon: "person-outline",
+    featured: false,
+    features: ["Agenda et rendez-vous", "Dossiers patients", "Consultations et constantes", "Ordonnances et lettres", "Paiements simples"],
+  },
+  {
+    name: "Clinique",
+    price: "14 900 DA",
+    cadence: "/ mois",
+    description: "Pour cabinet avec assistant, equipe ou plusieurs postes.",
+    icon: "business-outline",
+    featured: true,
+    features: ["Tout le plan solo", "Medecins et assistants", "Services et facturation", "Taches partagees", "Support prioritaire"],
+  },
+  {
+    name: "Test",
+    price: "0 DA",
+    cadence: "10 jours",
+    description: "Essai accompagne avant activation reelle du cabinet.",
+    icon: "key-outline",
+    featured: false,
+    features: ["Demonstration complete", "Donnees exemple", "Configuration guidee", "Retour metier", "Sans engagement"],
+  },
 ];
 
 const faqItems = [
   {
-    question: "Is my data secure?",
-    answer: "Yes, all data is encrypted and securely stored with regular backups.",
+    question: "Mes donnees patients sont-elles securisees ?",
+    answer: "Le lancement production doit inclure acces strict par cabinet, sauvegardes et journal audit avant les vrais patients.",
   },
   {
-    question: "Can I get help if I can't use certain features?",
+    question: "Est-ce que je peux etre accompagne ?",
     answer:
-      "Our support team is available to assist you with any features you need help with.",
+      "Oui. Le lancement doit inclure une configuration guidee et un support WhatsApp pour les cabinets pilotes.",
   },
   {
-    question: "Is the software compatible with Mac?",
-    answer: "Yes, our software works on Windows, Mac, and web browsers.",
+    question: "Est-ce reserve aux grandes cliniques ?",
+    answer: "Non. Le workflow principal est pense d abord pour un medecin seul dans un cabinet prive.",
   },
   {
-    question: "How do I recover my data if I change equipment?",
+    question: "Que se passe-t-il si je change ordinateur ?",
     answer:
-      "Your data is cloud-based and can be accessed from any device after login.",
+      "En mode reel, les donnees du cabinet sont liees au compte et non a une seule machine.",
   },
 ];
 
@@ -307,7 +343,7 @@ function SectionHeader({
   );
 }
 
-/** Cal-like “hero illustration” (animated UI cards + blobs) */
+/** Cal-like hero illustration (animated UI cards + blobs) */
 function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
   const t = useSharedValue(0);
 
@@ -433,7 +469,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
         ]}
       />
 
-      {/* Main “scheduling UI” card */}
+      {/* Main scheduling UI card */}
       <View
         style={{
           position: "absolute",
@@ -480,7 +516,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 fontSize: 12,
               }}
             >
-              Tue • 15 min • Online
+              Aujourd hui • 15 min • Cabinet
             </Text>
           </View>
 
@@ -499,7 +535,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 color: "#0D6EFD",
               }}
             >
-              Available
+              Disponible
             </Text>
           </View>
         </View>
@@ -513,7 +549,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 color: "#0b1220",
               }}
             >
-              May 2026
+              Mai 2026
             </Text>
 
             <View
@@ -584,7 +620,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
           </View>
         </View>
 
-        {/* tiny moving “EKG” bar */}
+        {/* tiny moving EKG bar */}
         <View
           style={{
             marginTop: 14,
@@ -632,7 +668,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             color: "#0b1220",
           }}
         >
-          Reminder sent
+          Rappel envoyé
         </Text>
         <Text
           style={{
@@ -642,7 +678,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             marginTop: 4,
           }}
         >
-          Patient confirmed ✅
+          Patient confirmé
         </Text>
       </Animated.View>
 
@@ -669,7 +705,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             color: "#0b1220",
           }}
         >
-          Next appointment
+          Prochain rendez-vous
         </Text>
         <Text
           style={{
@@ -679,7 +715,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             marginTop: 4,
           }}
         >
-          Wed • 10:00 • Pediatrics
+          Demain • 10:00 • Pédiatrie
         </Text>
       </Animated.View>
     </View>
@@ -699,6 +735,7 @@ export default function Index() {
   const sectionY = useRef<Record<string, number>>({
     features: 0,
     testimonials: 0,
+    pricing: 0,
     faq: 0,
     contact: 0,
   }).current;
@@ -806,8 +843,8 @@ export default function Index() {
 
               <View style={{ width: 10 }} />
 
-              <SecondaryButton label="SIGN IN" onPress={() => router.push("/login")} />
-              <PrimaryButton label="SIGN UP NOW" onPress={() => router.push("/signup")} />
+              <SecondaryButton label="CONNEXION" onPress={() => router.push("/login")} />
+              <PrimaryButton label="ESSAI GRATUIT" onPress={() => router.push("/signup")} />
             </View>
           </View>
         </Container>
@@ -845,7 +882,7 @@ export default function Index() {
                       color: "#0D6EFD",
                     }}
                   >
-                    Scheduling • Patient records • Billing
+                    Agenda - Patients - Ordonnances - Paiements
                   </Text>
                 </View>
 
@@ -857,8 +894,8 @@ export default function Index() {
                     lineHeight: isWide ? 58 : 46,
                   }}
                 >
-                  Modern clinic management,
-                  {"\n"}made simple.
+                  Gerez votre cabinet medical,
+                  {"\n"}simplement.
                 </Text>
 
                 <Text
@@ -871,17 +908,17 @@ export default function Index() {
                     maxWidth: 560,
                   }}
                 >
-                  A Cal.com-style experience for your clinic: beautifully designed scheduling,
-                  automated reminders, and tools that keep consultations flowing.
+                  Une experience moderne pour les medecins en Algerie : rendez-vous, dossiers patients,
+                  consultations, ordonnances, paiements et taches dans un seul espace.
                 </Text>
 
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
-                  <PrimaryButton label="GET STARTED" onPress={() => router.push("/signup")} />
-                  <SecondaryButton label="SEE FEATURES" onPress={() => scrollToSection("features")} />
+                  <PrimaryButton label="OBTENIR UNE CLE ESSAI" onPress={() => router.push("/signup")} />
+                  <SecondaryButton label="VOIR LES FONCTIONNALITES" onPress={() => scrollToSection("features")} />
                 </View>
 
                 <View style={{ flexDirection: "row", gap: 18, marginTop: 20, flexWrap: "wrap" }}>
-                  {["Fast onboarding", "Secure cloud", "Support included"].map((t) => (
+                  {["Prise en main rapide", "Acces securise", "Support WhatsApp"].map((t) => (
                     <View
                       key={t}
                       style={{
@@ -924,9 +961,9 @@ export default function Index() {
       <Container>
         <Animated.View entering={FadeInUp.delay(80).duration(650)} style={{ paddingVertical: 64 }}>
           <SectionHeader
-            eyebrow="CLINIC MANAGEMENT"
-            title="Everything you need to run your clinic"
-            description="Simple to learn, powerful to use. Designed for day-to-day operations, consultations, billing, and patient follow-up."
+            eyebrow="GESTION DE CABINET"
+            title="Tout pour gerer le quotidien"
+            description="Simple a apprendre, assez complet pour les consultations, les ordonnances, le suivi patient et les paiements."
           />
 
           <View
@@ -938,11 +975,11 @@ export default function Index() {
           >
             <View style={{ flex: 1, gap: 12 }}>
               {[
-                "Appointment Management",
-                "Consultation Management",
-                "Patient Files",
-                "Payment Management",
-                "Printing",
+                "Appointments and waiting flow",
+                "Consultation notes and vitals",
+                "Patient files and documents",
+                "Payments and invoices",
+                "Ordonnances et lettres",
               ].map((item, i) => (
                 <View key={i} style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
                   <View
@@ -997,8 +1034,8 @@ export default function Index() {
           <Animated.View entering={FadeInUp.delay(120).duration(650)} style={{ paddingVertical: 64 }}>
             <SectionHeader
               center
-              title="Features built for real clinics"
-              description="A clean workflow, fast actions, and tools that feel professional."
+              title="Better than a simple desktop cabinet tool"
+              description="Keep the familiar clean design, but add the cloud workflow, solo-doctor focus, and launch-ready operations your market needs."
             />
 
             <View
@@ -1033,6 +1070,22 @@ export default function Index() {
                     transition={250}
                   />
                   <View style={{ padding: 16 }}>
+                    <View
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 14,
+                        backgroundColor: "rgba(13,110,253,0.10)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginTop: -38,
+                        marginBottom: 10,
+                        borderWidth: 1,
+                        borderColor: "rgba(13,110,253,0.18)",
+                      }}
+                    >
+                      <Ionicons name={f.icon as any} size={21} color="#0D6EFD" />
+                    </View>
                     <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0b1220" }}>
                       {f.title}
                     </Text>
@@ -1052,13 +1105,13 @@ export default function Index() {
               ))}
             </View>
 
-            {/* Specialties chips (Cal-like “pill list”) */}
+            {/* Specialties chips */}
             <Animated.View entering={FadeInUp.delay(360).duration(650)} style={{ marginTop: 34 }}>
               <SectionHeader
                 center
-                eyebrow="SPECIALTIES"
-                title="Adapted to all specialties"
-                description="Built to support any medical practice with a flexible workflow."
+                eyebrow="SPECIALITES"
+                title="Adapte aux specialites courantes"
+                description="Le meme workflow de base, avec des espaces specialises quand le cabinet en a besoin."
               />
 
               <View
@@ -1123,7 +1176,7 @@ export default function Index() {
         </Container>
       </View>
 
-      {/* TESTIMONIALS */}
+      {/* AVIS */}
 <View
   onLayout={(e) => {
     sectionY.testimonials = e.nativeEvent.layout.y;
@@ -1131,9 +1184,9 @@ export default function Index() {
 >
   <Container>
     <Animated.View entering={FadeInUp.delay(240).duration(650)} style={{ paddingVertical: 64 }}>
-      <SectionHeader center eyebrow="TESTIMONIALS" title="More than 900 doctors trust us" />
+      <SectionHeader center eyebrow="AVIS MEDECINS" title="Pense pour les cabinets medicaux en Algerie" />
 
-      {/* ✅ Web fix wrapper */}
+      {/* Web fix wrapper */}
       <View
         style={{
           width: "100%",
@@ -1148,7 +1201,7 @@ export default function Index() {
               } as any)
             : null),
         }}
-        // ✅ ensure horizontal drag doesn't get swallowed by vertical scroll
+        // Ensure horizontal drag does not get swallowed by vertical scroll
         onStartShouldSetResponderCapture={(evt) => {
           if (Platform.OS !== "web") return false;
 
@@ -1165,16 +1218,16 @@ export default function Index() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 6, gap: 14 }}
 
-          // ✅ keep these
+          // Keep these
           nestedScrollEnabled
           scrollEnabled
           directionalLockEnabled
           alwaysBounceHorizontal={false}
 
-          // ✅ helps web list layout
+          // Helps web list layout
           style={{ flexGrow: 0 }}
 
-          // ✅ make sure it *needs* scrolling
+          // Make sure it needs scrolling
           renderItem={({ item, index }) => (
             <Animated.View
               entering={FadeInUp.delay(260 + index * 70).duration(650)}
@@ -1206,7 +1259,7 @@ export default function Index() {
               </View>
 
               <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, lineHeight: 22, color: "#334155" }}>
-                “{item.text}”
+                {item.text}
               </Text>
             </Animated.View>
           )}
@@ -1215,12 +1268,112 @@ export default function Index() {
 
       <Animated.View entering={FadeInUp.delay(520).duration(650)} style={{ alignItems: "center", marginTop: 10 }}>
         <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: "#64748b" }}>
-          Swipe horizontally to explore →
+          Faites glisser pour voir plus d avis
         </Text>
       </Animated.View>
     </Animated.View>
   </Container>
 </View>
+
+
+      {/* PRICING */}
+      <View
+        onLayout={(e) => {
+          sectionY.pricing = e.nativeEvent.layout.y;
+        }}
+        style={{ backgroundColor: "#fff" }}
+      >
+        <Container>
+          <Animated.View entering={FadeInUp.delay(260).duration(650)} style={{ paddingVertical: 64 }}>
+            <SectionHeader
+              center
+              eyebrow="TARIFS"
+              title="Des offres simples pour demarrer"
+              description="Un plan pour le medecin seul, un plan pour la clinique, et un essai pour tester le workflow avant activation."
+            />
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
+              {pricingPlans.map((plan, idx) => (
+                <Animated.View
+                  key={plan.name}
+                  entering={FadeInUp.delay(280 + idx * 70).duration(650)}
+                  style={{
+                    width: 340,
+                    borderRadius: 22,
+                    padding: 20,
+                    borderWidth: 1,
+                    borderColor: plan.featured ? "rgba(13,110,253,0.35)" : "rgba(2,6,23,0.10)",
+                    backgroundColor: plan.featured ? "#0D6EFD" : "#f8fafc",
+                    shadowColor: "#000",
+                    shadowOpacity: plan.featured ? 0.14 : 0.06,
+                    shadowRadius: 18,
+                    elevation: 5,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <View
+                      style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: 16,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: plan.featured ? "rgba(255,255,255,0.16)" : "rgba(13,110,253,0.10)",
+                      }}
+                    >
+                      <Ionicons name={plan.icon as any} size={22} color={plan.featured ? "#fff" : "#0D6EFD"} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 18, color: plan.featured ? "#fff" : "#0b1220" }}>
+                        {plan.name}
+                      </Text>
+                      <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: plan.featured ? "rgba(255,255,255,0.82)" : "#64748b", marginTop: 2 }}>
+                        {plan.description}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, marginTop: 18 }}>
+                    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 34, color: plan.featured ? "#fff" : "#0b1220" }}>
+                      {plan.price}
+                    </Text>
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: plan.featured ? "rgba(255,255,255,0.78)" : "#64748b", marginBottom: 6 }}>
+                      {plan.cadence}
+                    </Text>
+                  </View>
+
+                  <View style={{ gap: 10, marginTop: 18 }}>
+                    {plan.features.map((item) => (
+                      <View key={item} style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+                        <Ionicons name="checkmark-circle" size={17} color={plan.featured ? "#fff" : "#16a34a"} />
+                        <Text style={{ flex: 1, fontFamily: "Inter_400Regular", fontSize: 14, color: plan.featured ? "rgba(255,255,255,0.9)" : "#334155" }}>
+                          {item}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <Pressable onPress={() => router.push("/signup")} style={{ marginTop: 22 }}>
+                    <View
+                      style={{
+                        height: 46,
+                        borderRadius: 14,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: plan.featured ? "#fff" : "#0D6EFD",
+                      }}
+                    >
+                      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: plan.featured ? "#0D6EFD" : "#fff" }}>
+                        {plan.name === "Test" ? "DEMANDER UN TEST" : "CHOISIR CE PLAN"}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </View>
+          </Animated.View>
+        </Container>
+      </View>
 
 
       {/* FAQ */}
@@ -1232,7 +1385,7 @@ export default function Index() {
       >
         <Container>
           <Animated.View entering={FadeInUp.delay(280).duration(650)} style={{ paddingVertical: 64 }}>
-            <SectionHeader center title="Frequently Asked Questions" />
+            <SectionHeader center title="Questions frequentes" />
 
             <View style={{ gap: 12, maxWidth: 860, width: "100%", alignSelf: "center" as any }}>
               {faqItems.map((f, idx) => {
@@ -1270,7 +1423,7 @@ export default function Index() {
                           {f.question}
                         </Text>
                         <Text style={{ fontFamily: "Inter_600SemiBold", color: "#0D6EFD" }}>
-                          {open ? "–" : "+"}
+                          {open ? "-" : "+"}
                         </Text>
                       </View>
                     </Pressable>
@@ -1305,7 +1458,7 @@ export default function Index() {
                 color: "rgba(255,255,255,0.9)",
               }}
             >
-              REGISTRATION FORM
+              ESSAI GRATUIT
             </Text>
             <Text
               style={{
@@ -1317,7 +1470,7 @@ export default function Index() {
                 lineHeight: 44,
               }}
             >
-              Sign Up Now
+              Lancez votre cabinet pilote
             </Text>
 
             <View style={{ marginTop: 20 }}>
@@ -1331,7 +1484,7 @@ export default function Index() {
                   }}
                 >
                   <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0D6EFD" }}>
-                    GET STARTED
+                    OBTENIR UNE CLÉ ESSAI
                   </Text>
                 </View>
               </Pressable>
@@ -1352,7 +1505,7 @@ export default function Index() {
             <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 28 }}>
               <View style={{ minWidth: 260, flex: 1 }}>
                 <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 20, color: "#fff", marginBottom: 12 }}>
-                  Contact Us
+                  Contact
                 </Text>
 
                 <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#94a3b8", marginBottom: 6 }}>
@@ -1366,7 +1519,7 @@ export default function Index() {
                 </Text>
 
                 <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: "#fff", marginBottom: 10 }}>
-                  Social Networks
+                  Réseaux sociaux
                 </Text>
 
                 <View style={{ flexDirection: "row", gap: 10 }}>
@@ -1392,7 +1545,7 @@ export default function Index() {
 
             <View style={{ marginTop: 32, paddingTop: 22, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)" }}>
               <Text style={{ textAlign: "center", fontFamily: "Inter_400Regular", fontSize: 13, color: "#94a3b8" }}>
-                © Copyright 2026 MedSync. All rights reserved.
+                © 2026 MyDoctor. Tous droits réservés.
               </Text>
             </View>
           </Animated.View>
@@ -1401,3 +1554,8 @@ export default function Index() {
     </ScrollView>
   );
 }
+
+
+
+
+

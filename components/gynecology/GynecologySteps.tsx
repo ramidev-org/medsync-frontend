@@ -11,7 +11,7 @@ const STEPS: { key: StepKey; title: string; subtitle: string; icon: keyof typeof
   { key: "history", title: "History", subtitle: "Cycle, obstetric history, contraception, symptoms.", icon: "book-outline" },
   { key: "exam", title: "Exam", subtitle: "General + pelvic exam findings.", icon: "stethoscope" },
   { key: "pregnancy", title: "Pregnancy", subtitle: "LMP, gestational age, risk factors, red flags.", icon: "human-pregnant" },
-  { key: "tests", title: "Tests", subtitle: "Labs, imaging, swabs.", icon: "flask-outline" },
+  { key: "tests", title: "Tests", subtitle: "Requested follow-up and result notes.", icon: "clipboard-text-outline" },
   { key: "assessment", title: "Assessment", subtitle: "Working diagnosis and differentials.", icon: "clipboard-text-outline" },
   { key: "plan", title: "Plan", subtitle: "Treatment, counseling, follow-up.", icon: "check-decagram-outline" },
 ];

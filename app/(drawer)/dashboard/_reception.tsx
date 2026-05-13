@@ -2,6 +2,7 @@ import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
+import { useTasks } from "@/contexts/tasks_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +18,7 @@ export default function ReceptionDashboardPage() {
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
   const { clinic, subscription } = useAppData();
+  const { recentTasks } = useTasks();
   const router = useRouter();
   const [counts, setCounts] = useState<any | null>(null);
 
@@ -268,12 +270,18 @@ export default function ReceptionDashboardPage() {
 
             {/* Recent activity */}
             <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface, marginTop: 16 }]}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Activité récente</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
 
               <View style={styles.activityList}>
-                <ActivityItem title="Visite créée" time="Il y a 10 min" icon="calendar-outline" theme={theme} />
-                <ActivityItem title="Patient enregistré" time="Il y a 45 min" icon="person-add-outline" theme={theme} />
-                <ActivityItem title="Paiement ajouté" time="Il y a 2 h" icon="cash-outline" theme={theme} />
+                {recentTasks.map((task) => (
+                  <ActivityItem
+                    key={task.id}
+                    title={task.title}
+                    time={`${task.dueText || "Not set"} - ${task.status.replace("_", " ")}`}
+                    icon={task.status === "done" ? "checkmark-done-outline" : task.status === "in_progress" ? "time-outline" : "checkbox-outline"}
+                    theme={theme}
+                  />
+                ))}
               </View>
             </View>
 

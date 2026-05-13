@@ -1,20 +1,9 @@
 import { PageShell } from "@/components/page_shell";
+import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-
-type TaskPriority = "high" | "medium" | "low";
-type TaskStatus = "todo" | "in_progress" | "done";
-
-type TaskRow = {
-  id: string;
-  title: string;
-  assignee: string;
-  priority: TaskPriority;
-  status: TaskStatus;
-  dueText?: string;
-};
 
 type TaskForm = {
   title: string;
@@ -23,17 +12,10 @@ type TaskForm = {
   priority: TaskPriority;
 };
 
-const initialTasks: TaskRow[] = [
-  { id: "t1", title: "Review pending lab results", assignee: "Dr. Amine", priority: "high", status: "todo", dueText: "Today 14:00" },
-  { id: "t2", title: "Call post-op patients", assignee: "Assistant Lina", priority: "medium", status: "in_progress", dueText: "Today 16:30" },
-  { id: "t3", title: "Approve insurance claims", assignee: "Admin", priority: "high", status: "todo", dueText: "Tomorrow" },
-  { id: "t4", title: "Refill anesthetics inventory", assignee: "Assistant Yacine", priority: "low", status: "done", dueText: "Completed" },
-];
-
 export default function TasksPage() {
   const { theme } = useTheme();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
-  const [tasks, setTasks] = React.useState<TaskRow[]>(initialTasks);
+  const { stats, grouped, addTask, moveTask } = useTasks();
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState<TaskForm>({
     title: "",
@@ -42,40 +24,9 @@ export default function TasksPage() {
     priority: "medium",
   });
 
-  const stats = React.useMemo(() => {
-    const todo = tasks.filter((item) => item.status === "todo").length;
-    const inProgress = tasks.filter((item) => item.status === "in_progress").length;
-    const done = tasks.filter((item) => item.status === "done").length;
-    return { total: tasks.length, todo, inProgress, done };
-  }, [tasks]);
-
-  const grouped = React.useMemo(() => {
-    return {
-      todo: tasks.filter((item) => item.status === "todo"),
-      in_progress: tasks.filter((item) => item.status === "in_progress"),
-      done: tasks.filter((item) => item.status === "done"),
-    };
-  }, [tasks]);
-
-  const moveTask = (taskId: string, toStatus: TaskStatus) => {
-    setTasks((prev) =>
-      prev.map((item) => (item.id === taskId ? { ...item, status: toStatus } : item)),
-    );
-  };
-
-  const addTask = () => {
+  const createTask = () => {
     if (!draft.title.trim() || !draft.assignee.trim()) return;
-    setTasks((prev) => [
-      {
-        id: `task_${Date.now()}`,
-        title: draft.title.trim(),
-        assignee: draft.assignee.trim(),
-        dueText: draft.dueText.trim() || "Not set",
-        priority: draft.priority,
-        status: "todo",
-      },
-      ...prev,
-    ]);
+    addTask(draft);
     setOpen(false);
     setDraft({ title: "", assignee: "", dueText: "", priority: "medium" });
   };
@@ -93,7 +44,7 @@ export default function TasksPage() {
     >
       <View style={styles.notice}>
         <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
-        <Text style={styles.noticeText}>Tasks are currently local-only in app state (not linked to DB yet).</Text>
+        <Text style={styles.noticeText}>Tasks are shared with the dashboard for the solo doctor daily workflow.</Text>
       </View>
 
       <View style={styles.statsRow}>
@@ -163,7 +114,7 @@ export default function TasksPage() {
               <TouchableOpacity style={styles.modalCancel} onPress={() => setOpen(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSave} onPress={addTask}>
+              <TouchableOpacity style={styles.modalSave} onPress={createTask}>
                 <Text style={styles.modalSaveText}>Create</Text>
               </TouchableOpacity>
             </View>
@@ -183,7 +134,7 @@ function TaskColumn({
 }: {
   title: string;
   icon: any;
-  rows: TaskRow[];
+  rows: ReturnType<typeof useTasks>["tasks"];
   onMove: (taskId: string, toStatus: TaskStatus) => void;
   theme: any;
 }) {

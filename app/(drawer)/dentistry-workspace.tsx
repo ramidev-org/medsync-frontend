@@ -109,6 +109,12 @@ export default function DentistryWorkspacePage() {
     examen_clinique: "",
     conclusion: "",
   });
+  const [vitals, setVitals] = React.useState({
+    taille_cm: "",
+    poids_kg: "",
+    tension: "",
+    temperature_c: "",
+  });
 
   const resetFilters = React.useCallback(() => {
     const d = new Date();
@@ -270,7 +276,7 @@ export default function DentistryWorkspacePage() {
                   <TouchableOpacity
                     style={{ backgroundColor: theme.colors.warning, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 }}
                     onPress={() => {
-                      setDraftCurrentParams({ ...parameters });
+                      setDraftCurrentParams({ ...parameters, vitals: { ...vitals } });
                       setIsEditingCurrentParams(true);
                     }}
                   >
@@ -281,7 +287,11 @@ export default function DentistryWorkspacePage() {
                     <TouchableOpacity
                       style={{ backgroundColor: theme.colors.success, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 }}
                       onPress={() => {
-                        if (draftCurrentParams) setParameters(draftCurrentParams);
+                        if (draftCurrentParams) {
+                          const { vitals: nextVitals, ...nextParameters } = draftCurrentParams;
+                          setParameters(nextParameters);
+                          if (nextVitals) setVitals(nextVitals);
+                        }
                         setDraftCurrentParams(null);
                         setIsEditingCurrentParams(false);
                       }}
@@ -303,6 +313,20 @@ export default function DentistryWorkspacePage() {
 
               {isEditingCurrentParams ? (
                 <>
+                  <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <BlueField theme={theme} label="Taille (cm) :" value={draftCurrentParams?.vitals?.taille_cm ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), vitals: { ...((s ?? {}).vitals ?? vitals), taille_cm: v } }))} minHeight={56} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <BlueField theme={theme} label="Poids (kg) :" value={draftCurrentParams?.vitals?.poids_kg ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), vitals: { ...((s ?? {}).vitals ?? vitals), poids_kg: v } }))} minHeight={56} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <BlueField theme={theme} label="Tension :" value={draftCurrentParams?.vitals?.tension ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), vitals: { ...((s ?? {}).vitals ?? vitals), tension: v } }))} minHeight={56} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <BlueField theme={theme} label="Temperature (C) :" value={draftCurrentParams?.vitals?.temperature_c ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), vitals: { ...((s ?? {}).vitals ?? vitals), temperature_c: v } }))} minHeight={56} />
+                    </View>
+                  </View>
                   <BlueField theme={theme} label="Motif de consultation :" value={draftCurrentParams?.motif_consultation ?? ""} onChange={(v: string) => setDraftCurrentParams((s: any) => ({ ...(s ?? parameters), motif_consultation: v }))} minHeight={56} />
                   <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
                     <View style={{ flex: 1, minWidth: 230 }}>
@@ -317,6 +341,20 @@ export default function DentistryWorkspacePage() {
                 </>
               ) : (
                 <>
+                  <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <ReadOnlyBlueBox theme={theme} label="Taille (cm) :" value={vitals.taille_cm || "-"} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <ReadOnlyBlueBox theme={theme} label="Poids (kg) :" value={vitals.poids_kg || "-"} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <ReadOnlyBlueBox theme={theme} label="Tension :" value={vitals.tension || "-"} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 160 }}>
+                      <ReadOnlyBlueBox theme={theme} label="Temperature (C) :" value={vitals.temperature_c || "-"} />
+                    </View>
+                  </View>
                   <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={parameters.motif_consultation || "-"} />
                   <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
                     <View style={{ flex: 1, minWidth: 230 }}>

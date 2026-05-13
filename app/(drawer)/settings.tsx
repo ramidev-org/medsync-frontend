@@ -26,7 +26,7 @@ export default function SettingsPage() {
   }, [subscription?.expires_at]);
 
   return (
-    <PageShell title="Settings" subtitle="Clinic operations, billing, integrations, and security controls">
+    <PageShell title="Settings" subtitle="Solo doctor workflow, billing, practice profile, and security controls">
       <ScrollView contentContainerStyle={{ gap: 12 }}>
         <ThemedCard style={styles.summaryCard}>
           <View style={styles.summaryHead}>
@@ -53,10 +53,10 @@ export default function SettingsPage() {
         </ThemedCard>
 
         <ThemedCard style={styles.section}>
-          <SectionTitle title="Workspace" theme={theme} />
+          <SectionTitle title="Solo Workspace" theme={theme} />
           <ActionRow icon="person-circle-outline" label="Profile & Personal Info" subtitle="Edit your profile details and role fields" onPress={() => router.push("/profile")} theme={theme} />
-          <ActionRow icon="people-outline" label="Team Directory" subtitle="Manage clinic users, invites, and permissions" onPress={() => router.push("/users")} theme={theme} />
-          <ActionRow icon="chatbubbles-outline" label="Internal Chats" subtitle="Staff communication and handoff workflow" onPress={() => router.push("/chats")} theme={theme} />
+          <ActionRow icon="business-outline" label="Practice Profile" subtitle="Cabinet identity, address, document header, and opening hours" onPress={() => router.push("/settings-practice")} theme={theme} />
+          {!!isClinicAdmin && <ActionRow icon="people-outline" label="Team Directory" subtitle="Manage clinic users, invites, and permissions" onPress={() => router.push("/users")} theme={theme} />}
         </ThemedCard>
 
         <ThemedCard style={styles.section}>
@@ -68,15 +68,14 @@ export default function SettingsPage() {
         </ThemedCard>
 
         <ThemedCard style={styles.section}>
-          <SectionTitle title="Integrations" theme={theme} />
-          <ActionRow icon="scan-outline" label="Imaging Tools" subtitle="OHIF and specialty tools routing by clinic" onPress={() => router.push("/imaging-tools")} theme={theme} />
-          <ActionRow icon="cloud-outline" label="Data Connections" subtitle="API endpoints, service health, and sync status" onPress={() => {}} theme={theme} />
-          <ActionRow icon="shield-checkmark-outline" label="Audit Trail" subtitle="Operational logs and safety checks" onPress={() => {}} theme={theme} />
+          <SectionTitle title="Subscription & Data" theme={theme} />
+          <ActionRow icon="receipt-outline" label="Subscription" subtitle="Plan, limits, renewal, and payment instructions" onPress={() => router.push("/settings-subscription")} theme={theme} />
+          <ActionRow icon="cloud-outline" label="Data & Backup" subtitle="Export, backup cadence, and service health checklist" onPress={() => router.push("/settings-data")} theme={theme} />
         </ThemedCard>
 
         <ThemedCard style={styles.section}>
           <SectionTitle title="Security & Access" theme={theme} />
-          <ActionRow icon="lock-closed-outline" label="Password & Session Policy" subtitle="Session behavior and account security baseline" onPress={() => {}} theme={theme} />
+          <ActionRow icon="lock-closed-outline" label="Password & Session Policy" subtitle="Session behavior and account security baseline" onPress={() => router.push("/settings-security")} theme={theme} />
           <ActionRow icon="notifications-outline" label="Notification Controls" subtitle="Configure alerts and signal priorities" onPress={() => router.push("/notifications")} theme={theme} />
           <ActionRow icon="log-out-outline" label="Sign Out" subtitle="End current session on this device" onPress={logout} theme={theme} danger />
         </ThemedCard>

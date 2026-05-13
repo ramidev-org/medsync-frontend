@@ -14,10 +14,8 @@ import type { ConsultationSession } from "@/services/backend.types";
 import { printOrdonnanceA4 } from "@/services/print.services";
 
 // Tab pages (separate files)
-import BilansTab from "./_tabs/_bilan";
 import ConsultationHeader from "./_tabs/_consultation_header";
 import DocumentsTab from "./_tabs/_documents";
-import ImagingTab from "./_tabs/_imaging";
 import LettresTab from "./_tabs/_lettres";
 import MaladiesTab from "./_tabs/_maladies";
 import ObservationMedicalTab from "./_tabs/_observation";
@@ -144,8 +142,6 @@ type SelectedOrdonnance = {
 type MainTabKey =
   | "observation"
   | "prescriptions"
-  | "lab_tests"
-  | "imaging"
   | "letters"
   | "diagnoses"
   | "symptoms"
@@ -156,8 +152,6 @@ type MainTabKey =
 const MAIN_TABS: { key: MainTabKey; label: string }[] = [
   { key: "observation", label: "Observation mÃ©dicale" },
   { key: "prescriptions", label: "Ordonnances" },
-  { key: "lab_tests", label: "Bilans" },
-  { key: "imaging", label: "Imagerie" },
   { key: "letters", label: "Lettres" },
   { key: "diagnoses", label: "Maladies" },
   { key: "symptoms", label: "SymptÃ´mes" },
@@ -567,18 +561,6 @@ export default function ConsultationPage() {
               });
             }}
           />
-        )}
-
-        {activeMainTab === "lab_tests" && (
-          <BilansTab
-            theme={theme}
-            consultationId={consultation!.id}
-            patientId={appointment!.patient!.id}
-          />
-        )}
-
-        {activeMainTab === "imaging" && (
-          <ImagingTab theme={theme} doctorSpeciality={doctorSpeciality} consultationId={consultation?.id} />
         )}
 
         {activeMainTab === "letters" && (

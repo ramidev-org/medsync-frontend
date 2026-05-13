@@ -3,6 +3,7 @@ import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
+import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import {
@@ -60,6 +61,7 @@ export default function DoctorDashboardPage() {
 
   const { user } = useAuth();
   const { clinic, subscription } = useAppData();
+  const { recentTasks } = useTasks();
   const [counts, setCounts] = useState<any | null>(null);
 
   useEffect(() => {
@@ -315,11 +317,18 @@ export default function DoctorDashboardPage() {
             </View>
 
             <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface, marginTop: 16 }]}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Activité Récente</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
               <View style={styles.activityList}>
-                <ActivityItem title="Consultation" time="Il y a 32 min" icon="eye" theme={theme} />
-                <ActivityItem title="RDV Annulé" time="Il y a 1 h" icon="checkmark-circle" theme={theme} />
-                <ActivityItem title="Nouveau Patient" time="Il y a 6 h" icon="calendar" theme={theme} />
+                {recentTasks.map((task) => (
+                  <ActivityItem
+                    key={task.id}
+                    title={task.title}
+                    time={`${task.dueText || "Not set"} - ${taskStatusLabel(task.status)}`}
+                    icon={taskIcon(task.status)}
+                    priority={task.priority}
+                    theme={theme}
+                  />
+                ))}
               </View>
             </View>
           </View>
@@ -453,9 +462,25 @@ const DoctorStat = ({ label, value, theme, progress }: any) => {
   );
 };
 
-const ActivityItem = ({ title, time, icon, theme }: any) => {
-  const Ion = require("@expo/vector-icons").Ionicons;
+function taskStatusLabel(status: TaskStatus) {
+  if (status === "in_progress") return "in progress";
+  if (status === "done") return "done";
+  return "to do";
+}
 
+function taskIcon(status: TaskStatus) {
+  if (status === "in_progress") return "time-outline";
+  if (status === "done") return "checkmark-done-outline";
+  return "checkbox-outline";
+}
+
+function priorityColor(priority: TaskPriority, theme: any) {
+  if (priority === "high") return theme.colors.error;
+  if (priority === "medium") return theme.colors.warning;
+  return theme.colors.success;
+}
+
+const ActivityItem = ({ title, time, icon, priority = "medium", theme }: any) => {
   const activityStyles = StyleSheet.create({
     activityItem: { flexDirection: "row", alignItems: "center", gap: 12 },
     activityIcon: {
@@ -464,7 +489,7 @@ const ActivityItem = ({ title, time, icon, theme }: any) => {
       borderRadius: 18,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.accent,
+      backgroundColor: `${priorityColor(priority, theme)}18`,
     },
     activityContent: { flex: 1 },
     activityTitle: { fontWeight: "600", fontSize: 14, color: theme.colors.text },
@@ -474,7 +499,7 @@ const ActivityItem = ({ title, time, icon, theme }: any) => {
   return (
     <View style={activityStyles.activityItem}>
       <View style={activityStyles.activityIcon}>
-        <Ion name={icon} size={16} color={theme.colors.primary} />
+        <Ionicons name={icon} size={16} color={priorityColor(priority, theme)} />
       </View>
       <View style={activityStyles.activityContent}>
         <Text style={activityStyles.activityTitle}>{title}</Text>
