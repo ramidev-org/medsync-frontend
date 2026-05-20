@@ -3,6 +3,7 @@ import {
   Inter_600SemiBold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +22,6 @@ import Animated, {
   Easing,
   FadeInDown,
   FadeInUp,
-  Layout,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -29,7 +29,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
 
 /**
  * Cal.com-ish feel:
@@ -47,10 +46,6 @@ const navItems = [
   { label: "FAQ", id: "faq" },
   { label: "Contact", id: "contact" },
 ];
-
-// You can keep these for later (used in sections)
-const DASHBOARD_IMAGE =
-  "https://images.unsplash.com/photo-1676364424409-e87919caffe1?auto=format&fit=crop&w=1600&q=80";
 
 const features = [
   {
@@ -128,16 +123,16 @@ const specialties = [
 ];
 
 const stats = [
-  { number: "120+", label: "Cabinets cibles" },
-  { number: "35k+", label: "Patients organises" },
-  { number: "300+", label: "Medecins a servir" },
+  { value: 120, suffix: "+", label: "Cabinets cibles" },
+  { value: 35000, suffix: "+", label: "Patients organises" },
+  { value: 300, suffix: "+", label: "Medecins a servir" },
 ];
 
 const pricingPlans = [
   {
     name: "Medecin solo",
-    price: "4 900 DA",
-    cadence: "/ mois",
+    price: "9 900 DA",
+    cadence: "/ an",
     description: "Pour un cabinet prive gere par un seul medecin.",
     icon: "person-outline",
     featured: false,
@@ -145,12 +140,27 @@ const pricingPlans = [
   },
   {
     name: "Clinique",
-    price: "14 900 DA",
-    cadence: "/ mois",
+    price: "26 000 DA",
+    cadence: "/ an",
     description: "Pour cabinet avec assistant, equipe ou plusieurs postes.",
     icon: "business-outline",
-    featured: true,
+    featured: false,
     features: ["Tout le plan solo", "Medecins et assistants", "Services et facturation", "Taches partagees", "Support prioritaire"],
+  },
+  {
+    name: "Pro",
+    price: "35 000 DA",
+    cadence: "/ an",
+    description: "Pour les cliniques structurees avec plus d operations, de supervision et d accompagnement.",
+    icon: "sparkles-outline",
+    featured: true,
+    features: [
+      "Tout le plan clinique",
+      "Multi-postes et suivi d equipe avance",
+      "Rapports mensuels et annuels",
+      "Journal d activite et supervision",
+      "Accompagnement prioritaire au lancement",
+    ],
   },
   {
     name: "Test",
@@ -182,6 +192,134 @@ const faqItems = [
     answer:
       "En mode reel, les donnees du cabinet sont liees au compte et non a une seule machine.",
   },
+];
+
+const complianceHighlights = [
+  {
+    title: "Acces par role",
+    description: "Medecin, assistant et administrateur avec permissions separees pour limiter les erreurs et proteger les dossiers.",
+    icon: "shield-checkmark-outline",
+  },
+  {
+    title: "Sauvegardes et tracabilite",
+    description: "Journal d actions, sauvegardes planifiees et reprise plus simple avant mise en production reelle.",
+    icon: "archive-outline",
+  },
+  {
+    title: "Hebergement et confidentialite",
+    description: "Preparation du cadre de confidentialite, des conditions d utilisation et des engagements de traitement des donnees.",
+    icon: "document-lock-outline",
+  },
+];
+
+const productScreens = [
+  {
+    title: "Agenda et file d attente",
+    subtitle: "Vue reception + medecin pour la journee en cours",
+    accent: "#0D6EFD",
+    metrics: ["18 rendez-vous", "4 patients en attente", "2 rappels envoyes"],
+  },
+  {
+    title: "Dossier patient complet",
+    subtitle: "Constantes, antecedents, consultation et documents",
+    accent: "#16a34a",
+    metrics: ["Antecedents", "Mesures vitales", "Ordonnances PDF"],
+  },
+  {
+    title: "Paiements et services",
+    subtitle: "Facturation simple avec suivi des actes et recus",
+    accent: "#f59e0b",
+    metrics: ["6 paiements recus", "2 impayes", "Journal du jour"],
+  },
+];
+
+const workflowSteps = [
+  {
+    title: "1. Setup",
+    description: "Activation du cabinet, configuration de base et personnalisation des informations de pratique.",
+  },
+  {
+    title: "2. Onboard team",
+    description: "Invitation des medecins et assistants avec les bons acces selon leurs roles.",
+  },
+  {
+    title: "3. Start consultations",
+    description: "Commencez les rendez-vous, les dossiers patients, les ordonnances et les paiements dans le meme espace.",
+  },
+];
+
+const audienceCards = [
+  {
+    title: "Medecin solo",
+    description: "Pour un cabinet prive qui veut gagner du temps sur les rendez-vous, les notes et les ordonnances.",
+    bullets: ["Vue simple", "Demarrage rapide", "Suivi patient centralise"],
+  },
+  {
+    title: "Cabinet avec assistant",
+    description: "Pour une organisation reception + medecin avec planning partage, paiements et coordination du flux patient.",
+    bullets: ["Accueil et file d attente", "Gestion des paiements", "Taches partagees"],
+  },
+  {
+    title: "Clinique multi-docteurs",
+    description: "Pour les structures qui ont besoin de plusieurs postes, de supervision et de reporting.",
+    bullets: ["Multi-postes", "Suivi equipe", "Pilotage plus avance"],
+  },
+];
+
+const specialtyCards = [
+  {
+    title: "Dentisterie",
+    description: "Suivi soins, actes, odontogramme et historique de traitement.",
+    icon: "medkit-outline",
+    tags: ["Odontogramme", "Actes", "Historique"],
+  },
+  {
+    title: "Dermatologie",
+    description: "Photos, suivi de lesions et comparaisons avant/apres.",
+    icon: "image-outline",
+    tags: ["Photos", "Suivi lesions", "Comparaison"],
+  },
+  {
+    title: "Cardiologie",
+    description: "Observations cliniques, suivi tension et consultation structuree.",
+    icon: "heart-outline",
+    tags: ["Constantes", "Observation", "Suivi"],
+  },
+  {
+    title: "Gynecologie",
+    description: "Formulaires specialises, historique et parcours de consultation.",
+    icon: "female-outline",
+    tags: ["Formulaire", "Historique", "Parcours"],
+  },
+];
+
+const comparisonRows = [
+  {
+    label: "Agenda et rendez-vous",
+    values: ["Oui", "Oui", "Oui", "Oui"],
+  },
+  {
+    label: "Utilisateurs d equipe",
+    values: ["1 medecin", "Equipe", "Equipe avancee", "Demo guidee"],
+  },
+  {
+    label: "Paiements et services",
+    values: ["Essentiel", "Complet", "Complet", "Apercu"],
+  },
+  {
+    label: "Rapports et supervision",
+    values: ["-", "Basique", "Avance", "-"],
+  },
+  {
+    label: "Accompagnement",
+    values: ["Standard", "Prioritaire", "Prioritaire + migration", "Guide"],
+  },
+];
+
+const trustLinks = [
+  "Politique de confidentialite",
+  "Conditions d utilisation",
+  "Traitement des donnees",
 ];
 
 const MAX_WIDTH = 1200;
@@ -343,7 +481,50 @@ function SectionHeader({
   );
 }
 
-/** Cal-like hero illustration (animated UI cards + blobs) */
+function CountUpNumber({
+  value,
+  suffix = "",
+  duration = 1200,
+  start = true,
+}: {
+  value: number;
+  suffix?: string;
+  duration?: number;
+  start?: boolean;
+}) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (!start) {
+      setDisplayValue(0);
+      return;
+    }
+    let frameId = 0;
+    let startTime: number | null = null;
+
+    const step = (timestamp: number) => {
+      if (startTime === null) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setDisplayValue(Math.round(value * eased));
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      }
+    };
+
+    frameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [duration, start, value]);
+
+  const formatted =
+    displayValue >= 1000 ? `${Math.round(displayValue / 1000)}k` : `${displayValue}`;
+
+  return <>{formatted}{suffix}</>;
+}
+
+/** Animated hero illustration tuned to the MedSync workflow */
 function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
   const t = useSharedValue(0);
 
@@ -496,7 +677,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             }}
           >
             <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold" }}>
-              Dr
+              MS
             </Text>
           </View>
           <View style={{ flex: 1 }}>
@@ -507,7 +688,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 fontSize: 14,
               }}
             >
-              Consultation
+              Tableau de bord
             </Text>
             <Text
               style={{
@@ -516,7 +697,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 fontSize: 12,
               }}
             >
-              Aujourd hui • 15 min • Cabinet
+              Agenda • Patients • Consultations • Paiements
             </Text>
           </View>
 
@@ -535,7 +716,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 color: "#0D6EFD",
               }}
             >
-              Disponible
+              Cabinet actif
             </Text>
           </View>
         </View>
@@ -549,7 +730,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
                 color: "#0b1220",
               }}
             >
-              Mai 2026
+              Journee du cabinet
             </Text>
 
             <View
@@ -705,7 +886,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             color: "#0b1220",
           }}
         >
-          Prochain rendez-vous
+          Paiement enregistre
         </Text>
         <Text
           style={{
@@ -715,7 +896,7 @@ function ClinicHeroIllustration({ isWide }: { isWide: boolean }) {
             marginTop: 4,
           }}
         >
-          Demain • 10:00 • Pédiatrie
+          4 500 DA recus aujourd hui
         </Text>
       </Animated.View>
     </View>
@@ -726,12 +907,16 @@ export default function Index() {
   const router = useRouter();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold });
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
+  const [hasPlayedStats, setHasPlayedStats] = useState(false);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
 
 
   
 
   // Smooth scroll support
   const scrollRef = useRef<ScrollView>(null);
+  const testimonialsRef = useRef<FlatList<(typeof testimonials)[number]>>(null);
+  const statsSectionY = useRef<number | null>(null);
   const sectionY = useRef<Record<string, number>>({
     features: 0,
     testimonials: 0,
@@ -747,6 +932,8 @@ export default function Index() {
     const w = Dimensions.get("window").width;
     return w >= 900;
   }, []);
+  const testimonialCardWidth = isWide ? 432 : 352;
+  const testimonialStep = testimonialCardWidth + 12;
 
   if (!fontsLoaded) return null;
 
@@ -757,6 +944,12 @@ export default function Index() {
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
+    const viewHeight = e.nativeEvent.layoutMeasurement.height;
+    const totalHeight = e.nativeEvent.contentSize.height;
+
+    if (!hasPlayedStats && statsSectionY.current !== null && y + viewHeight * 0.9 >= statsSectionY.current) {
+      setHasPlayedStats(true);
+    }
 
     // simple active section detection
     const entries = Object.entries(sectionY).sort((a, b) => a[1] - b[1]);
@@ -764,13 +957,25 @@ export default function Index() {
     for (const [id, top] of entries) {
       if (y + 120 >= top) current = id;
     }
+    if (y + viewHeight >= totalHeight - 48) current = "contact";
     if (current !== activeNav) setActiveNav(current);
   };
 
+  const scrollToTestimonial = (index: number) => {
+    const nextIndex = Math.max(0, Math.min(index, testimonials.length - 1));
+    testimonialsRef.current?.scrollToOffset({
+      offset: nextIndex * testimonialStep,
+      animated: true,
+    });
+    setActiveTestimonial(nextIndex);
+  };
+
   return (
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: "#fff" }}
+      contentContainerStyle={{ paddingBottom: isWide ? 0 : 96 }}
       showsVerticalScrollIndicator={true}
       nestedScrollEnabled
       scrollEventThrottle={16}
@@ -1010,14 +1215,40 @@ export default function Index() {
                 shadowOpacity: 0.08,
                 shadowRadius: 20,
                 elevation: 6,
+                padding: 18,
               }}
             >
-              <Image
-                source={{ uri: DASHBOARD_IMAGE }}
-                style={{ width: "100%", height: 320 }}
-                contentFit="cover"
-                transition={250}
-              />
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#0b1220" }}>
+                Ecran principal du cabinet
+              </Text>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: "#64748b", marginTop: 6 }}>
+                Une interface unifiee pour l accueil, la consultation, les documents et les paiements.
+              </Text>
+
+              <View style={{ marginTop: 16, gap: 12 }}>
+                {[
+                  { title: "Accueil du jour", value: "18 rendez-vous", tone: "#0D6EFD" },
+                  { title: "Patients suivis", value: "124 dossiers actifs", tone: "#16a34a" },
+                  { title: "Paiements", value: "6 recus aujourd hui", tone: "#f59e0b" },
+                ].map((item) => (
+                  <View
+                    key={item.title}
+                    style={{
+                      borderRadius: 16,
+                      padding: 14,
+                      backgroundColor: "rgba(248,250,252,0.96)",
+                      borderWidth: 1,
+                      borderColor: "rgba(2,6,23,0.08)",
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: "#0b1220" }}>{item.title}</Text>
+                      <View style={{ width: 10, height: 10, borderRadius: 999, backgroundColor: item.tone }} />
+                    </View>
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: "#64748b", marginTop: 8 }}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
             </Animated.View>
           </View>
         </Animated.View>
@@ -1040,10 +1271,88 @@ export default function Index() {
 
             <View
               style={{
+                width: "100%",
+                ...(Platform.OS === "web"
+                  ? ({
+                      overflowX: "auto",
+                      overflowY: "hidden",
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-x" as any,
+                    } as any)
+                  : null),
+              }}
+            >
+              <FlatList
+                horizontal
+                data={productScreens}
+                keyExtractor={(item) => item.title}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 4, gap: 16 }}
+                renderItem={({ item, index }) => (
+                  <Animated.View
+                    entering={FadeInUp.delay(130 + index * 70).duration(600)}
+                    style={{
+                      width: isWide ? 360 : 300,
+                      borderRadius: 24,
+                      backgroundColor: "#fff",
+                      borderWidth: 1,
+                      borderColor: "rgba(2,6,23,0.08)",
+                      padding: 18,
+                      shadowColor: "#000",
+                      shadowOpacity: 0.06,
+                      shadowRadius: 16,
+                      elevation: 4,
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <View>
+                        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0b1220" }}>{item.title}</Text>
+                        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                          {item.subtitle}
+                        </Text>
+                      </View>
+                      <View style={{ width: 12, height: 12, borderRadius: 999, backgroundColor: item.accent }} />
+                    </View>
+
+                    <View
+                      style={{
+                        marginTop: 18,
+                        borderRadius: 20,
+                        backgroundColor: "#f8fafc",
+                        borderWidth: 1,
+                        borderColor: "rgba(2,6,23,0.06)",
+                        padding: 16,
+                        gap: 10,
+                      }}
+                    >
+                      {item.metrics.map((metric, metricIndex) => (
+                        <View
+                          key={metric}
+                          style={{
+                            borderRadius: 14,
+                            paddingVertical: 10,
+                            paddingHorizontal: 12,
+                            backgroundColor: metricIndex === 0 ? "rgba(13,110,253,0.08)" : "#fff",
+                            borderWidth: 1,
+                            borderColor: "rgba(2,6,23,0.06)",
+                          }}
+                        >
+                          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#0b1220" }}>{metric}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </Animated.View>
+                )}
+              />
+            </View>
+
+            <View
+              style={{
                 flexDirection: "row",
                 flexWrap: "wrap",
                 justifyContent: "center",
                 gap: 16,
+                marginTop: 28,
               }}
             >
               {features.map((f, idx) => (
@@ -1054,53 +1363,44 @@ export default function Index() {
                     width: 292,
                     backgroundColor: "#fff",
                     borderRadius: 20,
-                    overflow: "hidden",
                     borderWidth: 1,
                     borderColor: "rgba(2,6,23,0.10)",
                     shadowColor: "#000",
                     shadowOpacity: 0.06,
                     shadowRadius: 18,
                     elevation: 5,
+                    padding: 16,
                   }}
                 >
-                  <Image
-                    source={{ uri: f.image }}
-                    style={{ width: "100%", height: 165 }}
-                    contentFit="cover"
-                    transition={250}
-                  />
-                  <View style={{ padding: 16 }}>
-                    <View
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 14,
-                        backgroundColor: "rgba(13,110,253,0.10)",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginTop: -38,
-                        marginBottom: 10,
-                        borderWidth: 1,
-                        borderColor: "rgba(13,110,253,0.18)",
-                      }}
-                    >
-                      <Ionicons name={f.icon as any} size={21} color="#0D6EFD" />
-                    </View>
-                    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0b1220" }}>
-                      {f.title}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Inter_400Regular",
-                        fontSize: 14,
-                        color: "#556070",
-                        marginTop: 8,
-                        lineHeight: 22,
-                      }}
-                    >
-                      {f.description}
-                    </Text>
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 14,
+                      backgroundColor: "rgba(13,110,253,0.10)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 12,
+                      borderWidth: 1,
+                      borderColor: "rgba(13,110,253,0.18)",
+                    }}
+                  >
+                    <Ionicons name={f.icon as any} size={21} color="#0D6EFD" />
                   </View>
+                  <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0b1220" }}>
+                    {f.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter_400Regular",
+                      fontSize: 14,
+                      color: "#556070",
+                      marginTop: 8,
+                      lineHeight: 22,
+                    }}
+                  >
+                    {f.description}
+                  </Text>
                 </Animated.View>
               ))}
             </View>
@@ -1141,12 +1441,163 @@ export default function Index() {
                 ))}
               </View>
             </Animated.View>
+
+            <Animated.View entering={FadeInUp.delay(390).duration(650)} style={{ marginTop: 34 }}>
+              <SectionHeader
+                center
+                eyebrow="APERCUS"
+                title="Previews specialises"
+                description="Chaque specialite garde le meme socle produit, avec les outils dont la consultation a besoin."
+              />
+
+              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
+                {specialtyCards.map((card, idx) => (
+                  <Animated.View
+                    key={card.title}
+                    entering={FadeInUp.delay(410 + idx * 60).duration(650)}
+                    style={{
+                      width: isWide ? 272 : "100%",
+                      maxWidth: 320,
+                      borderRadius: 22,
+                      backgroundColor: "#fff",
+                      borderWidth: 1,
+                      borderColor: "rgba(2,6,23,0.08)",
+                      padding: 18,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 14,
+                        backgroundColor: "rgba(13,110,253,0.10)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: 12,
+                      }}
+                    >
+                      <Ionicons name={card.icon as any} size={22} color="#0D6EFD" />
+                    </View>
+                    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0b1220" }}>{card.title}</Text>
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#556070", lineHeight: 22, marginTop: 8 }}>
+                      {card.description}
+                    </Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+                      {card.tags.map((tag) => (
+                        <View
+                          key={tag}
+                          style={{
+                            paddingVertical: 8,
+                            paddingHorizontal: 10,
+                            borderRadius: 999,
+                            backgroundColor: "rgba(13,110,253,0.07)",
+                          }}
+                        >
+                          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 11, color: "#0D6EFD" }}>{tag}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </Animated.View>
+                ))}
+              </View>
+            </Animated.View>
+          </Animated.View>
+        </Container>
+      </View>
+
+      {/* HOW IT WORKS */}
+      <View style={{ backgroundColor: "#fff" }}>
+        <Container>
+          <Animated.View entering={FadeInUp.delay(180).duration(650)} style={{ paddingVertical: 64 }}>
+            <SectionHeader
+              center
+              eyebrow="MISE EN ROUTE"
+              title="Comment ca marche"
+              description="Un parcours simple pour activer le cabinet, integrer l equipe et commencer a consulter."
+            />
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
+              {workflowSteps.map((step, idx) => (
+                <Animated.View
+                  key={step.title}
+                  entering={FadeInUp.delay(200 + idx * 60).duration(650)}
+                  style={{
+                    width: isWide ? 360 : "100%",
+                    maxWidth: 380,
+                    borderRadius: 22,
+                    backgroundColor: "#f8fafc",
+                    borderWidth: 1,
+                    borderColor: "rgba(2,6,23,0.08)",
+                    padding: 20,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 18, color: "#0b1220" }}>{step.title}</Text>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#556070", lineHeight: 22, marginTop: 10 }}>
+                    {step.description}
+                  </Text>
+                </Animated.View>
+              ))}
+            </View>
+          </Animated.View>
+        </Container>
+      </View>
+
+      {/* AUDIENCE */}
+      <View style={{ backgroundColor: "#f8fafc" }}>
+        <Container>
+          <Animated.View entering={FadeInUp.delay(200).duration(650)} style={{ paddingVertical: 64 }}>
+            <SectionHeader
+              center
+              eyebrow="POUR QUI"
+              title="Un produit adapte a plusieurs tailles de cabinet"
+              description="Le meme coeur produit, avec le bon niveau d organisation selon votre pratique."
+            />
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
+              {audienceCards.map((card, idx) => (
+                <Animated.View
+                  key={card.title}
+                  entering={FadeInUp.delay(220 + idx * 60).duration(650)}
+                  style={{
+                    width: isWide ? 360 : "100%",
+                    maxWidth: 380,
+                    borderRadius: 22,
+                    backgroundColor: "#fff",
+                    borderWidth: 1,
+                    borderColor: "rgba(2,6,23,0.08)",
+                    padding: 20,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 18, color: "#0b1220" }}>{card.title}</Text>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#556070", lineHeight: 22, marginTop: 10 }}>
+                    {card.description}
+                  </Text>
+                  <View style={{ gap: 9, marginTop: 14 }}>
+                    {card.bullets.map((bullet) => (
+                      <View key={bullet} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: "#334155" }}>{bullet}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
           </Animated.View>
         </Container>
       </View>
 
       {/* STATS */}
-      <View style={{ backgroundColor: "#0D6EFD" }}>
+      <View
+        onLayout={(e) => {
+          const y = e.nativeEvent.layout.y;
+          statsSectionY.current = y;
+          if (!hasPlayedStats && y <= Dimensions.get("window").height * 0.9) {
+            setHasPlayedStats(true);
+          }
+        }}
+        style={{ backgroundColor: "#0D6EFD" }}
+      >
         <Container>
           <Animated.View entering={FadeInUp.delay(200).duration(650)} style={{ paddingVertical: 46 }}>
             <View
@@ -1164,7 +1615,7 @@ export default function Index() {
                   style={{ alignItems: "center" }}
                 >
                   <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 44, color: "#fff" }}>
-                    {s.number}
+                    <CountUpNumber value={s.value} suffix={s.suffix} start={hasPlayedStats} />
                   </Text>
                   <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "rgba(255,255,255,0.92)" }}>
                     {s.label}
@@ -1185,6 +1636,58 @@ export default function Index() {
   <Container>
     <Animated.View entering={FadeInUp.delay(240).duration(650)} style={{ paddingVertical: 64 }}>
       <SectionHeader center eyebrow="AVIS MEDECINS" title="Pense pour les cabinets medicaux en Algerie" />
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          marginBottom: 18,
+        }}
+      >
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: "#64748b", flex: 1 }}>
+          Parcourez les retours des medecins avec les fleches ou en glissant horizontalement.
+        </Text>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Pressable
+            onPress={() => scrollToTestimonial(activeTestimonial - 1)}
+            disabled={activeTestimonial === 0}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 999,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: "rgba(2,6,23,0.10)",
+              backgroundColor: activeTestimonial === 0 ? "#f8fafc" : "#fff",
+            }}
+          >
+            <Ionicons name="arrow-back" size={18} color={activeTestimonial === 0 ? "#94a3b8" : "#0b1220"} />
+          </Pressable>
+          <Pressable
+            onPress={() => scrollToTestimonial(activeTestimonial + 1)}
+            disabled={activeTestimonial === testimonials.length - 1}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 999,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: activeTestimonial === testimonials.length - 1 ? "rgba(2,6,23,0.10)" : "rgba(13,110,253,0.20)",
+              backgroundColor: activeTestimonial === testimonials.length - 1 ? "#f8fafc" : "#0D6EFD",
+            }}
+          >
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={activeTestimonial === testimonials.length - 1 ? "#94a3b8" : "#fff"}
+            />
+          </Pressable>
+        </View>
+      </View>
 
       {/* Web fix wrapper */}
       <View
@@ -1212,11 +1715,19 @@ export default function Index() {
         }}
       >
         <FlatList
+          ref={testimonialsRef}
           horizontal
           data={testimonials}
           keyExtractor={(i) => i.name}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 6, gap: 14 }}
+          contentContainerStyle={{ paddingHorizontal: 6 }}
+          snapToInterval={testimonialStep}
+          decelerationRate="fast"
+          disableIntervalMomentum
+          onMomentumScrollEnd={(e) => {
+            const nextIndex = Math.round(e.nativeEvent.contentOffset.x / testimonialStep);
+            setActiveTestimonial(Math.max(0, Math.min(nextIndex, testimonials.length - 1)));
+          }}
 
           // Keep these
           nestedScrollEnabled
@@ -1232,13 +1743,17 @@ export default function Index() {
             <Animated.View
               entering={FadeInUp.delay(260 + index * 70).duration(650)}
               style={{
-                width: isWide ? 420 : 340, // make cards bigger so overflow is guaranteed
+                width: testimonialCardWidth,
                 backgroundColor: "#f8fafc",
-                padding: 18,
-                borderRadius: 20,
+                padding: 20,
+                borderRadius: 24,
                 borderWidth: 1,
                 borderColor: "rgba(2,6,23,0.10)",
                 marginRight: 12,
+                shadowColor: "#0f172a",
+                shadowOpacity: 0.05,
+                shadowRadius: 16,
+                elevation: 3,
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
@@ -1266,10 +1781,21 @@ export default function Index() {
         />
       </View>
 
-      <Animated.View entering={FadeInUp.delay(520).duration(650)} style={{ alignItems: "center", marginTop: 10 }}>
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: "#64748b" }}>
-          Faites glisser pour voir plus d avis
-        </Text>
+      <Animated.View entering={FadeInUp.delay(520).duration(650)} style={{ alignItems: "center", marginTop: 16 }}>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {testimonials.map((item, index) => (
+            <Pressable
+              key={item.name}
+              onPress={() => scrollToTestimonial(index)}
+              style={{
+                width: activeTestimonial === index ? 28 : 8,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: activeTestimonial === index ? "#0D6EFD" : "rgba(13,110,253,0.22)",
+              }}
+            />
+          ))}
+        </View>
       </Animated.View>
     </Animated.View>
   </Container>
@@ -1289,8 +1815,60 @@ export default function Index() {
               center
               eyebrow="TARIFS"
               title="Des offres simples pour demarrer"
-              description="Un plan pour le medecin seul, un plan pour la clinique, et un essai pour tester le workflow avant activation."
+              description="Facturation annuelle pour les plans actifs, avec un essai accompagne pour valider le workflow avant activation."
             />
+
+            <View
+              style={{
+                alignSelf: "center",
+                marginBottom: 18,
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                borderRadius: 999,
+                backgroundColor: "rgba(13,110,253,0.08)",
+                borderWidth: 1,
+                borderColor: "rgba(13,110,253,0.14)",
+              }}
+            >
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#0D6EFD" }}>
+                Tarifs annuels • activation et onboarding inclus
+              </Text>
+            </View>
+
+            <View
+              style={{
+                alignSelf: "center",
+                marginBottom: 24,
+                width: "100%",
+                maxWidth: 860,
+                borderRadius: 20,
+                backgroundColor: "#f8fafc",
+                borderWidth: 1,
+                borderColor: "rgba(2,6,23,0.08)",
+                padding: 18,
+              }}
+            >
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#0b1220" }}>
+                Promesse onboarding
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                {["Setup initial guide", "Aide migration des donnees", "Support lun-sam 08h-18h"].map((item) => (
+                  <View
+                    key={item}
+                    style={{
+                      paddingVertical: 9,
+                      paddingHorizontal: 12,
+                      borderRadius: 999,
+                      backgroundColor: "#fff",
+                      borderWidth: 1,
+                      borderColor: "rgba(13,110,253,0.12)",
+                    }}
+                  >
+                    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#0D6EFD" }}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
 
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
               {pricingPlans.map((plan, idx) => (
@@ -1298,7 +1876,9 @@ export default function Index() {
                   key={plan.name}
                   entering={FadeInUp.delay(280 + idx * 70).duration(650)}
                   style={{
-                    width: 340,
+                    width: isWide ? 272 : "100%",
+                    maxWidth: 320,
+                    minHeight: 460,
                     borderRadius: 22,
                     padding: 20,
                     borderWidth: 1,
@@ -1353,7 +1933,7 @@ export default function Index() {
                     ))}
                   </View>
 
-                  <Pressable onPress={() => router.push("/signup")} style={{ marginTop: 22 }}>
+                  <Pressable onPress={() => router.push("/signup")} style={{ marginTop: "auto", paddingTop: 22 }}>
                     <View
                       style={{
                         height: 46,
@@ -1368,6 +1948,194 @@ export default function Index() {
                       </Text>
                     </View>
                   </Pressable>
+                </Animated.View>
+              ))}
+            </View>
+
+            <Animated.View entering={FadeInUp.delay(360).duration(650)} style={{ marginTop: 34 }}>
+              <SectionHeader
+                center
+                eyebrow="COMPARAISON"
+                title="Comparer les plans"
+                description="Une vue rapide pour choisir le bon niveau de demarrage pour le cabinet."
+              />
+
+              <View
+                style={{
+                  width: "100%",
+                  ...(Platform.OS === "web"
+                    ? ({
+                        overflowX: "auto",
+                        overflowY: "hidden",
+                        WebkitOverflowScrolling: "touch",
+                        touchAction: "pan-x" as any,
+                      } as any)
+                    : null),
+                }}
+              >
+                <View
+                  style={{
+                    minWidth: 860,
+                    borderRadius: 24,
+                    borderWidth: 1,
+                    borderColor: "rgba(2,6,23,0.08)",
+                    backgroundColor: "#fff",
+                    padding: 12,
+                    shadowColor: "#0f172a",
+                    shadowOpacity: 0.05,
+                    shadowRadius: 20,
+                    elevation: 4,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+                    {["Fonction", "Solo", "Clinique", "Pro", "Test"].map((head, index) => (
+                      <View
+                        key={head}
+                        style={{
+                          width: index === 0 ? 260 : 150,
+                          paddingVertical: 16,
+                          paddingHorizontal: 14,
+                          borderRadius: 18,
+                          backgroundColor:
+                            index === 0
+                              ? "#eff6ff"
+                              : head === "Clinique"
+                                ? "#0D6EFD"
+                                : "#f8fafc",
+                          borderWidth: 1,
+                          borderColor:
+                            head === "Clinique"
+                              ? "rgba(13,110,253,0.35)"
+                              : "rgba(2,6,23,0.08)",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Inter_600SemiBold",
+                            fontSize: 13,
+                            color: head === "Clinique" ? "#fff" : "#0b1220",
+                          }}
+                        >
+                          {head}
+                        </Text>
+                        {head === "Clinique" ? (
+                          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: "rgba(255,255,255,0.82)", marginTop: 4 }}>
+                            Le plus choisi
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+
+                  {comparisonRows.map((row, idx) => (
+                    <View
+                      key={row.label}
+                      style={{
+                        flexDirection: "row",
+                        gap: 10,
+                        marginTop: idx === 0 ? 0 : 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 260,
+                          paddingVertical: 16,
+                          paddingHorizontal: 14,
+                          borderRadius: 18,
+                          backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                          borderWidth: 1,
+                          borderColor: "rgba(2,6,23,0.06)",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: "#0b1220" }}>{row.label}</Text>
+                      </View>
+                      {row.values.map((value, valueIndex) => (
+                        <View
+                          key={`${row.label}-${valueIndex}`}
+                          style={{
+                            width: 150,
+                            paddingVertical: 16,
+                            paddingHorizontal: 14,
+                            borderRadius: 18,
+                            backgroundColor: valueIndex === 1 ? "rgba(13,110,253,0.08)" : idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                            borderWidth: 1,
+                            borderColor: valueIndex === 1 ? "rgba(13,110,253,0.18)" : "rgba(2,6,23,0.06)",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: "Inter_400Regular",
+                              fontSize: 13,
+                              color: valueIndex === 1 ? "#0D6EFD" : "#556070",
+                            }}
+                          >
+                            {value}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </Animated.View>
+          </Animated.View>
+        </Container>
+      </View>
+
+      {/* TRUST / COMPLIANCE */}
+      <View style={{ backgroundColor: "#f8fafc" }}>
+        <Container>
+          <Animated.View entering={FadeInUp.delay(270).duration(650)} style={{ paddingVertical: 64 }}>
+            <SectionHeader
+              center
+              eyebrow="CONFIANCE"
+              title="Informations importantes avant mise en production"
+              description="Le produit couvre deja le coeur metier du cabinet. Cette zone rappelle aussi les points de securite et d exploitation a cadrer pour un usage reel."
+            />
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
+              {complianceHighlights.map((item, idx) => (
+                <Animated.View
+                  key={item.title}
+                  entering={FadeInUp.delay(290 + idx * 60).duration(650)}
+                  style={{
+                    width: 320,
+                    backgroundColor: "#fff",
+                    borderRadius: 20,
+                    padding: 20,
+                    borderWidth: 1,
+                    borderColor: "rgba(2,6,23,0.08)",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 16,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "rgba(13,110,253,0.10)",
+                      marginBottom: 14,
+                    }}
+                  >
+                    <Ionicons name={item.icon as any} size={22} color="#0D6EFD" />
+                  </View>
+                  <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: "#0b1220" }}>
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter_400Regular",
+                      fontSize: 14,
+                      color: "#556070",
+                      lineHeight: 22,
+                      marginTop: 8,
+                    }}
+                  >
+                    {item.description}
+                  </Text>
                 </Animated.View>
               ))}
             </View>
@@ -1391,10 +2159,8 @@ export default function Index() {
               {faqItems.map((f, idx) => {
                 const open = activeFaq === idx;
                 return (
-                  <Animated.View
+                  <View
                     key={f.question}
-                    layout={Layout.springify()}
-                    entering={FadeInUp.delay(300 + idx * 60).duration(650)}
                     style={{
                       backgroundColor: "#fff",
                       borderRadius: 18,
@@ -1422,20 +2188,31 @@ export default function Index() {
                         >
                           {f.question}
                         </Text>
-                        <Text style={{ fontFamily: "Inter_600SemiBold", color: "#0D6EFD" }}>
-                          {open ? "-" : "+"}
-                        </Text>
+                        <View
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 999,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: open ? "rgba(13,110,253,0.10)" : "#f8fafc",
+                          }}
+                        >
+                          <Text style={{ fontFamily: "Inter_600SemiBold", color: "#0D6EFD" }}>
+                            {open ? "-" : "+"}
+                          </Text>
+                        </View>
                       </View>
                     </Pressable>
 
                     {open ? (
-                      <Animated.View entering={FadeInDown.duration(220)} style={{ paddingHorizontal: 18, paddingBottom: 18 }}>
+                      <View style={{ paddingHorizontal: 18, paddingBottom: 18 }}>
                         <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#556070", lineHeight: 22 }}>
                           {f.answer}
                         </Text>
-                      </Animated.View>
+                      </View>
                     ) : null}
-                  </Animated.View>
+                  </View>
                 );
               })}
             </View>
@@ -1508,15 +2285,43 @@ export default function Index() {
                   Contact
                 </Text>
 
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#94a3b8", marginBottom: 6 }}>
-                  +1 (555) 123-4567
+                <View style={{ gap: 10 }}>
+                  {[
+                    { label: "WhatsApp", value: "Numero onboarding a renseigner" },
+                    { label: "Email", value: "Email commercial a renseigner" },
+                    { label: "Onboarding", value: "Contact mise en route a renseigner" },
+                  ].map((item) => (
+                    <View key={item.label}>
+                      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff" }}>{item.label}</Text>
+                      <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#94a3b8", marginTop: 4 }}>
+                        {item.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: "#fff", marginTop: 18, marginBottom: 10 }}>
+                  Liens de confiance
                 </Text>
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#94a3b8", marginBottom: 6 }}>
-                  +1 (555) 987-6543
-                </Text>
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: "#94a3b8", marginBottom: 18 }}>
-                  contact@medsync.com
-                </Text>
+
+                <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+                  {trustLinks.map((name) => (
+                    <Pressable key={name}>
+                      <View
+                        style={{
+                          paddingVertical: 10,
+                          paddingHorizontal: 12,
+                          borderRadius: 999,
+                          backgroundColor: "rgba(255,255,255,0.04)",
+                          borderWidth: 1,
+                          borderColor: "rgba(255,255,255,0.08)",
+                        }}
+                      >
+                        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#cbd5e1" }}>{name}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
 
                 <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: "#fff", marginBottom: 10 }}>
                   Réseaux sociaux
@@ -1552,8 +2357,51 @@ export default function Index() {
         </Container>
       </View>
     </ScrollView>
+    {!isWide ? (
+      <View
+        style={{
+          position: "absolute",
+          left: 14,
+          right: 14,
+          bottom: 14,
+          borderRadius: 18,
+          backgroundColor: "rgba(11,18,32,0.96)",
+          padding: 12,
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.08)",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: "#fff" }}>
+              Activez votre cabinet
+            </Text>
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: "rgba(255,255,255,0.72)", marginTop: 4 }}>
+              Demandez un essai et commencez votre onboarding.
+            </Text>
+          </View>
+          <Pressable onPress={() => router.push("/signup")}>
+            <View
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                backgroundColor: "#0D6EFD",
+              }}
+            >
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: "#fff" }}>
+                ESSAI GRATUIT
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+      </View>
+    ) : null}
+    </View>
   );
 }
+
+
 
 
 
