@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { key: "orthopedics_workspace", label: "Orthopedics", route: "/orthopedics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
   { key: "gynecology_workspace", label: "Gynecology", route: "/gynecology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
   { key: "cardiology_workspace", label: "Cardiology", route: "/cardiology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
+  { key: "medical_analyses_workspace", label: "Analyses médicales", route: "/analyses-medicales-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="flask-outline" size={size} color={color} /> },
 
   { key: "payments", label: "Billing", route: "/payments", section: "management", icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
   { key: "services", label: "Services", route: "/services", section: "management", icon: ({ color, size }) => <MaterialIcons name="medical-services" size={size} color={color} /> },
@@ -85,6 +86,7 @@ export default function Layout() {
       <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics" }} />
       <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology" }} />
       <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology" }} />
+      <Drawer.Screen name="analyses-medicales-workspace" options={{ drawerLabel: "Analyses médicales" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
       <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />
