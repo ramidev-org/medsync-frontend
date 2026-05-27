@@ -1,55 +1,27 @@
-import { PageShell } from "@/components/page_shell";
-import { useTheme } from "@/theme/theme_provider";
-import React from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Alert, View } from "react-native";
-import ObservationMedicalTab from "./consultation/_tabs/_observation";
-
-const initialVitals = {
-  taille_cm: "",
-  poids_kg: "",
-  tension: "",
-  temperature_c: "",
-};
-
-const initialParams = {
-  motif_consultation: "",
-  glycemie: "",
-  hba1c: "",
-  examen_clinique: "",
-  conclusion: "",
-};
+import GenericMedicalWorkspacePage from "@/components/workspaces/GenericMedicalWorkspacePage";
 
 export default function GynecologyWorkspacePage() {
-  const { theme } = useTheme();
-  const [vitals, setVitals] = React.useState(initialVitals);
-  const [parameters, setParameters] = React.useState(initialParams);
-  const [observations, setObservations] = React.useState("");
-
   return (
-    <PageShell
-      title="Gynecology Workspace"
-      subtitle="Observation capture (gynecology)."
-      actions={<MaterialCommunityIcons name="human-female" size={24} color={theme.colors.primary} />}
-    >
-      <View style={{ marginTop: 10 }}>
-        <ObservationMedicalTab
-          theme={theme}
-          doctorSpeciality="gynecologie"
-          vitals={vitals}
-          setVitals={setVitals}
-          parameters={parameters}
-          setParameters={setParameters}
-          observations={observations}
-          setObservations={setObservations}
-          onSave={() =>
-            Alert.alert("Saved", "Workspace note saved locally (no appointment linked yet).")
-          }
-          workspaceMode
-          initialLeftTab="gynecology"
-        />
-      </View>
-    </PageShell>
+    <GenericMedicalWorkspacePage
+      pageTitle="Gynecology Workspace"
+      pageSubtitle="Gynecology and obstetrics consultation workflow."
+      icon="human-female"
+      workspaceTitle="Gynecology / Obstetrics"
+      workspaceSubtitle="Cycle and pregnancy follow-up, warning symptoms, and plan."
+      formFields={[
+        { key: "lmp", label: "LMP" },
+        { key: "pregnancy_status", label: "Pregnancy status" },
+        { key: "gestational_age_weeks", label: "Gestational age (weeks)" },
+        { key: "warning_symptoms", label: "Warning symptoms", multiline: true },
+        { key: "plan", label: "Plan", multiline: true },
+      ]}
+      initialValues={{ lmp: "", pregnancy_status: "", gestational_age_weeks: "", warning_symptoms: "", plan: "" }}
+      historyRows={[
+        "Session #3 - Prenatal lab summary updated",
+        "Session #2 - Ultrasound review",
+        "Session #1 - Initial gynecology/obstetrics assessment",
+      ]}
+    />
   );
 }
 

@@ -12,12 +12,15 @@ import {
   View,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { TopBar } from "@/components/top_bar";
+import { useTheme } from "@/theme/theme_provider";
 
 type BadgeType = "gray" | "green" | "blue" | "orange" | "red" | "purple";
 type LabStatus = "En attente" | "Prélèvement fait" | "Résultat prêt";
 type LabPriority = "Urgent" | "Normal";
 type LabSourceType = "Interne" | "Externe";
 type ModalType = "request" | "manual" | "details" | "history" | "report" | null;
+type RequestFilter = "all" | LabStatus;
 
 type LabRequest = {
   id: string;
@@ -264,7 +267,7 @@ function LabModal({
               </View>
             </View>
             <Pressable onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={22} color="#64748B" />
+              <Ionicons name="close" size={20} color="#64748B" />
             </Pressable>
           </View>
 
@@ -278,23 +281,39 @@ function LabModal({
 }
 
 export default function LabWorkspaceScreen() {
+  const { theme } = useTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1100;
   const isWideDesktop = width >= 1280;
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RequestFilter>("all");
   const [modal, setModal] = useState<ModalType>(null);
   const [selectedTests, setSelectedTests] = useState<string[]>(["FNS", "Glycémie", "CRP"]);
+  const pendingCount = useMemo(
+    () => labRequests.filter((item) => statusType(item.status) === "orange").length,
+    []
+  );
+  const sampledCount = useMemo(
+    () => labRequests.filter((item) => statusType(item.status) === "blue").length,
+    []
+  );
+  const readyCount = useMemo(
+    () => labRequests.filter((item) => statusType(item.status) === "green").length,
+    []
+  );
 
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return labRequests;
-
-    return labRequests.filter((item) =>
-      `${item.patient} ${item.doctor} ${item.tests} ${item.status} ${item.type}`
-        .toLowerCase()
-        .includes(normalizedQuery)
-    );
-  }, [query]);
+    return labRequests.filter((item) => {
+      const matchesFilter = statusFilter === "all" ? true : item.status === statusFilter;
+      const matchesQuery = !normalizedQuery
+        ? true
+        : `${item.patient} ${item.doctor} ${item.tests} ${item.status} ${item.type}`
+            .toLowerCase()
+            .includes(normalizedQuery);
+      return matchesFilter && matchesQuery;
+    });
+  }, [query, statusFilter]);
 
   const toggleTest = (test: string) => {
     setSelectedTests((current) =>
@@ -303,7 +322,9 @@ export default function LabWorkspaceScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.screenRoot}>
+      <TopBar theme={theme} />
+      <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={[styles.page, isDesktop && styles.pageDesktop]} showsVerticalScrollIndicator={false}>
         <Card style={[styles.heroCard, isWideDesktop && styles.heroCardDesktop]}>
           <View style={styles.brandPill}>
@@ -340,7 +361,7 @@ export default function LabWorkspaceScreen() {
               <IconBox icon="time-outline" color="#C2410C" backgroundColor="#FFF7ED" />
               <Badge type="orange">À faire</Badge>
             </View>
-            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statNumber}>{pendingCount}</Text>
             <Text style={styles.statLabel}>Demandes en attente</Text>
           </Pressable>
 
@@ -349,7 +370,7 @@ export default function LabWorkspaceScreen() {
               <IconBox icon="flask-outline" color="#1D4ED8" backgroundColor="#EFF6FF" />
               <Badge type="blue">Saisie</Badge>
             </View>
-            <Text style={styles.statNumber}>8</Text>
+            <Text style={styles.statNumber}>{sampledCount}</Text>
             <Text style={styles.statLabel}>Résultats à remplir</Text>
           </Pressable>
 
@@ -358,7 +379,7 @@ export default function LabWorkspaceScreen() {
               <IconBox icon="checkmark-circle-outline" color="#047857" backgroundColor="#ECFDF5" />
               <Badge type="green">Prêt</Badge>
             </View>
-            <Text style={styles.statNumber}>5</Text>
+            <Text style={styles.statNumber}>{readyCount}</Text>
             <Text style={styles.statLabel}>Résultats prêts</Text>
           </Pressable>
         </View>
@@ -378,8 +399,29 @@ export default function LabWorkspaceScreen() {
                 />
               </View>
             </View>
+            <View style={styles.filtersRow}>
+              <Pressable onPress={() => setStatusFilter("all")} style={[styles.filterChip, statusFilter === "all" && styles.filterChipActive]}>
+                <Text style={[styles.filterChipText, statusFilter === "all" && styles.filterChipTextActive]}>Tous</Text>
+              </Pressable>
+              <Pressable onPress={() => setStatusFilter("En attente")} style={[styles.filterChip, statusFilter === "En attente" && styles.filterChipActive]}>
+                <Text style={[styles.filterChipText, statusFilter === "En attente" && styles.filterChipTextActive]}>En attente</Text>
+              </Pressable>
+              <Pressable onPress={() => setStatusFilter("Prélèvement fait")} style={[styles.filterChip, statusFilter === "Prélèvement fait" && styles.filterChipActive]}>
+                <Text style={[styles.filterChipText, statusFilter === "Prélèvement fait" && styles.filterChipTextActive]}>Prélèvement fait</Text>
+              </Pressable>
+              <Pressable onPress={() => setStatusFilter("Résultat prêt")} style={[styles.filterChip, statusFilter === "Résultat prêt" && styles.filterChipActive]}>
+                <Text style={[styles.filterChipText, statusFilter === "Résultat prêt" && styles.filterChipTextActive]}>Résultat prêt</Text>
+              </Pressable>
+            </View>
 
             <View style={styles.requestList}>
+              {filteredRequests.length === 0 ? (
+                <View style={styles.emptyStateWrap}>
+                  <Ionicons name="search-outline" size={20} color="#94A3B8" />
+                  <Text style={styles.emptyStateTitle}>Aucun résultat</Text>
+                  <Text style={styles.emptyStateText}>Ajustez la recherche ou le filtre de statut.</Text>
+                </View>
+              ) : null}
               {filteredRequests.map((request) => (
                 <View key={request.id} style={[styles.requestItem, isWideDesktop && styles.requestItemDesktop]}>
                   <View style={styles.requestLeft}>
@@ -464,7 +506,8 @@ export default function LabWorkspaceScreen() {
       <DetailsModal visible={modal === "details"} onClose={() => setModal(null)} setModal={setModal} />
       <HistoryModal visible={modal === "history"} onClose={() => setModal(null)} />
       <ReportModal visible={modal === "report"} onClose={() => setModal(null)} />
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -525,10 +568,9 @@ function RequestModal({
           <Text style={styles.paymentValue}>3,200 DZD</Text>
         </View>
       </View>
-
       <View style={styles.modalFooter}>
-        <ActionButton title="Annuler" variant="light" onPress={onClose} />
-        <ActionButton title="Créer la demande" variant="primary" />
+        <ActionButton title="Créer la demande" variant="primary" containerStyle={styles.modalFooterButton} />
+        <ActionButton title="Annuler" variant="light" onPress={onClose} containerStyle={styles.modalFooterButton} />
       </View>
     </LabModal>
   );
@@ -563,10 +605,9 @@ function ManualModal({ visible, onClose }: { visible: boolean; onClose: () => vo
       </View>
 
       <InputField label="Conclusion / commentaire" value="CRP élevée. Glycémie légèrement supérieure à la norme." multiline />
-
       <View style={styles.modalFooter}>
-        <ActionButton title="Sauvegarder brouillon" variant="light" onPress={onClose} />
-        <ActionButton title="Valider résultat" variant="primary" />
+        <ActionButton title="Sauvegarder brouillon" variant="light" onPress={onClose} containerStyle={styles.modalFooterButton} />
+        <ActionButton title="Valider résultat" variant="primary" containerStyle={styles.modalFooterButton} />
       </View>
     </LabModal>
   );
@@ -615,11 +656,10 @@ function DetailsModal({
           </View>
         ))}
       </View>
-
       <View style={styles.modalFooterThree}>
-        <ActionButton title="Remplir résultat" variant="primary" onPress={() => setModal("manual")} />
-        <ActionButton title="Voir rapport" variant="dark" onPress={() => setModal("report")} />
-        <ActionButton title="Historique" variant="light" onPress={() => setModal("history")} />
+        <ActionButton title="Remplir résultat" variant="primary" onPress={() => setModal("manual")} containerStyle={styles.modalFooterThirdButton} />
+        <ActionButton title="Voir rapport" variant="dark" onPress={() => setModal("report")} containerStyle={styles.modalFooterThirdButton} />
+        <ActionButton title="Historique" variant="light" onPress={() => setModal("history")} containerStyle={styles.modalFooterThirdButton} />
       </View>
     </LabModal>
   );
@@ -707,11 +747,10 @@ function ReportModal({ visible, onClose }: { visible: boolean; onClose: () => vo
           <Text style={styles.noteText}>Contrôle recommandé si symptômes inflammatoires persistent. Conseiller suivi glycémie.</Text>
         </View>
       </View>
-
       <View style={styles.modalFooterThree}>
-        <ActionButton title="Imprimer" icon="print-outline" variant="dark" />
-        <ActionButton title="PDF" icon="download-outline" variant="light" />
-        <ActionButton title="Envoyer" icon="send-outline" variant="blueLight" />
+        <ActionButton title="Imprimer" icon="print-outline" variant="dark" containerStyle={styles.modalFooterThirdButton} />
+        <ActionButton title="PDF" icon="download-outline" variant="light" containerStyle={styles.modalFooterThirdButton} />
+        <ActionButton title="Envoyer" icon="send-outline" variant="blueLight" containerStyle={styles.modalFooterThirdButton} />
       </View>
     </LabModal>
   );
@@ -757,14 +796,18 @@ const badgeStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    backgroundColor: COLORS.page,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.page,
   },
   page: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 34,
+    padding: 18,
+    gap: 18,
+    paddingBottom: 40,
   },
   pageDesktop: {
     width: "100%",
@@ -773,10 +816,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 18,
+    padding: 20,
     ...Platform.select({
       ios: {
         shadowColor: "#0F172A",
@@ -954,7 +997,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardHeader: {
-    padding: 18,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.softBorder,
     gap: 14,
@@ -997,8 +1040,53 @@ const styles = StyleSheet.create({
   requestList: {
     gap: 0,
   },
+  filtersRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.softBorder,
+  },
+  filterChip: {
+    borderRadius: 999,
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.blue,
+  },
+  filterChipText: {
+    color: "#334155",
+    fontWeight: "800",
+    fontSize: 12,
+  },
+  filterChipTextActive: {
+    color: "#FFFFFF",
+  },
+  emptyStateWrap: {
+    margin: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.softBorder,
+    backgroundColor: COLORS.page,
+    padding: 16,
+    alignItems: "center",
+    gap: 6,
+  },
+  emptyStateTitle: {
+    color: COLORS.text,
+    fontWeight: "800",
+    fontSize: 14,
+  },
+  emptyStateText: {
+    color: COLORS.muted,
+    fontSize: 12,
+  },
   requestItem: {
-    padding: 18,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.softBorder,
     gap: 14,
@@ -1191,13 +1279,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modalCard: {
-    maxHeight: "92%",
+    maxHeight: "84%",
+    maxWidth: 900,
+    alignSelf: "center",
+    width: "100%",
     backgroundColor: COLORS.card,
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: "hidden",
   },
   modalHeader: {
-    padding: 18,
+    padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.softBorder,
     flexDirection: "row",
@@ -1226,15 +1317,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   closeButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     backgroundColor: "#F8FAFC",
     alignItems: "center",
     justifyContent: "center",
   },
   modalScroll: {
-    maxHeight: 620,
+    maxHeight: 520,
   },
   modalBody: {
     padding: 18,
@@ -1252,8 +1343,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   input: {
-    minHeight: 48,
-    borderRadius: 18,
+    minHeight: 42,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.page,
@@ -1262,12 +1353,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   textArea: {
-    minHeight: 100,
-    paddingTop: 14,
+    minHeight: 86,
+    paddingTop: 10,
   },
   selectBox: {
-    minHeight: 48,
-    borderRadius: 18,
+    minHeight: 42,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.page,
@@ -1292,8 +1383,8 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 999,
     backgroundColor: "#F1F5F9",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   chipSelected: {
     backgroundColor: COLORS.blue,
@@ -1334,10 +1425,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   modalFooter: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   modalFooterThree: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
+  },
+  modalFooterButton: {
+    flex: 1,
+  },
+  modalFooterThirdButton: {
+    flex: 1,
   },
   uploadBox: {
     borderWidth: 2,
@@ -1595,3 +1696,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
+
+
+
+
+
+
+
+

@@ -1,62 +1,22 @@
+import React from "react";
+import { BlueField } from "../_ui";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-/**
- * This file contains ONLY gynecology UI.
- * Observation page passes theme + handler(s) as props.
- */
+type LocalMode = "form" | "widgets" | "history";
 
 export type GynecologyState = {
-  // if later you want to store these values dynamically
-  bebeJour?: string;
-  bebeMois?: string;
-  bebeAnnee?: string;
-  ddr?: string;
-  cycle?: string;
-  ageGrossesse?: string;
+  reason?: string;
+  lmpDate?: string;
+  cycleDays?: string;
+  pregnancyStatus?: string;
+  gestationalAgeWeeks?: string;
+  gravidityParity?: string;
+  redFlags?: string;
+  pelvicExam?: string;
+  ultrasoundSummary?: string;
+  diagnosis?: string;
+  planFollowUp?: string;
 };
-
-function InfoPair({ theme, label, value }: { theme: any; label: string; value: string }) {
-  return (
-    <View style={{ flex: 1, minWidth: 180 }}>
-      <Text style={{ fontWeight: "900", opacity: 0.7 }}>{label}</Text>
-      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 4 }}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function TimelinePoint({
-  theme,
-  label,
-  date,
-  active,
-}: {
-  theme: any;
-  label: string;
-  date: string;
-  active?: boolean;
-}) {
-  return (
-    <View style={{ alignItems: "center", width: 160 }}>
-      <View
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 999,
-          borderWidth: 3,
-          borderColor: active ? theme.colors.primary : "rgba(0,0,0,0.2)",
-          backgroundColor: theme.colors.surface,
-          marginBottom: 6,
-        }}
-      />
-      <Text style={{ fontWeight: "900", textAlign: "center", color: theme.colors.primary }}>
-        {label}
-      </Text>
-      <Text style={{ fontWeight: "800", opacity: 0.7, marginTop: 4 }}>{date}</Text>
-    </View>
-  );
-}
 
 export function GynecologyTab({
   theme,
@@ -70,68 +30,115 @@ export function GynecologyTab({
   onChange: (next: GynecologyState) => void;
 }) {
   const styles = createStyles(theme);
+  const set = (p: Partial<GynecologyState>) => onChange({ ...value, ...p });
+  const [mode, setMode] = React.useState<LocalMode>("form");
 
-  // fallback prototype values = what you currently hardcoded
-  const bebeJour = value.bebeJour ?? "19";
-  const bebeMois = value.bebeMois ?? "11";
-  const bebeAnnee = value.bebeAnnee ?? "22";
-
-  const ddr = value.ddr ?? "12.02.2022";
-  const cycle = value.cycle ?? "28 Jours";
-  const ageGrossesse = value.ageGrossesse ?? "15 Semaines Et 3 Jours";
+  const gaTrend = [8, 12, 16, 20, 24];
+  const historyRows = [
+    "Supplementation fer + folates - 20/05/2026",
+    "Suivi echographique planifie - 05/05/2026",
+    "Education signes d'alerte - 21/04/2026",
+  ];
 
   return (
     <View style={{ gap: 12 }}>
       <View style={styles.metaRow}>
-        <View style={{ flex: 1 }} />
+        <View style={styles.modeTabs}>
+          {[
+            { key: "form", label: "Form" },
+            { key: "widgets", label: "Widgets / Chart" },
+            { key: "history", label: "History Treatments" },
+          ].map((tab) => {
+            const active = mode === (tab.key as LocalMode);
+            return (
+              <TouchableOpacity key={tab.key} onPress={() => setMode(tab.key as LocalMode)} style={[styles.modeBtn, active && styles.modeBtnActive]}>
+                <Text style={[styles.modeBtnText, active && styles.modeBtnTextActive]}>{tab.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         <TouchableOpacity style={styles.yellowBtn} onPress={onModifyLabel}>
-          <Text style={styles.yellowBtnText}>MODIFIER ÉTIQUETTE</Text>
+          <Text style={styles.yellowBtnText}>MODIFIER ETIQUETTE</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.labelBanner}>
-        <Text style={styles.labelBannerTitle}>Bébé arrive le</Text>
-        <View style={styles.labelBannerDateRow}>
-          <View style={styles.labelBannerDateBox}>
-            <Text style={styles.labelBannerDateText}>{bebeJour}</Text>
-          </View>
-          <View style={styles.labelBannerDateBox}>
-            <Text style={styles.labelBannerDateText}>{bebeMois}</Text>
-          </View>
-          <View style={styles.labelBannerDateBox}>
-            <Text style={styles.labelBannerDateText}>{bebeAnnee}</Text>
-          </View>
-        </View>
-      </View>
+      <Text style={styles.title}>GYNECOLOGIE</Text>
 
-      <View style={styles.labelInfoRow}>
-        <InfoPair theme={theme} label="Date des dernières règles:" value={ddr} />
-        <InfoPair theme={theme} label="Cycle Menstruel:" value={cycle} />
-        <InfoPair theme={theme} label="Age de grossesse:" value={ageGrossesse} />
-      </View>
+      {mode === "form" ? (
+        <>
+          <BlueField theme={theme} label="Motif de consultation" value={value.reason ?? ""} onChange={(v: string) => set({ reason: v })} multiline minHeight={80} />
+          <View style={styles.row}>
+            <BlueField theme={theme} label="DDR (date)" value={value.lmpDate ?? ""} onChange={(v: string) => set({ lmpDate: v })} minHeight={56} />
+            <BlueField theme={theme} label="Cycle (jours)" value={value.cycleDays ?? ""} onChange={(v: string) => set({ cycleDays: v })} minHeight={56} />
+          </View>
+          <View style={styles.row}>
+            <BlueField theme={theme} label="Statut grossesse" value={value.pregnancyStatus ?? ""} onChange={(v: string) => set({ pregnancyStatus: v })} minHeight={56} />
+            <BlueField theme={theme} label="Age gestationnel (SA)" value={value.gestationalAgeWeeks ?? ""} onChange={(v: string) => set({ gestationalAgeWeeks: v })} minHeight={56} />
+          </View>
+          <BlueField theme={theme} label="Gravidite / Parite" value={value.gravidityParity ?? ""} onChange={(v: string) => set({ gravidityParity: v })} minHeight={56} />
+          <BlueField theme={theme} label="Signes d'alerte" value={value.redFlags ?? ""} onChange={(v: string) => set({ redFlags: v })} minHeight={56} />
+          <BlueField theme={theme} label="Examen pelvien / obstetrical" value={value.pelvicExam ?? ""} onChange={(v: string) => set({ pelvicExam: v })} multiline minHeight={90} />
+          <BlueField theme={theme} label="Resume echographie" value={value.ultrasoundSummary ?? ""} onChange={(v: string) => set({ ultrasoundSummary: v })} multiline minHeight={90} />
+          <BlueField theme={theme} label="Diagnostic / impression clinique" value={value.diagnosis ?? ""} onChange={(v: string) => set({ diagnosis: v })} multiline minHeight={90} />
+          <BlueField theme={theme} label="Plan et suivi" value={value.planFollowUp ?? ""} onChange={(v: string) => set({ planFollowUp: v })} multiline minHeight={90} />
+        </>
+      ) : null}
 
-      <View style={styles.timelineWrap}>
-        <Text style={styles.sectionTitle}>Mes échographies</Text>
-        <View style={styles.timelineLine} />
-        <View style={styles.timelinePoints}>
-          <TimelinePoint theme={theme} label="Début de la grossesse" date="26-Feb-2022" active />
-          <TimelinePoint theme={theme} label="2ème échographie" date="16-Jul → 30-Jul.2022" />
-          <TimelinePoint theme={theme} label="Naissance" date="19.Nov.2022" />
+      {mode === "widgets" ? (
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Age gestationnel (SA) - progression</Text>
+          <View style={styles.chartRow}>
+            {gaTrend.map((v, idx) => (
+              <View key={`${idx}-${v}`} style={styles.chartCol}>
+                <View style={[styles.chartBar, { height: 22 + Math.round(v * 3.5) }]} />
+                <Text style={styles.chartVal}>{v}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.panelHint}>Widget interactif: adaptez statut grossesse, SA, et red flags pour prioriser le suivi.</Text>
         </View>
-      </View>
+      ) : null}
+
+      {mode === "history" ? (
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Historique des traitements</Text>
+          {historyRows.map((row) => (
+            <View key={row} style={styles.historyItem}>
+              <Text style={styles.historyText}>{row}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    title: { fontWeight: "900", color: theme.colors.primary },
+    row: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
     metaRow: {
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 12,
-      marginBottom: 10,
+      justifyContent: "space-between",
+      gap: 8,
       flexWrap: "wrap",
     },
+    modeTabs: { flexDirection: "row", flexWrap: "wrap", gap: 8, flex: 1, minWidth: 230 },
+    modeBtn: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    modeBtnActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primarySoft,
+    },
+    modeBtnText: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary },
+    modeBtnTextActive: { color: theme.colors.primary },
     yellowBtn: {
       backgroundColor: "#F5B301",
       paddingVertical: 10,
@@ -140,44 +147,30 @@ const createStyles = (theme: any) =>
       alignSelf: "flex-start",
     },
     yellowBtnText: { fontWeight: "900", color: "#fff", fontSize: 12 },
-
-    labelBanner: {
-      alignItems: "center",
-      paddingVertical: 18,
-      borderRadius: 10,
-      backgroundColor: theme.colors.accent,
-    },
-    labelBannerTitle: { fontWeight: "900", opacity: 0.8, marginBottom: 8 },
-    labelBannerDateRow: { flexDirection: "row", gap: 10 },
-    labelBannerDateBox: {
-      width: 54,
-      height: 54,
-      borderRadius: 10,
-      backgroundColor: theme.colors.primary,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    labelBannerDateText: { color: "#fff", fontWeight: "900", fontSize: 18 },
-
-    labelInfoRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 },
-
-    timelineWrap: {
-      marginTop: 10,
+    panel: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+      backgroundColor: theme.colors.surface,
       padding: 12,
+      gap: 10,
+    },
+    panelTitle: { fontWeight: "900", color: theme.colors.text },
+    panelHint: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
+    chartRow: { flexDirection: "row", alignItems: "flex-end", gap: 10, minHeight: 140 },
+    chartCol: { alignItems: "center", gap: 4 },
+    chartBar: { width: 22, borderRadius: 8, backgroundColor: theme.colors.primary },
+    chartVal: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary },
+    historyItem: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       borderRadius: 10,
-      backgroundColor: "rgba(0,0,0,0.02)",
+      padding: 10,
+      backgroundColor: theme.colors.background,
     },
-    sectionTitle: { fontWeight: "900", textAlign: "center", marginBottom: 10, opacity: 0.75 },
-    timelineLine: {
-      height: 2,
-      backgroundColor: "rgba(0,0,0,0.10)",
-      marginHorizontal: 10,
-      marginBottom: 12,
-    },
-    timelinePoints: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
+    historyText: { fontWeight: "700", color: theme.colors.text },
   });
 
-// Not a route screen; keep router scanning happy.
 export default function GynecologyRoute() {
   return null;
 }

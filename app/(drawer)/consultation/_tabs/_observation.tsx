@@ -17,6 +17,7 @@ import { CardiologyState, CardiologyTab } from "./observation_specialities/_card
 import { DentistryState, DentistryTab } from "./observation_specialities/_dentistry";
 import { DermatologyState, DermatologyTab } from "./observation_specialities/_dermatologie";
 import { GynecologyState, GynecologyTab } from "./observation_specialities/_gynecologie";
+import { OrthopedicsState, OrthopedicsTab } from "./observation_specialities/_orthopedie";
 
 
 
@@ -38,7 +39,7 @@ import { GynecologyState, GynecologyTab } from "./observation_specialities/_gyne
    Sub-tab definitions
 ========================== */
 
-type SpecialtyKey = "gynecology" | "cardiology" | "dermatology" | "dentistry";
+type SpecialtyKey = "gynecology" | "cardiology" | "dermatology" | "orthopedics" | "dentistry";
 
 type LeftTabKey =
   | "label"
@@ -62,6 +63,7 @@ const SPECIALTY_TABS: Array<{
   { key: "gynecology", label: "Gynécologie" },
   { key: "cardiology", label: "Cardiologie" },
   { key: "dermatology", label: "Dermatologie" },
+  { key: "orthopedics", label: "Orthopedie" },
   { key: "dentistry", label: "Dentisterie" },
 ];
 
@@ -90,12 +92,14 @@ type PreviousLabelRow = {
 };
 
 type PreviousParamsRow = {
-  visitLabel: string; // e.g. "N° de visite: 6 - 31.05.2022"
-  motif: string;
-  glycemie: string;
-  hba1c: string;
-  examen: string;
-  conclusion: string;
+  visitLabel: string;
+  data: Record<string, string>;
+};
+
+type ParameterField = {
+  key: string;
+  label: string;
+  multiline?: boolean;
 };
 
 const PROTO_PREVIOUS_LABELS: PreviousLabelRow[] = [
@@ -109,54 +113,65 @@ const PROTO_PREVIOUS_LABELS: PreviousLabelRow[] = [
 
 const PROTO_PREVIOUS_PARAMS: PreviousParamsRow[] = [
   {
-    visitLabel: "N° de visite : 6 - 31.05.2022",
-    motif: "Motif de consultation text",
-    glycemie: "0.6g/L",
-    hba1c: "6%",
-    examen: "Examen clinique text",
-    conclusion: "Conclusion text",
+    visitLabel: "N de visite : 6 - 31.05.2022",
+    data: {
+      motif_consultation: "Motif de consultation text",
+      glycemie: "0.6g/L",
+      hba1c: "6%",
+      examen_clinique: "Examen clinique text",
+      conclusion: "Conclusion text",
+    },
   },
-  {
-    visitLabel: "N° de visite : 5 - 28.04.2022",
-    motif: "-",
-    glycemie: "-",
-    hba1c: "-",
-    examen: "-",
-    conclusion: "-",
-  },
-  {
-    visitLabel: "N° de visite : 4 - 10.04.2022",
-    motif: "-",
-    glycemie: "-",
-    hba1c: "-",
-    examen: "-",
-    conclusion: "-",
-  },
-  {
-    visitLabel: "N° de visite : 3 - 04.04.2022",
-    motif: "-",
-    glycemie: "-",
-    hba1c: "-",
-    examen: "-",
-    conclusion: "-",
-  },
-  {
-    visitLabel: "N° de visite : 2 - 21.03.2022",
-    motif: "-",
-    glycemie: "-",
-    hba1c: "-",
-    examen: "-",
-    conclusion: "-",
-  },
-  {
-    visitLabel: "N° de visite : 1 - 17.03.2022",
-    motif: "-",
-    glycemie: "-",
-    hba1c: "-",
-    examen: "-",
-    conclusion: "-",
-  },
+  { visitLabel: "N de visite : 5 - 28.04.2022", data: {} },
+  { visitLabel: "N de visite : 4 - 10.04.2022", data: {} },
+  { visitLabel: "N de visite : 3 - 04.04.2022", data: {} },
+  { visitLabel: "N de visite : 2 - 21.03.2022", data: {} },
+  { visitLabel: "N de visite : 1 - 17.03.2022", data: {} },
 ];
+
+const GENERIC_PARAMETER_FIELDS: ParameterField[] = [
+  { key: "motif_consultation", label: "Motif de consultation :" },
+  { key: "glycemie", label: "Glycemie :" },
+  { key: "hba1c", label: "HbA1c :" },
+  { key: "examen_clinique", label: "Examen clinique :", multiline: true },
+  { key: "conclusion", label: "Conclusion :", multiline: true },
+];
+
+const SPECIALTY_PARAMETER_FIELDS: Record<SpecialtyKey, ParameterField[]> = {
+  cardiology: [
+    { key: "chestPain", label: "Douleur thoracique :" },
+    { key: "dyspnea", label: "Dyspnee :" },
+    { key: "bloodPressure", label: "TA :" },
+    { key: "heartRate", label: "Frequence cardiaque :" },
+    { key: "ecgSummary", label: "Resume ECG :", multiline: true },
+    { key: "assessmentPlan", label: "Evaluation et plan :", multiline: true },
+  ],
+  dermatology: [
+    { key: "chiefComplaint", label: "Plainte principale :" },
+    { key: "lesionSite", label: "Site lesionnel :" },
+    { key: "morphology", label: "Morphologie :" },
+    { key: "dermoscopy", label: "Dermoscopie :", multiline: true },
+    { key: "biopsyDecision", label: "Decision biopsie :" },
+    { key: "plan", label: "Plan therapeutique :", multiline: true },
+  ],
+  gynecology: [
+    { key: "reason", label: "Motif de consultation :" },
+    { key: "lmpDate", label: "DDR :" },
+    { key: "pregnancyStatus", label: "Statut grossesse :" },
+    { key: "gestationalAgeWeeks", label: "Age gestationnel (SA) :" },
+    { key: "redFlags", label: "Signes d'alerte :" },
+    { key: "planFollowUp", label: "Plan et suivi :", multiline: true },
+  ],
+  orthopedics: [
+    { key: "mechanism", label: "Mecanisme :" },
+    { key: "painSite", label: "Site de la douleur :" },
+    { key: "painScale", label: "EVA douleur :" },
+    { key: "rangeOfMotion", label: "Amplitude articulaire (ROM) :" },
+    { key: "imagingSummary", label: "Resume imagerie :", multiline: true },
+    { key: "treatmentPlan", label: "Plan de traitement :", multiline: true },
+  ],
+  dentistry: GENERIC_PARAMETER_FIELDS,
+};
 
 /* ==========================
    Main component
@@ -178,7 +193,7 @@ export default function ObservationMedicalTab({
   const styles = createStyles(theme);
 
   const isSpecialtyTab = (k: string): k is SpecialtyKey =>
-    k === "gynecology" || k === "cardiology" || k === "dermatology" || k === "dentistry";
+    k === "gynecology" || k === "cardiology" || k === "dermatology" || k === "orthopedics" || k === "dentistry";
 
   // Only show the specialty sub-tab that matches the doctor's speciality (if any).
   const enabledSpecialties = React.useMemo(() => {
@@ -200,6 +215,13 @@ export default function ObservationMedicalTab({
       ...enabledSpecialties.map((x) => ({ key: x.key as LeftTabKey, label: x.label })),
     ];
   }, [enabledSpecialties, workspaceMode]);
+
+  const mainTabs = React.useMemo(() => {
+    if (workspaceMode) {
+      return MAIN_PAGE_TABS.filter((tab) => tab.key === "workspace");
+    }
+    return MAIN_PAGE_TABS;
+  }, [workspaceMode]);
 
   const [leftTab, setLeftTab] = React.useState<LeftTabKey>(() => {
     if (typeof initialLeftTab === "string") return initialLeftTab as any;
@@ -259,6 +281,15 @@ export default function ObservationMedicalTab({
   // Previous parameters selection (right tab)
   const [selectedPrevIndex, setSelectedPrevIndex] = React.useState(0);
   const selectedPrev = PROTO_PREVIOUS_PARAMS[selectedPrevIndex];
+  const activeSpecialtyKey = React.useMemo<SpecialtyKey | null>(() => {
+    if (workspaceMode && enabledSpecialties.length > 0) return enabledSpecialties[0].key;
+    if (isSpecialtyTab(leftTab)) return leftTab;
+    return null;
+  }, [workspaceMode, enabledSpecialties, leftTab]);
+  const parameterFields = React.useMemo<ParameterField[]>(
+    () => (activeSpecialtyKey ? SPECIALTY_PARAMETER_FIELDS[activeSpecialtyKey] ?? GENERIC_PARAMETER_FIELDS : GENERIC_PARAMETER_FIELDS),
+    [activeSpecialtyKey]
+  );
 
   const openLabelModal = () => setLabelModalOpen(true);
 
@@ -269,6 +300,7 @@ export default function ObservationMedicalTab({
     gynecology: GynecologyState;
     cardiology: CardiologyState;
     dermatology: DermatologyState;
+    orthopedics: OrthopedicsState;
     dentistry: DentistryState;
   };
 
@@ -276,6 +308,7 @@ export default function ObservationMedicalTab({
     gynecology: {},
     cardiology: {},
     dermatology: {},
+    orthopedics: {},
     dentistry: {},
   });
 
@@ -285,7 +318,7 @@ export default function ObservationMedicalTab({
       <ThemedCard>
         <FlatTabs
           theme={theme}
-          tabs={MAIN_PAGE_TABS}
+          tabs={mainTabs}
           activeKey={mainPage}
           onChange={setMainPage}
         />
@@ -494,6 +527,14 @@ export default function ObservationMedicalTab({
         />
       )}
 
+      {leftTab === "orthopedics" && (
+      <OrthopedicsTab
+        theme={theme}
+        value={specialities.orthopedics}
+        onChange={(next) => setSpecialities((s) => ({ ...s, orthopedics: next }))}
+        />
+      )}
+
       {leftTab === "dentistry" && (
       <DentistryTab
         theme={theme}
@@ -686,6 +727,7 @@ export default function ObservationMedicalTab({
         visible={previousParamsModalOpen}
         onClose={() => setPreviousParamsModalOpen(false)}
         row={selectedPrev}
+        fields={parameterFields}
       />
 
       {/* "MODIFIER LE PATIENT" modal (matches the antecedents screenshot) */}
@@ -913,6 +955,7 @@ function PreviousParametersModal({
   visible,
   onClose,
   row,
+  fields,
 }: any) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -923,17 +966,18 @@ function PreviousParametersModal({
           </View>
           <ScrollView contentContainerStyle={{ padding: 16 }}>
             <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
-            <ReadOnlyBlueBox theme={theme} label="Motif de consultation :" value={row?.motif || "-"} />
-            <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-              <View style={{ flex: 1, minWidth: 230 }}>
-                <ReadOnlyBlueBox theme={theme} label="glycémie :" value={row?.glycemie || "-"} />
-              </View>
-              <View style={{ flex: 1, minWidth: 230 }}>
-                <ReadOnlyBlueBox theme={theme} label="HbA1c :" value={row?.hba1c || "-"} />
-              </View>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              {(fields ?? GENERIC_PARAMETER_FIELDS).map((field: ParameterField) => (
+                <View key={field.key} style={{ flex: 1, minWidth: field.multiline ? 320 : 230 }}>
+                  <ReadOnlyBlueBox
+                    theme={theme}
+                    label={field.label}
+                    value={String(row?.data?.[field.key] ?? "-")}
+                    multiline={!!field.multiline}
+                  />
+                </View>
+              ))}
             </View>
-            <ReadOnlyBlueBox theme={theme} label="Examen clinique :" value={row?.examen || "-"} multiline />
-            <ReadOnlyBlueBox theme={theme} label="Conclusion :" value={row?.conclusion || "-"} multiline />
           </ScrollView>
           <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.02)" }}>
             <TouchableOpacity onPress={onClose} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
@@ -1515,5 +1559,9 @@ const createStyles = (theme: any) =>
     },
 
   });
+
+
+
+
 
 

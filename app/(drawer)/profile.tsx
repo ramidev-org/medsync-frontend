@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
@@ -14,7 +13,7 @@ export default function ProfilePage() {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
   const { user, refreshUser } = useAuth();
   const { clinic, isClinicAdmin } = useAppData();
-  const router = useRouter();
+  const [isEditing, setIsEditing] = React.useState(false);
 
   const [fullName, setFullName] = React.useState(user?.fullname ?? "");
   const [username, setUsername] = React.useState(user?.username ?? "");
@@ -67,6 +66,7 @@ export default function ProfilePage() {
         p_assistant_shift_end: assistantShiftEnd.trim() || null,
       });
       await refreshUser();
+      setIsEditing(false);
       Alert.alert("Saved", "Profile updated successfully.");
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to update profile");
@@ -83,7 +83,26 @@ export default function ProfilePage() {
     .join("");
 
   return (
-    <PageShell title="Profile" subtitle="Identity, credentials, and role-specific details">
+    <PageShell
+      title="Profile"
+      subtitle="Identity, credentials, and role-specific details"
+      actions={
+        isEditing ? (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TouchableOpacity onPress={() => setIsEditing(false)} style={[styles.topAction, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.topActionText, { color: theme.colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity disabled={saving} onPress={onSave} style={[styles.topAction, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+              <Text style={[styles.topActionText, { color: "#fff" }]}>{saving ? "Saving..." : "Save"}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => setIsEditing(true)} style={[styles.topAction, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.topActionText, { color: theme.colors.primary }]}>Edit</Text>
+          </TouchableOpacity>
+        )
+      }
+    >
       <ScrollView contentContainerStyle={{ gap: 12 }}>
         <ThemedCard style={styles.heroCard}>
           <View style={styles.avatar}>
@@ -102,59 +121,40 @@ export default function ProfilePage() {
 
         <ThemedCard style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
-          <Field label="Full Name" value={fullName} onChangeText={setFullName} theme={theme} />
-          <Field label="Username" value={username} onChangeText={setUsername} theme={theme} />
+          <Field label="Full Name" value={fullName} onChangeText={setFullName} theme={theme} editable={isEditing} />
+          <Field label="Username" value={username} onChangeText={setUsername} theme={theme} editable={isEditing} />
           <Field label="Email (read-only)" value={user?.email ?? ""} onChangeText={() => {}} theme={theme} editable={false} />
         </ThemedCard>
 
         {user?.user_type === "doctor" ? (
           <ThemedCard style={styles.section}>
             <Text style={styles.sectionTitle}>Doctor Details</Text>
-            <Field label="Speciality" value={doctorSpeciality} onChangeText={setDoctorSpeciality} theme={theme} />
-            <Field label="License Number" value={doctorLicense} onChangeText={setDoctorLicense} theme={theme} />
+            <Field label="Speciality" value={doctorSpeciality} onChangeText={setDoctorSpeciality} theme={theme} editable={isEditing} />
+            <Field label="License Number" value={doctorLicense} onChangeText={setDoctorLicense} theme={theme} editable={isEditing} />
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Field label="Years of Experience" value={doctorYears} onChangeText={setDoctorYears} theme={theme} keyboardType="numeric" />
+                <Field label="Years of Experience" value={doctorYears} onChangeText={setDoctorYears} theme={theme} keyboardType="numeric" editable={isEditing} />
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Consultation Fee" value={doctorFee} onChangeText={setDoctorFee} theme={theme} keyboardType="numeric" />
+                <Field label="Consultation Fee" value={doctorFee} onChangeText={setDoctorFee} theme={theme} keyboardType="numeric" editable={isEditing} />
               </View>
             </View>
-            <Field label="Bio" value={doctorBio} onChangeText={setDoctorBio} theme={theme} multiline />
+            <Field label="Bio" value={doctorBio} onChangeText={setDoctorBio} theme={theme} multiline editable={isEditing} />
           </ThemedCard>
         ) : (
           <ThemedCard style={styles.section}>
             <Text style={styles.sectionTitle}>Assistant Details</Text>
-            <Field label="Department" value={assistantDepartment} onChangeText={setAssistantDepartment} theme={theme} />
+            <Field label="Department" value={assistantDepartment} onChangeText={setAssistantDepartment} theme={theme} editable={isEditing} />
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
-                <Field label="Shift Start (HH:MM)" value={assistantShiftStart} onChangeText={setAssistantShiftStart} theme={theme} />
+                <Field label="Shift Start (HH:MM)" value={assistantShiftStart} onChangeText={setAssistantShiftStart} theme={theme} editable={isEditing} />
               </View>
               <View style={{ flex: 1 }}>
-                <Field label="Shift End (HH:MM)" value={assistantShiftEnd} onChangeText={setAssistantShiftEnd} theme={theme} />
+                <Field label="Shift End (HH:MM)" value={assistantShiftEnd} onChangeText={setAssistantShiftEnd} theme={theme} editable={isEditing} />
               </View>
             </View>
           </ThemedCard>
         )}
-
-        <ThemedCard style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <TouchableOpacity style={styles.action} onPress={() => router.push("/settings")}>
-            <Ionicons name="settings-outline" size={18} color={theme.colors.primary} />
-            <Text style={styles.actionText}>Open Settings</Text>
-          </TouchableOpacity>
-          {!!isClinicAdmin && (
-            <TouchableOpacity style={styles.action} onPress={() => router.push("/users")}>
-              <Ionicons name="people-outline" size={18} color={theme.colors.primary} />
-              <Text style={styles.actionText}>Manage Team</Text>
-            </TouchableOpacity>
-          )}
-        </ThemedCard>
-
-        <TouchableOpacity disabled={saving} onPress={onSave} style={styles.saveBtn}>
-          <Ionicons name="save-outline" size={18} color="#fff" />
-          <Text style={styles.saveText}>{saving ? "Saving..." : "Save Profile Changes"}</Text>
-        </TouchableOpacity>
       </ScrollView>
     </PageShell>
   );
@@ -245,29 +245,14 @@ const createStyles = (theme: any) =>
     badgeRow: { marginTop: 8, flexDirection: "row", gap: 8, flexWrap: "wrap" },
     section: { padding: 16 },
     sectionTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 16 },
-    action: {
-      marginTop: 10,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
+    topAction: {
+      height: 36,
+      paddingHorizontal: 12,
+      borderRadius: 10,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 12,
-      padding: 12,
-      backgroundColor: theme.colors.background,
-    },
-    actionText: { color: theme.colors.text, fontWeight: "800" },
-    saveBtn: {
-      marginTop: 2,
-      marginBottom: Platform.OS === "ios" ? 18 : 10,
-      height: 48,
-      borderRadius: 12,
-      backgroundColor: theme.colors.primary,
       alignItems: "center",
       justifyContent: "center",
-      flexDirection: "row",
-      gap: 8,
     },
-    saveText: { color: "#fff", fontWeight: "900" },
+    topActionText: { fontWeight: "900", fontSize: 12 },
   });
 

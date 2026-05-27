@@ -11,6 +11,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -70,6 +71,12 @@ export default function ChatConversationPage() {
     if (!conversation) return "internal clinic chat";
     return conversation.kind === "group" ? `${conversation.members.length} participants` : "online team chat";
   }, [conversation]);
+  const talkingWith = React.useMemo(() => {
+    if (!conversation) return "Unknown";
+    if (conversation.kind === "group") return conversation.title || "Group chat";
+    const other = conversation.members.find((m) => m.id !== user?.id);
+    return other?.full_name || "Direct chat";
+  }, [conversation, user?.id]);
 
   const onSend = async () => {
     if (!user?.id || !conversationId) return;
@@ -100,7 +107,7 @@ export default function ChatConversationPage() {
   };
 
   return (
-    <PageShell title="Chat" subtitle={subtitle} scrollable={false} contentStyle={{ flex: 1, paddingBottom: 10 }}>
+    <PageShell scrollable={false} contentStyle={{ flex: 1, paddingBottom: 10, paddingTop: 14 }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
@@ -112,6 +119,7 @@ export default function ChatConversationPage() {
               <Text style={styles.historyTitle}>Chats</Text>
               <Text style={styles.historySub}>Recent conversations</Text>
               <View style={{ height: 10 }} />
+              <ScrollView contentContainerStyle={styles.historyListContent}>
               {allConversations.map((row) => {
                 const active = row.id === conversationId;
                 const rowTitle =
@@ -138,6 +146,7 @@ export default function ChatConversationPage() {
                   </View>
                 </TouchableOpacity>
               )})}
+              </ScrollView>
             </View>
           )}
 
@@ -145,11 +154,7 @@ export default function ChatConversationPage() {
           {!!conversation && (
             <View style={styles.chatTopBar}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                {conversation.members.slice(0, 2).map((member, index) => (
-                  <View key={member.id} style={{ marginLeft: index === 0 ? 0 : -14 }}>
-                    <Avatar name={member.full_name || "Unknown"} theme={theme} size={34} />
-                  </View>
-                ))}
+                <Avatar name={talkingWith} theme={theme} size={34} />
                 <View style={{ maxWidth: "72%" }}>
                   <Text style={styles.chatTitle} numberOfLines={1}>
                     {title}
@@ -172,7 +177,7 @@ export default function ChatConversationPage() {
             onRefresh={refresh}
             refreshing={loading}
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 10, paddingTop: 6 }}
+            contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 12, paddingTop: 6 }}
             renderItem={({ item }) => {
               const mine = item.sender_id === user?.id;
               return (
@@ -259,16 +264,18 @@ function Avatar({ name, theme, size = 36 }: { name: string; theme: any; size?: n
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    outer: { flex: 1, flexDirection: "row", gap: 10, minHeight: 0 },
+    outer: { flex: 1, flexDirection: "row", gap: 12, minHeight: 0 },
     historyPane: {
       width: 300,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 14,
+      borderRadius: 20,
       backgroundColor: theme.colors.surface,
-      padding: 12,
+      padding: 14,
       minHeight: 0,
+      height: "100%",
     },
+    historyListContent: { gap: 10, paddingBottom: 10 },
     historyTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 18 },
     historySub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
     historyRow: {
@@ -283,15 +290,24 @@ const createStyles = (theme: any) =>
     },
     historyRowTitle: { color: theme.colors.text, fontWeight: "900" },
     historyRowSub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
-    container: { flex: 1, backgroundColor: theme.colors.surfaceVariant },
+    container: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surfaceVariant,
+      padding: 8,
+      minHeight: 380,
+      height: "100%",
+    },
     chatTopBar: {
-      marginHorizontal: 8,
-      marginBottom: 6,
+      marginHorizontal: 6,
+      marginBottom: 8,
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: 14,
       backgroundColor: theme.colors.surface,
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
       paddingVertical: 8,
       flexDirection: "row",
       alignItems: "center",

@@ -1,55 +1,27 @@
-import { PageShell } from "@/components/page_shell";
-import { useTheme } from "@/theme/theme_provider";
-import React from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Alert, View } from "react-native";
-import ObservationMedicalTab from "./consultation/_tabs/_observation";
-
-const initialVitals = {
-  taille_cm: "",
-  poids_kg: "",
-  tension: "",
-  temperature_c: "",
-};
-
-const initialParams = {
-  motif_consultation: "",
-  glycemie: "",
-  hba1c: "",
-  examen_clinique: "",
-  conclusion: "",
-};
+import GenericMedicalWorkspacePage from "@/components/workspaces/GenericMedicalWorkspacePage";
 
 export default function CardiologyWorkspacePage() {
-  const { theme } = useTheme();
-  const [vitals, setVitals] = React.useState(initialVitals);
-  const [parameters, setParameters] = React.useState(initialParams);
-  const [observations, setObservations] = React.useState("");
-
   return (
-    <PageShell
-      title="Cardiology Workspace"
-      subtitle="Observation capture (cardiology)."
-      actions={<MaterialCommunityIcons name="heart-pulse" size={24} color={theme.colors.primary} />}
-    >
-      <View style={{ marginTop: 10 }}>
-        <ObservationMedicalTab
-          theme={theme}
-          doctorSpeciality="cardiologie"
-          vitals={vitals}
-          setVitals={setVitals}
-          parameters={parameters}
-          setParameters={setParameters}
-          observations={observations}
-          setObservations={setObservations}
-          onSave={() =>
-            Alert.alert("Saved", "Workspace note saved locally (no appointment linked yet).")
-          }
-          workspaceMode
-          initialLeftTab="cardiology"
-        />
-      </View>
-    </PageShell>
+    <GenericMedicalWorkspacePage
+      pageTitle="Cardiology Workspace"
+      pageSubtitle="Cardiology consultation and monitoring."
+      icon="heart-pulse"
+      workspaceTitle="Cardiology visit"
+      workspaceSubtitle="Vitals, cardiac symptoms, ECG summary, and treatment plan."
+      formFields={[
+        { key: "blood_pressure", label: "Blood pressure" },
+        { key: "heart_rate", label: "Heart rate" },
+        { key: "chest_pain", label: "Chest pain" },
+        { key: "ecg_summary", label: "ECG summary", multiline: true },
+        { key: "plan", label: "Plan", multiline: true },
+      ]}
+      initialValues={{ blood_pressure: "", heart_rate: "", chest_pain: "", ecg_summary: "", plan: "" }}
+      historyRows={[
+        "Session #3 - ECG follow-up completed",
+        "Session #2 - Cardiac risk factors reviewed",
+        "Session #1 - Initial cardiology assessment",
+      ]}
+    />
   );
 }
 

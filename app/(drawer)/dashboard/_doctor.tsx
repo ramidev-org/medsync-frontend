@@ -1,48 +1,15 @@
 import { TopBar } from "@/components/top_bar";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
-import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
-import {
-    FontAwesome5,
-    FontAwesome6,
-    Ionicons,
-    MaterialCommunityIcons,
-    MaterialIcons,
-} from "@expo/vector-icons";
+import { FontAwesome5, FontAwesome6, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { BarChart, LineChart, PieChart } from "react-native-chart-kit";
 import { getDashboardStyles } from "./_styles";
-
-// Mock chart data removed - TODO: Implement real chart data from database
-const chartData = {
-  "RDV - CONS": {
-    type: "line" as const,
-    labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const,
-    datasets: [
-      { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: 3, label: "RDV" },
-      { data: [0, 0, 0, 0, 0, 0, 0], strokeWidth: 3, label: "Consultations" },
-    ],
-  },
-  "Revenus": {
-    type: "bar" as const,
-    labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const,
-    datasets: [
-      { data: [0, 0, 0, 0, 0, 0, 0], label: "Revenus (€)" },
-    ],
-  },
-  "Répartition": {
-    type: "pie" as const,
-    data: [
-      { name: "Général", population: 0, color: "#FF6384", legendFontColor: "#7F7F7F" },
-      { name: "Spécialisé", population: 0, color: "#36A2EB", legendFontColor: "#7F7F7F" },
-    ],
-  },
-} as const;
 
 const ICON_FAMILIES = {
   ion: Ionicons,
@@ -53,14 +20,12 @@ const ICON_FAMILIES = {
 } as const;
 
 type IconFamily = keyof typeof ICON_FAMILIES;
-type ChartKey = keyof typeof chartData;
 
 export default function DoctorDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
-
   const { user } = useAuth();
-  const { clinic, subscription } = useAppData();
+  const router = useRouter();
   const { recentTasks } = useTasks();
   const [counts, setCounts] = useState<any | null>(null);
 
@@ -69,10 +34,9 @@ export default function DoctorDashboardPage() {
     const run = async () => {
       try {
         if (!user?.id) return;
-        const c = await callRpc<any, Record<string, unknown>>(
-          "rpc_get_clinic_dashboard_counts",
-          { p_requester_id: user.id },
-        );
+        const c = await callRpc<any, Record<string, unknown>>("rpc_get_clinic_dashboard_counts", {
+          p_requester_id: user.id,
+        });
         if (!cancelled) setCounts(c ?? null);
       } catch {
         if (!cancelled) setCounts(null);
@@ -84,106 +48,7 @@ export default function DoctorDashboardPage() {
     };
   }, [user?.id]);
 
-  const [selectedTab, setSelectedTab] = useState<ChartKey>("RDV - CONS");
-  const [chartWidth, setChartWidth] = useState(500);
-
-  const doctorSpecialityKey = useMemo(
-    () => normalizeSpeciality((user as any)?.doctorProfile?.speciality),
-    [user],
-  );
-
-  const renderChart = () => {
-    const data = chartData[selectedTab];
-    if (!data || chartWidth < 100) return null;
-
-    const chartConfig = {
-      backgroundColor: theme.colors.surface,
-      backgroundGradientFrom: theme.colors.surface,
-      backgroundGradientTo: theme.colors.surface,
-      decimalPlaces: 0,
-      color: (opacity = 1) => `rgba(0, 119, 182, ${opacity})`,
-      labelColor: (opacity = 1) => theme.colors.text,
-      style: { borderRadius: 16 },
-      propsForLabels: { fontSize: 12, fontWeight: "600" as "600" },
-      propsForBackgroundLines: {
-        strokeDasharray: "",
-        stroke: theme.colors.border,
-        strokeWidth: 1,
-      },
-    };
-
-    try {
-      switch (data.type) {
-        case "line":
-          return (
-            <LineChart
-              data={{
-                labels: [...data.labels],
-                datasets: data.datasets.map((d: any, i: number) => ({
-                  ...d,
-                  data: [...d.data],
-                  color: (opacity = 1) =>
-                    i === 0
-                      ? `rgba(0, 119, 182, ${opacity})`
-                      : `rgba(0, 180, 216, ${opacity})`,
-                })),
-                legend: data.datasets.map((d: any) => d.label),
-              }}
-              width={chartWidth}
-              height={280}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.chart}
-            />
-          );
-
-        case "bar":
-          return (
-            <BarChart
-              data={{
-                labels: [...data.labels],
-                datasets: data.datasets.map((d: any) => ({
-                  ...d,
-                  data: [...d.data],
-                })),
-              }}
-              width={chartWidth}
-              height={280}
-              yAxisLabel="€"
-              yAxisSuffix=""
-              chartConfig={{ ...chartConfig, barPercentage: 0.7 }}
-              style={styles.chart}
-              fromZero
-              showBarTops={false}
-            />
-          );
-
-        case "pie":
-          return (
-            <PieChart
-              data={data.data.map((item: any) => ({ ...item }))}
-              width={chartWidth}
-              height={280}
-              chartConfig={chartConfig}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              hasLegend
-            />
-          );
-
-        default:
-          return null;
-      }
-    } catch (error) {
-      console.error("Chart render error:", error);
-      return (
-        <View style={{ padding: 20, alignItems: "center" }}>
-          <Text style={{ color: theme.colors.error }}>Erreur de chargement du graphique</Text>
-        </View>
-      );
-    }
-  };
+  const doctorSpecialityKey = useMemo(() => normalizeSpeciality((user as any)?.doctorProfile?.speciality), [user]);
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -196,102 +61,25 @@ export default function DoctorDashboardPage() {
               <Text style={styles.welcomeSubtitle}>Bienvenue sur votre tableau de bord</Text>
             </View>
 
-            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface, padding: 16 }]}>
-              <Text style={[styles.cardTitle, { color: theme.colors.text, marginBottom: 10 }]}>
-                Clinique & Abonnement
-              </Text>
-              <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>
-                {clinic?.name ? String(clinic.name) : "—"} •{" "}
-                {(subscription?.tier_plan || clinic?.tier_plan || "basic").toString()} •{" "}
-                {subscription?.status || "missing"}
-              </Text>
-              {!!subscription?.expires_at && (
-                <Text style={{ marginTop: 6, color: theme.colors.textSecondary, fontWeight: "800" }}>
-                  Expiration: {String(subscription.expires_at)}
-                </Text>
-              )}
-            </View>
-
             <View style={styles.statsRow}>
-              <StatCard
-                title="Patients"
-                value={String(counts?.patients ?? counts?.patients_count ?? 0)}
-                percentage=""
-                icon="personal-injury"
-                color="#8b5cf6"
-                iconFamily="material"
-                theme={theme}
-              />
-              <StatCard
-                title="Appointments"
-                value={String(
-                  counts?.appointments_total ?? counts?.appointments ?? counts?.appointments_count ?? 0,
-                )}
-                percentage=""
-                icon="eye"
-                color="#f59e0b"
-                iconFamily="fontAwesome5"
-                theme={theme}
-              />
-              <StatCard
-                title="Pending"
-                value={String(
-                  counts?.appointments_pending ?? counts?.pending_appointments ?? counts?.pending_count ?? 0,
-                )}
-                percentage=""
-                icon="calendar-check"
-                color="#06b6d4"
-                iconFamily="fontAwesome5"
-                theme={theme}
-              />
-              <StatCard
-                title="Payments (paid)"
-                value={String(counts?.payments_paid ?? counts?.paid_payments ?? counts?.paid_count ?? 0)}
-                percentage=""
-                icon="truck-medical"
-                color="#ef4444"
-                iconFamily="fontAwesome6"
-                theme={theme}
-              />
+              <StatCard title="Patients" value={String(counts?.patients ?? 0)} percentage="" icon="personal-injury" color="#8b5cf6" iconFamily="material" theme={theme} />
+              <StatCard title="Appointments" value={String(counts?.appointments_total ?? 0)} percentage="" icon="eye" color="#f59e0b" iconFamily="fontAwesome5" theme={theme} />
+              <StatCard title="Pending" value={String(counts?.appointments_pending ?? 0)} percentage="" icon="calendar-check" color="#06b6d4" iconFamily="fontAwesome5" theme={theme} />
+              <StatCard title="Payments (paid)" value={String(counts?.payments_paid ?? 0)} percentage="" icon="truck-medical" color="#ef4444" iconFamily="fontAwesome6" theme={theme} />
             </View>
 
-            <View style={styles.tabs}>
-              {(Object.keys(chartData) as ChartKey[]).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => setSelectedTab(tab)}
-                  style={[
-                    styles.tab,
-                    {
-                      backgroundColor:
-                        selectedTab === tab ? theme.colors.primary : theme.colors.surface,
-                      borderColor: selectedTab === tab ? theme.colors.primary : theme.colors.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      { color: selectedTab === tab ? "#fff" : theme.colors.text },
-                    ]}
-                  >
-                    {tab}
-                  </Text>
+            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Clinical Insights</Text>
+                <TouchableOpacity onPress={() => router.push("/statistiques")} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: theme.colors.border }}>
+                  <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: 12 }}>Open statistiques</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            <View
-              style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}
-              onLayout={(event) => {
-                const { width } = event.nativeEvent.layout;
-                setChartWidth(width - 48);
-              }}
-            >
-              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                {selectedTab} - Statistiques
-              </Text>
-              <View style={styles.chartPlaceholder}>{renderChart()}</View>
+              </View>
+              <View style={{ gap: 10 }}>
+                <InsightRow title="Follow-up required" value={String(counts?.appointments_pending ?? 0)} hint="Patients waiting for next action" icon="refresh" tone="info" theme={theme} />
+                <InsightRow title="Paid payments" value={String(counts?.payments_paid ?? 0)} hint="Validated in this period" icon="cash" tone="success" theme={theme} />
+                <InsightRow title="Clinic flow" value={String(counts?.appointments_total ?? 0)} hint="Total appointment pipeline" icon="pulse" tone="warning" theme={theme} />
+              </View>
             </View>
           </View>
 
@@ -300,24 +88,24 @@ export default function DoctorDashboardPage() {
               <View style={styles.doctorHeader}>
                 <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
                 <View style={styles.doctorInfo}>
-                  <Text style={[styles.doctorName, { color: theme.colors.text }]}>
-                    Dr {user?.fullname}
-                  </Text>
-                  <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>
-                    {specialityLabelFr(doctorSpecialityKey)}
-                  </Text>
+                  <Text style={[styles.doctorName, { color: theme.colors.text }]}>Dr {user?.fullname}</Text>
+                  <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>{specialityLabelFr(doctorSpecialityKey)}</Text>
                 </View>
               </View>
-
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
-              <DoctorStat label="N° Ordonnances" value="24" theme={theme} />
-              <DoctorStat label="N° Lettres" value="9" theme={theme} />
-              <DoctorStat label="Objectif Mensuel" value="75 / 150" theme={theme} progress={50} />
+              <View style={{ flexDirection: "row", gap: 18, marginBottom: 10 }}>
+                <DoctorInlineStat label="N° Ordonnances" value="24" theme={theme} />
+                <DoctorInlineStat label="N° Lettres" value="9" theme={theme} />
+              </View>
             </View>
 
             <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface, marginTop: 16 }]}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
+                <TouchableOpacity onPress={() => router.push("/tasks")}>
+                  <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: 12 }}>View all tasks</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.activityList}>
                 {recentTasks.map((task) => (
                   <ActivityItem
@@ -338,8 +126,6 @@ export default function DoctorDashboardPage() {
   );
 }
 
-/* ---------- Components (same as your original) ---------- */
-
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -347,22 +133,11 @@ interface StatCardProps {
   icon: string;
   iconFamily?: IconFamily;
   color: string;
-  theme: {
-    colors: { surface: string; border: string; text: string; textSecondary: string };
-  };
+  theme: { colors: { surface: string; border: string; text: string; textSecondary: string } };
 }
 
-const StatCard = ({
-  title,
-  value,
-  percentage,
-  icon,
-  iconFamily = "ion",
-  color,
-  theme,
-}: StatCardProps) => {
+const StatCard = ({ title, value, percentage, icon, iconFamily = "ion", color, theme }: StatCardProps) => {
   const IconComponent = ICON_FAMILIES[iconFamily];
-
   const cardStyles = StyleSheet.create({
     statCard: {
       backgroundColor: theme.colors.surface,
@@ -390,24 +165,10 @@ const StatCard = ({
       justifyContent: "center",
     },
     statValue: { fontSize: 32, fontWeight: "800", marginBottom: 4, color: theme.colors.text },
-    statTitle: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: theme.colors.textSecondary,
-      marginBottom: 8,
-    },
-    percentageBadge: {
-      position: "absolute",
-      top: 16,
-      right: 16,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-      backgroundColor: color + "20",
-    },
+    statTitle: { fontSize: 14, fontWeight: "600", color: theme.colors.textSecondary, marginBottom: 8 },
+    percentageBadge: { position: "absolute", top: 16, right: 16, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: color + "20" },
     percentageText: { fontSize: 12, fontWeight: "700", color: color },
   });
-
   return (
     <View style={cardStyles.statCard}>
       <View style={cardStyles.contentRow}>
@@ -426,27 +187,36 @@ const StatCard = ({
   );
 };
 
+const toneColors = (tone: "info" | "success" | "warning", theme: any) => {
+  if (tone === "success") return { bg: "rgba(34,197,94,0.10)", border: "rgba(34,197,94,0.28)", icon: "#16A34A" };
+  if (tone === "warning") return { bg: "rgba(245,158,11,0.11)", border: "rgba(245,158,11,0.28)", icon: "#D97706" };
+  return { bg: "rgba(37,99,235,0.10)", border: "rgba(37,99,235,0.28)", icon: "#2563EB" };
+};
+
+const InsightRow = ({ title, value, hint, icon, tone = "info", theme }: any) => {
+  const c = toneColors(tone, theme);
+  return (
+  <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderWidth: 1, borderColor: c.border, borderRadius: 12, backgroundColor: c.bg }}>
+    <View style={{ width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
+      <Ionicons name={icon} size={18} color={c.icon} />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontWeight: "900", color: theme.colors.text }}>{title}</Text>
+      <Text style={{ marginTop: 2, fontSize: 12, fontWeight: "700", color: theme.colors.textSecondary }}>{hint}</Text>
+    </View>
+    <Text style={{ fontWeight: "900", fontSize: 18, color: theme.colors.text }}>{value}</Text>
+  </View>
+);};
+
 const DoctorStat = ({ label, value, theme, progress }: any) => {
   const statStyles = StyleSheet.create({
     doctorStat: { marginBottom: 16 },
-    doctorStatLabel: {
-      fontSize: 13,
-      marginBottom: 4,
-      fontWeight: "600",
-      color: theme.colors.muted,
-    },
+    doctorStatLabel: { fontSize: 13, marginBottom: 4, fontWeight: "600", color: theme.colors.muted },
     doctorStatRow: { flexDirection: "row", alignItems: "center", gap: 12 },
     doctorStatValue: { fontWeight: "700", fontSize: 18, color: theme.colors.text },
-    progressBar: {
-      flex: 1,
-      height: 8,
-      borderRadius: 4,
-      overflow: "hidden",
-      backgroundColor: theme.colors.border,
-    },
+    progressBar: { flex: 1, height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: theme.colors.border },
     progressFill: { height: "100%", borderRadius: 4, backgroundColor: theme.colors.success },
   });
-
   return (
     <View style={statStyles.doctorStat}>
       <Text style={statStyles.doctorStatLabel}>{label}</Text>
@@ -462,49 +232,36 @@ const DoctorStat = ({ label, value, theme, progress }: any) => {
   );
 };
 
+const DoctorInlineStat = ({ label, value, theme }: any) => (
+  <View style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 10, backgroundColor: theme.colors.background }}>
+    <Text style={{ fontSize: 12, fontWeight: "700", color: theme.colors.muted }}>{label}</Text>
+    <Text style={{ marginTop: 4, fontSize: 28, fontWeight: "900", color: theme.colors.text }}>{value}</Text>
+  </View>
+);
+
 function taskStatusLabel(status: TaskStatus) {
   if (status === "in_progress") return "in progress";
   if (status === "done") return "done";
   return "to do";
 }
-
 function taskIcon(status: TaskStatus) {
   if (status === "in_progress") return "time-outline";
   if (status === "done") return "checkmark-done-outline";
   return "checkbox-outline";
 }
-
 function priorityColor(priority: TaskPriority, theme: any) {
   if (priority === "high") return theme.colors.error;
   if (priority === "medium") return theme.colors.warning;
   return theme.colors.success;
 }
-
-const ActivityItem = ({ title, time, icon, priority = "medium", theme }: any) => {
-  const activityStyles = StyleSheet.create({
-    activityItem: { flexDirection: "row", alignItems: "center", gap: 12 },
-    activityIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: `${priorityColor(priority, theme)}18`,
-    },
-    activityContent: { flex: 1 },
-    activityTitle: { fontWeight: "600", fontSize: 14, color: theme.colors.text },
-    activityTime: { fontSize: 12, marginTop: 2, color: theme.colors.muted },
-  });
-
-  return (
-    <View style={activityStyles.activityItem}>
-      <View style={activityStyles.activityIcon}>
-        <Ionicons name={icon} size={16} color={priorityColor(priority, theme)} />
-      </View>
-      <View style={activityStyles.activityContent}>
-        <Text style={activityStyles.activityTitle}>{title}</Text>
-        <Text style={activityStyles.activityTime}>{time}</Text>
-      </View>
+const ActivityItem = ({ title, time, icon, priority = "medium", theme }: any) => (
+  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+    <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: `${priorityColor(priority, theme)}18` }}>
+      <Ionicons name={icon} size={16} color={priorityColor(priority, theme)} />
     </View>
-  );
-};
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontWeight: "600", fontSize: 14, color: theme.colors.text }}>{title}</Text>
+      <Text style={{ fontSize: 12, marginTop: 2, color: theme.colors.muted }}>{time}</Text>
+    </View>
+  </View>
+);

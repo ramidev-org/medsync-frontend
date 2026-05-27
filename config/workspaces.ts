@@ -27,6 +27,11 @@ export const gynecologyWorkspace: WorkspaceDef = {
   name: "Gynecology / OB",
   tools: ["pregnancy-wheel", "pelvic-diagram", "ultrasound-gallery", "pap-smear-tracker"],
 };
+export const generalMedicineWorkspace: WorkspaceDef = {
+  key: "general_medicine",
+  name: "General Medicine",
+  tools: ["systems-review", "screening-checklist", "vitals-trend", "follow-up-planner"],
+};
 
 export const pediatricsWorkspace: WorkspaceDef = {
   key: "pediatrics",
@@ -46,25 +51,35 @@ export const entWorkspace: WorkspaceDef = {
   tools: ["ear-diagram", "audiogram-viewer", "sinus-diagram", "otoscopy-gallery"],
 };
 
-export const neurologyWorkspace: WorkspaceDef = {
-  key: "neurology",
-  name: "Neurology",
-  tools: ["neuro-exam-checklist", "reflex-map", "stroke-scale", "seizure-log"],
-};
-
 export const pulmonologyWorkspace: WorkspaceDef = {
   key: "pulmonology",
   name: "Pulmonology",
   tools: ["spirometry-viewer", "peak-flow-tracker", "inhaler-technique-checklist", "asthma-control-test"],
 };
+export const endocrinologyWorkspace: WorkspaceDef = {
+  key: "endocrinology_diabetes",
+  name: "Endocrinology / Diabetes",
+  tools: ["glucose-tracker", "hba1c-trend", "complication-checklist", "thyroid-notes"],
+};
+export const gastroenterologyWorkspace: WorkspaceDef = {
+  key: "gastroenterology",
+  name: "Gastroenterology",
+  tools: ["digestive-symptom-log", "abdominal-exam-notes", "endoscopy-summary", "liver-panel-summary"],
+};
+export const labWorkspace: WorkspaceDef = {
+  key: "analyses_medicales",
+  name: "Analyses Medicales / Lab",
+  tools: ["lab-order-panel", "lab-result-panel", "test-catalog", "critical-results"],
+};
 
 export const dentistryWorkspace: WorkspaceDef = {
   key: "dentistry",
   name: "Dentistry",
-  tools: ["odontogram", "dental-xray-viewer", "tooth-treatment-panel"],
+  tools: ["odontogram", "dental-xray-viewer", "tooth-treatment-panel", "treatment-session-history"],
 };
 
 export const WORKSPACES: WorkspaceDef[] = [
+  generalMedicineWorkspace,
   dermatologyWorkspace,
   orthopedicsWorkspace,
   cardiologyWorkspace,
@@ -72,8 +87,9 @@ export const WORKSPACES: WorkspaceDef[] = [
   pediatricsWorkspace,
   ophthalmologyWorkspace,
   entWorkspace,
-  neurologyWorkspace,
   pulmonologyWorkspace,
+  endocrinologyWorkspace,
+  gastroenterologyWorkspace,
+  labWorkspace,
   dentistryWorkspace,
 ];
-

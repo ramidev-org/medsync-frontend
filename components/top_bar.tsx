@@ -2,6 +2,8 @@ import PatientForm from "@/components/new_patient";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
+import { getConversations } from "@/services/chats.services";
+import type { ConversationRow } from "@/services/backend.types";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -15,8 +17,11 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [chatsOpen, setChatsOpen] = useState(false);
   const [patientFormVisible, setPatientFormVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [chatRows, setChatRows] = useState<ConversationRow[]>([]);
   const [notifications, setNotifications] = useState([
     { id: "n1", title: "New appointment booked", time: "2m", read: false },
     { id: "n2", title: "Lab result uploaded", time: "12m", read: false },
@@ -29,6 +34,62 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   useEffect(() => setIsMounted(true), []);
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const handle = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handle);
+    handle();
+    return () => document.removeEventListener("fullscreenchange", handle);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadChats = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await getConversations({ requesterId: user.id, page: 1, itemsPerPage: 6 });
+        if (!cancelled) setChatRows(res?.conversations ?? []);
+      } catch (err) {
+        if (!cancelled) setChatRows([]);
+        console.error("Failed to load top bar chats:", err);
+      }
+    };
+    loadChats();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const toggleFullscreen = async () => {
+    if (Platform.OS !== "web") return;
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void>;
+      msExitFullscreen?: () => Promise<void>;
+    };
+    const el = (document.documentElement || document.body) as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>;
+      msRequestFullscreen?: () => Promise<void>;
+    };
+    const hasFullscreen = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement);
+    try {
+      if (hasFullscreen) {
+        if (doc.exitFullscreen) await doc.exitFullscreen();
+        else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+        else if (doc.msExitFullscreen) await doc.msExitFullscreen();
+        return;
+      }
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+      else if (typeof window !== "undefined") {
+        window.open(window.location.href, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      console.error("Fullscreen toggle failed:", err);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -86,12 +147,35 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
             <Pressable
               onPress={() => {
                 setNotificationsOpen((v) => !v);
+                setChatsOpen(false);
                 setMenuVisible(false);
               }}
               style={({ hovered, pressed }) => [styles.iconButton, hovered && Platform.OS === "web" ? styles.hover : null, pressed ? styles.pressed : null]}
             >
               <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
             </Pressable>
+            <Pressable
+              onPress={() => {
+                setChatsOpen((v) => !v);
+                setNotificationsOpen(false);
+                setMenuVisible(false);
+              }}
+              style={({ hovered, pressed }) => [styles.iconButton, hovered && Platform.OS === "web" ? styles.hover : null, pressed ? styles.pressed : null]}
+            >
+              <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.text} />
+            </Pressable>
+            {Platform.OS === "web" && (
+              <Pressable
+                onPress={toggleFullscreen}
+                style={({ hovered, pressed }) => [styles.iconButton, hovered ? styles.hover : null, pressed ? styles.pressed : null]}
+              >
+                <Ionicons
+                  name={isFullscreen ? "contract-outline" : "expand-outline"}
+                  size={20}
+                  color={theme.colors.text}
+                />
+              </Pressable>
+            )}
             {notificationsOpen && (
               <View style={styles.notificationMenu}>
                 <View style={styles.notificationHeader}>
@@ -114,6 +198,62 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                     </Pressable>
                   </View>
                 ))}
+                <View style={styles.dropdownFooter}>
+                  <Pressable
+                    onPress={() => {
+                      setNotificationsOpen(false);
+                      router.push("/notifications");
+                    }}
+                  >
+                    <Text style={styles.dropdownFooterLink}>View all notifications</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+            {chatsOpen && (
+              <View style={styles.chatMenu}>
+                <View style={styles.notificationHeader}>
+                  <Text style={styles.notificationTitle}>Latest messages</Text>
+                </View>
+                {chatRows.length === 0 ? (
+                  <View style={styles.notificationRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.notificationText}>No recent messages.</Text>
+                    </View>
+                  </View>
+                ) : (
+                  chatRows.map((row) => {
+                    const others = row.members?.filter((m) => m.id !== user?.id) ?? [];
+                    const title = row.kind === "group" ? row.title || "Group chat" : others.map((m) => m.full_name || "Unknown").join(", ") || "Direct chat";
+                    const subtitle = row.last_message?.body || "No messages yet";
+                    return (
+                      <Pressable
+                        key={row.id}
+                        onPress={() => {
+                          setChatsOpen(false);
+                          router.push(`/chats/${row.id}` as any);
+                        }}
+                        style={styles.notificationRow}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text numberOfLines={1} style={[styles.notificationText, { color: theme.colors.text, fontWeight: "800" }]}>{title}</Text>
+                          <Text numberOfLines={1} style={styles.notificationTime}>{subtitle}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
+                      </Pressable>
+                    );
+                  })
+                )}
+                <View style={styles.dropdownFooter}>
+                  <Pressable
+                    onPress={() => {
+                      setChatsOpen(false);
+                      router.push("/chats");
+                    }}
+                  >
+                    <Text style={styles.dropdownFooterLink}>Open full chat page</Text>
+                  </Pressable>
+                </View>
               </View>
             )}
             <Pressable onPress={() => setMenuVisible(!menuVisible)} style={({ hovered, pressed }) => [hovered && Platform.OS === "web" ? styles.hover : null, pressed ? styles.pressed : null]}>
@@ -198,8 +338,21 @@ const createStyles = (theme: any) =>
     notificationMenu: {
       position: "absolute",
       top: 56,
-      right: 58,
+      right: 104,
       minWidth: 330,
+      backgroundColor: theme.colors.background,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      zIndex: 20,
+      padding: 10,
+      gap: 8,
+    },
+    chatMenu: {
+      position: "absolute",
+      top: 56,
+      right: 58,
+      minWidth: 350,
       backgroundColor: theme.colors.background,
       borderRadius: 14,
       borderWidth: 1,
@@ -213,6 +366,14 @@ const createStyles = (theme: any) =>
     notificationRow: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface },
     notificationText: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
     notificationTime: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11, marginTop: 2 },
+    dropdownFooter: {
+      marginTop: 2,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingTop: 8,
+      alignItems: "flex-end",
+    },
+    dropdownFooterLink: { color: theme.colors.primary, fontWeight: "900", fontSize: 12 },
     menuHeader: { paddingHorizontal: 12, paddingBottom: 8 },
     menuHeaderRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
     menuAvatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: theme.colors.border },

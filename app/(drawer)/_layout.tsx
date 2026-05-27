@@ -10,9 +10,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 type AppRoute = string;
-
 type NavSection = "main" | "workspaces" | "management" | "tools" | "account";
-
 type NavItem = {
   key: string;
   label: string;
@@ -29,16 +27,24 @@ const NAV: NavItem[] = [
   { key: "visits", label: "Visits", route: "/visits", section: "main", icon: ({ color, size }) => <Ionicons name="clipboard-outline" size={size} color={color} /> },
   { key: "consultations", label: "Consultations", route: "/consultations", section: "main", icon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> },
 
+  { key: "general_workspace", label: "General Medicine", route: "/general-medicine-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="stethoscope" size={size} color={color} /> },
   { key: "dentistry_workspace", label: "Dentistry", route: "/dentistry-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="tooth-outline" size={size} color={color} /> },
   { key: "dermatology_workspace", label: "Dermatology", route: "/dermatology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="face-man-outline" size={size} color={color} /> },
   { key: "orthopedics_workspace", label: "Orthopedics", route: "/orthopedics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="bone" size={size} color={color} /> },
   { key: "gynecology_workspace", label: "Gynecology", route: "/gynecology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="human-female" size={size} color={color} /> },
   { key: "cardiology_workspace", label: "Cardiology", route: "/cardiology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> },
-  { key: "medical_analyses_workspace", label: "Analyses médicales", route: "/analyses-medicales-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="flask-outline" size={size} color={color} /> },
+  { key: "pediatrics_workspace", label: "Pediatrics", route: "/pediatrics-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="baby-face-outline" size={size} color={color} /> },
+  { key: "endocrinology_workspace", label: "Endocrinology", route: "/endocrinology-diabetes-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="chart-line" size={size} color={color} /> },
+  { key: "ent_workspace", label: "ENT", route: "/ent-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="ear-hearing" size={size} color={color} /> },
+  { key: "ophthalmology_workspace", label: "Ophthalmology", route: "/ophthalmology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="eye-outline" size={size} color={color} /> },
+  { key: "pulmonology_workspace", label: "Pulmonology", route: "/pulmonology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="lungs" size={size} color={color} /> },
+  { key: "gastro_workspace", label: "Gastroenterology", route: "/gastroenterology-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="stomach" size={size} color={color} /> },
+  { key: "medical_analyses_workspace", label: "Analyses medicales", route: "/analyses-medicales-workspace", section: "workspaces", icon: ({ color, size }) => <MaterialCommunityIcons name="flask-outline" size={size} color={color} /> },
 
   { key: "payments", label: "Billing", route: "/payments", section: "management", icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
   { key: "services", label: "Services", route: "/services", section: "management", icon: ({ color, size }) => <MaterialIcons name="medical-services" size={size} color={color} /> },
   { key: "reports", label: "Reports", route: "/reports", section: "management", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
+  { key: "statistiques", label: "Statistiques", route: "/statistiques", section: "management", icon: ({ color, size }) => <Ionicons name="stats-chart-outline" size={size} color={color} /> },
   { key: "tasks", label: "Tasks", route: "/tasks", section: "management", icon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} /> },
   { key: "inventory", label: "Inventory", route: "/inventory", section: "management", icon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> },
   { key: "users", label: "Team", route: "/users", section: "management", visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin, icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} /> },
@@ -81,15 +87,23 @@ export default function Layout() {
       <Drawer.Screen name="patients" options={{ drawerLabel: "Patients" }} />
       <Drawer.Screen name="visits" options={{ drawerLabel: "Visits" }} />
       <Drawer.Screen name="consultations" options={{ drawerLabel: "Consultations" }} />
+      <Drawer.Screen name="general-medicine-workspace" options={{ drawerLabel: "General Medicine" }} />
       <Drawer.Screen name="dentistry-workspace" options={{ drawerLabel: "Dentistry" }} />
       <Drawer.Screen name="dermatology-workspace" options={{ drawerLabel: "Dermatology" }} />
       <Drawer.Screen name="orthopedics-workspace" options={{ drawerLabel: "Orthopedics" }} />
       <Drawer.Screen name="gynecology-workspace" options={{ drawerLabel: "Gynecology" }} />
       <Drawer.Screen name="cardiology-workspace" options={{ drawerLabel: "Cardiology" }} />
-      <Drawer.Screen name="analyses-medicales-workspace" options={{ drawerLabel: "Analyses médicales" }} />
+      <Drawer.Screen name="pediatrics-workspace" options={{ drawerLabel: "Pediatrics" }} />
+      <Drawer.Screen name="endocrinology-diabetes-workspace" options={{ drawerLabel: "Endocrinology / Diabetes" }} />
+      <Drawer.Screen name="ent-workspace" options={{ drawerLabel: "ENT" }} />
+      <Drawer.Screen name="ophthalmology-workspace" options={{ drawerLabel: "Ophthalmology" }} />
+      <Drawer.Screen name="pulmonology-workspace" options={{ drawerLabel: "Pulmonology" }} />
+      <Drawer.Screen name="gastroenterology-workspace" options={{ drawerLabel: "Gastroenterology" }} />
+      <Drawer.Screen name="analyses-medicales-workspace" options={{ drawerLabel: "Analyses medicales" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
       <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />
+      <Drawer.Screen name="statistiques" options={{ drawerLabel: "Statistiques" }} />
       <Drawer.Screen name="tasks" options={{ drawerLabel: "Tasks" }} />
       <Drawer.Screen name="inventory" options={{ drawerLabel: "Inventory" }} />
       <Drawer.Screen name="users" options={{ drawerLabel: "Team" }} />
