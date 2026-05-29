@@ -1,4 +1,3 @@
-import { ThemedCard } from "@/components/default_card";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -49,12 +48,12 @@ export default function DocumentsTab({
   const remove = (id: string) => setDocs((p) => p.filter((x) => x.id !== id));
 
   return (
-    <ThemedCard>
+    <View style={styles.flatRoot}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Documents</Text>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={addDoc}>
-          <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
+          <Ionicons name="cloud-upload-outline" size={18} color={theme.colors.textOnPrimary} />
           <Text style={styles.primaryText}>AJOUTER</Text>
         </TouchableOpacity>
       </View>
@@ -77,22 +76,23 @@ export default function DocumentsTab({
               <Ionicons name="eye-outline" size={18} color={theme.colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => remove(d.id)}>
-              <Ionicons name="trash-outline" size={18} color="#ef4444" />
+              <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
             </TouchableOpacity>
           </View>
         </View>
       ))}
-    </ThemedCard>
+    </View>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    flatRoot: { backgroundColor: "transparent" },
     headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     title: { fontSize: 16, fontWeight: "900" },
 
     primaryBtn: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.info,
       paddingVertical: 10,
       paddingHorizontal: 14,
       borderRadius: 8,
@@ -100,14 +100,14 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    primaryText: { color: "#fff", fontWeight: "900" },
+    primaryText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
 
     tableHeader: {
       marginTop: 14,
       paddingVertical: 10,
       paddingHorizontal: 10,
       borderRadius: 8,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceVariant,
       flexDirection: "row",
       gap: 10,
       alignItems: "center",
@@ -119,6 +119,8 @@ const createStyles = (theme: any) =>
       padding: 12,
       borderRadius: 10,
       backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       flexDirection: "row",
       gap: 10,
       alignItems: "center",

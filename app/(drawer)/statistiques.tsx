@@ -1,7 +1,7 @@
 import { PageShell } from "@/components/page_shell";
 import { useTheme } from "@/theme/theme_provider";
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { BarChart, LineChart, PieChart } from "react-native-chart-kit";
 
 type StatTab =
@@ -27,6 +27,18 @@ export default function StatistiquesPage() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = React.useState<StatTab>("patient_flow");
   const [chartWidth, setChartWidth] = React.useState(600);
+  const [pointHint, setPointHint] = React.useState<string>("");
+  const enterAnim = React.useMemo(() => new Animated.Value(0), []);
+
+  React.useEffect(() => {
+    setPointHint("");
+    Animated.timing(enterAnim, {
+      toValue: 1,
+      duration: 650,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, enterAnim]);
 
   const baseChartConfig = React.useMemo(
     () => ({
@@ -40,6 +52,58 @@ export default function StatistiquesPage() {
     }),
     [theme.colors]
   );
+
+  const hoverSeries = React.useMemo(() => {
+    if (activeTab === "patient_flow") {
+      return {
+        labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+        series: [
+          { name: "Visits", data: [12, 18, 15, 22, 20, 11, 9] },
+          { name: "Consultations", data: [9, 14, 12, 17, 16, 8, 7] },
+        ],
+      };
+    }
+    if (activeTab === "vitals_trend") {
+      return {
+        labels: ["D1", "D2", "D3", "D4", "D5", "D6", "D7"],
+        series: [
+          { name: "Temp °C", data: [37.1, 37.0, 37.4, 37.2, 36.9, 37.3, 37.1] },
+          { name: "SpO2 %", data: [96, 95, 94, 97, 98, 96, 97] },
+        ],
+      };
+    }
+    if (activeTab === "bp_control") {
+      return {
+        labels: ["W1", "W2", "W3", "W4", "W5", "W6"],
+        series: [
+          { name: "Systolic", data: [138, 136, 134, 132, 130, 128] },
+          { name: "Diastolic", data: [88, 86, 84, 83, 82, 80] },
+        ],
+      };
+    }
+    if (activeTab === "hba1c_glucose") {
+      return {
+        labels: ["M1", "M2", "M3", "M4", "M5", "M6"],
+        series: [
+          { name: "HbA1c %", data: [8.6, 8.2, 7.9, 7.5, 7.2, 6.9] },
+          { name: "Glucose g/L", data: [1.9, 1.8, 1.7, 1.5, 1.4, 1.3] },
+        ],
+      };
+    }
+    if (activeTab === "lab_critical") {
+      return {
+        labels: ["Troponin", "K+", "CRP", "Creat", "Hb"],
+        series: [{ name: "Critical", data: [4, 7, 3, 5, 2] }],
+      };
+    }
+    if (activeTab === "treatment_response") {
+      return {
+        labels: ["W1", "W2", "W3", "W4", "W5", "W6"],
+        series: [{ name: "Response /10", data: [3, 4, 5, 6, 7, 8] }],
+      };
+    }
+    return null;
+  }, [activeTab]);
 
   const renderTabChart = () => {
     if (activeTab === "patient_flow") {
@@ -201,10 +265,35 @@ export default function StatistiquesPage() {
           <Text style={{ fontWeight: "900", fontSize: 18, color: theme.colors.text, marginBottom: 12 }}>
             {TABS.find((x) => x.key === activeTab)?.label}
           </Text>
-          <View style={{ alignItems: "center", justifyContent: "center" }}>{renderTabChart()}</View>
+          <Animated.View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              transform: [{ translateY: enterAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
+              opacity: enterAnim,
+              paddingVertical: 4,
+            }}
+          >
+            {renderTabChart()}
+            <View
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+              onPointerMove={(e: any) => {
+                if (!hoverSeries) return;
+                const x = Number(e?.nativeEvent?.locationX ?? 0);
+                const idx = Math.max(0, Math.min(hoverSeries.labels.length - 1, Math.round((x / Math.max(1, chartWidth)) * (hoverSeries.labels.length - 1))));
+                const values = hoverSeries.series.map((s) => `${s.name} ${s.data[idx]}`).join(" | ");
+                setPointHint(`${hoverSeries.labels[idx]}: ${values}`);
+              }}
+              onPointerLeave={() => setPointHint("")}
+            />
+            {pointHint ? (
+              <View style={{ marginTop: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
+                <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>{pointHint}</Text>
+              </View>
+            ) : null}
+          </Animated.View>
         </View>
       </ScrollView>
     </PageShell>
   );
 }
-

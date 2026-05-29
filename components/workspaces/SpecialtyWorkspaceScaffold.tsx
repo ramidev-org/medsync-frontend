@@ -34,7 +34,7 @@ export function SpecialtyWorkspaceScaffold({
           <View style={styles.heroTopRow}>
             <View style={styles.heroLeft}>
               <View style={styles.iconBox}>
-                <MaterialCommunityIcons name={icon} size={20} color="#1D4ED8" />
+                <MaterialCommunityIcons name={icon} size={20} color={theme.colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{title}</Text>
@@ -109,7 +109,7 @@ const createStyles = (theme: any) =>
       width: 42,
       height: 42,
       borderRadius: 14,
-      backgroundColor: "#EFF6FF",
+      backgroundColor: theme.colors.primarySoft,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -141,9 +141,9 @@ const createStyles = (theme: any) =>
       minWidth: 130,
       flex: 1,
     },
-    statBlue: { backgroundColor: "#EFF6FF" },
-    statGreen: { backgroundColor: "#ECFDF5" },
-    statOrange: { backgroundColor: "#FFF7ED" },
+    statBlue: { backgroundColor: theme.colors.primarySoft },
+    statGreen: { backgroundColor: theme.colors.successSoft },
+    statOrange: { backgroundColor: theme.colors.warningSoft },
     statValue: {
       color: "#0F172A",
       fontSize: 18,

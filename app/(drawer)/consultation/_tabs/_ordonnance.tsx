@@ -1,4 +1,3 @@
-﻿import { ThemedCard } from "@/components/default_card";
 import { DrugSuggestion, getPrescriptionItems, searchDrugsByName } from "@/services/drugs.services";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -229,11 +228,11 @@ export default function OrdonnancesTab({
   return (
     <View style={styles.rootRow}>
       <View style={[styles.col, { flex: 1 }]}>
-        <ThemedCard>
+        <View style={styles.flatPanel}>
           <View style={styles.leftHeaderRow}>
             <Text style={styles.panelTitle}>Médicaments</Text>
             <TouchableOpacity style={styles.blueBtn} onPress={() => {}}>
-              <Ionicons name="add" size={16} color="#fff" />
+              <Ionicons name="add" size={16} color={theme.colors.textOnPrimary} />
               <Text style={styles.blueBtnText}>NOUVEAU MÉDICAMENT</Text>
             </TouchableOpacity>
           </View>
@@ -245,7 +244,7 @@ export default function OrdonnancesTab({
               placeholder=""
               style={[styles.searchInput, { backgroundColor: theme.colors.surface }]}
             />
-            <Ionicons name="search" size={18} color="rgba(0,0,0,0.45)" />
+            <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
           </View>
 
           {!!medQuery.trim() && (suggestionsLoading || !!suggestions.length) && (
@@ -277,7 +276,7 @@ export default function OrdonnancesTab({
                     <Text style={styles.typeText} numberOfLines={1}>
                       {item.label}
                     </Text>
-                    <Ionicons name="arrow-forward" size={16} color="#10A760" />
+                    <Ionicons name="arrow-forward" size={16} color={theme.colors.success} />
                   </TouchableOpacity>
                 ))
               ) : (
@@ -296,16 +295,16 @@ export default function OrdonnancesTab({
               </Text>
             </View>
           )}
-        </ThemedCard>
+        </View>
       </View>
 
       <View style={[styles.col, { flex: 1 }]}>
-        <ThemedCard>
+        <View style={styles.flatPanel}>
           <View style={styles.rightHeaderRow}>
             <Text style={styles.panelTitle}>Ordonnances</Text>
 
             <TouchableOpacity style={styles.greenBtn} onPress={addPrescription}>
-              <Ionicons name="add" size={16} color="#fff" />
+              <Ionicons name="add" size={16} color={theme.colors.textOnPrimary} />
               <Text style={styles.greenBtnText}>AJOUTER ORDONNANCE</Text>
             </TouchableOpacity>
           </View>
@@ -335,10 +334,10 @@ export default function OrdonnancesTab({
 
             <View style={styles.bannerRightIcons}>
               <TouchableOpacity onPress={() => onPrint?.(selectedRx)} style={styles.iconBtn}>
-                <Ionicons name="print" size={18} color="#fff" />
+                <Ionicons name="print" size={18} color={theme.colors.warning} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => onOverflow?.(selectedRx)} style={styles.iconBtn}>
-                <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
+                <Ionicons name="ellipsis-vertical" size={18} color={theme.colors.warning} />
               </TouchableOpacity>
             </View>
           </View>
@@ -366,12 +365,12 @@ export default function OrdonnancesTab({
                         <Ionicons
                           name={d.validated ? "checkmark-circle" : "checkmark-circle-outline"}
                           size={20}
-                          color={d.validated ? "#10A760" : "rgba(0,0,0,0.45)"}
+                          color={d.validated ? theme.colors.success : theme.colors.textSecondary}
                         />
                       </TouchableOpacity>
 
                       <TouchableOpacity onPress={() => deleteDrug(d.id)} style={styles.rowIconBtn}>
-                        <Ionicons name="trash" size={18} color="#E74C3C" />
+                        <Ionicons name="trash" size={18} color={theme.colors.error} />
                       </TouchableOpacity>
                     </TouchableOpacity>
 
@@ -431,7 +430,7 @@ export default function OrdonnancesTab({
                         />
 
                         <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]} onPress={() => setExpandedDrugId(null)}>
-                          <Ionicons name="save-outline" size={16} color="#fff" />
+                          <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
                           <Text style={styles.saveBtnText}>ENREGISTRER</Text>
                         </TouchableOpacity>
                       </View>
@@ -447,7 +446,7 @@ export default function OrdonnancesTab({
           </View>
 
           {!!signedBy && <Text style={{ marginTop: 12, opacity: 0.6 }}>Signé : {signedBy}</Text>}
-        </ThemedCard>
+        </View>
       </View>
     </View>
   );
@@ -475,15 +474,15 @@ function PillTabs<T extends string>({
             style={[
               pillStyles.pill,
               {
-                backgroundColor: active ? "#fff" : "rgba(0,0,0,0.03)",
-                borderColor: active ? "rgba(0,0,0,0.14)" : "transparent",
+                backgroundColor: active ? theme.colors.surface : theme.colors.surfaceVariant,
+                borderColor: active ? theme.colors.border : "transparent",
               },
             ]}
           >
             <Text
               style={[
                 pillStyles.pillText,
-                { color: active ? "rgba(0,0,0,0.88)" : "rgba(0,0,0,0.65)" },
+                { color: active ? theme.colors.text : theme.colors.textSecondary },
               ]}
             >
               {t.label}
@@ -525,6 +524,9 @@ const createStyles = (theme: any) =>
     col: {
       minWidth: 0,
     },
+    flatPanel: {
+      backgroundColor: "transparent",
+    },
 
     panelTitle: {
       fontSize: 16,
@@ -546,7 +548,7 @@ const createStyles = (theme: any) =>
     },
 
     blueBtn: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.info,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -555,13 +557,13 @@ const createStyles = (theme: any) =>
       gap: 8,
     },
     blueBtnText: {
-      color: "#fff",
+      color: theme.colors.textOnPrimary,
       fontWeight: "900",
       fontSize: 12,
     },
 
     greenBtn: {
-      backgroundColor: "#10A760",
+      backgroundColor: theme.colors.success,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -570,7 +572,7 @@ const createStyles = (theme: any) =>
       gap: 8,
     },
     greenBtnText: {
-      color: "#fff",
+      color: theme.colors.textOnPrimary,
       fontWeight: "900",
       fontSize: 12,
     },
@@ -578,7 +580,7 @@ const createStyles = (theme: any) =>
     searchWrap: {
       marginTop: 12,
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.12)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
       paddingHorizontal: 12,
       paddingVertical: 10,
@@ -596,16 +598,16 @@ const createStyles = (theme: any) =>
     suggestDropdown: {
       marginTop: 6,
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.12)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
       overflow: "hidden",
-      backgroundColor: "#fff",
+      backgroundColor: theme.colors.surface,
     },
     suggestItem: {
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderBottomWidth: 1,
-      borderBottomColor: "rgba(0,0,0,0.06)",
+      borderBottomColor: theme.colors.border,
     },
     suggestText: {
       fontWeight: "800",
@@ -616,9 +618,9 @@ const createStyles = (theme: any) =>
       paddingVertical: 12,
       paddingHorizontal: 12,
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.10)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
-      backgroundColor: "#fff",
+      backgroundColor: theme.colors.surface,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -632,32 +634,32 @@ const createStyles = (theme: any) =>
     mutedBox: {
       marginTop: 12,
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.10)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
       padding: 12,
-      backgroundColor: "rgba(0,0,0,0.02)",
+      backgroundColor: theme.colors.surfaceVariant,
     },
     mutedTitle: { fontWeight: "900", marginBottom: 6, opacity: 0.8 },
     mutedText: { fontWeight: "800", opacity: 0.65, lineHeight: 18 },
 
     rxChip: {
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.12)",
+      borderColor: theme.colors.border,
       borderRadius: 999,
       paddingVertical: 8,
       paddingHorizontal: 12,
-      backgroundColor: "rgba(0,0,0,0.02)",
+      backgroundColor: theme.colors.surfaceVariant,
     },
     rxChipActive: {
-      backgroundColor: "rgba(0, 140, 255, 0.10)",
-      borderColor: "rgba(0, 140, 255, 0.28)",
+      backgroundColor: theme.colors.primarySoft,
+      borderColor: theme.colors.info,
     },
     rxChipText: { fontWeight: "900", opacity: 0.75, fontSize: 12 },
     rxChipTextActive: { opacity: 1, color: theme.colors.primary },
 
     orangeBanner: {
       marginTop: 10,
-      backgroundColor: "#F5B301",
+      backgroundColor: theme.colors.warning,
       borderRadius: 10,
       paddingVertical: 10,
       paddingHorizontal: 12,
@@ -667,7 +669,7 @@ const createStyles = (theme: any) =>
       gap: 12,
     },
     orangeBannerText: {
-      color: "#fff",
+      color: theme.colors.textOnPrimary,
       fontWeight: "900",
       letterSpacing: 0.3,
     },
@@ -678,15 +680,15 @@ const createStyles = (theme: any) =>
       borderRadius: 8,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "rgba(255,255,255,0.20)",
+      backgroundColor: theme.colors.primarySoft,
     },
 
     drugCard: {
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.10)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
       overflow: "hidden",
-      backgroundColor: "#fff",
+      backgroundColor: theme.colors.surface,
     },
     drugRow: {
       flexDirection: "row",
@@ -717,16 +719,16 @@ const createStyles = (theme: any) =>
 
     drugEditor: {
       borderTopWidth: 1,
-      borderTopColor: "rgba(0,0,0,0.08)",
+      borderTopColor: theme.colors.border,
       padding: 12,
       gap: 10,
-      backgroundColor: "rgba(0,0,0,0.02)",
+      backgroundColor: theme.colors.surfaceVariant,
     },
     editorRow: { flexDirection: "row", gap: 12 },
     editorLabel: { fontWeight: "900", opacity: 0.7, marginBottom: 6 },
     editorInput: {
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.12)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
       paddingHorizontal: 12,
       paddingVertical: 10,
@@ -735,7 +737,7 @@ const createStyles = (theme: any) =>
     },
     editorTextarea: {
       borderWidth: 1,
-      borderColor: "rgba(0,0,0,0.12)",
+      borderColor: theme.colors.border,
       borderRadius: 10,
       paddingHorizontal: 12,
       paddingVertical: 10,
@@ -751,6 +753,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       gap: 8,
     },
-    saveBtnText: { color: "#fff", fontWeight: "900", letterSpacing: 0.3 },
+    saveBtnText: { color: theme.colors.textOnPrimary, fontWeight: "900", letterSpacing: 0.3 },
   });
+
 

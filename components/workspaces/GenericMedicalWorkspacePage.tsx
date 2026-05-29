@@ -1,9 +1,10 @@
 import { PageShell } from "@/components/page_shell";
 import { SpecialtyWorkspaceScaffold } from "@/components/workspaces/SpecialtyWorkspaceScaffold";
+import { WorkspaceFlatTabs, WorkspaceInputField, WorkspaceReadOnlyField } from "@/components/workspaces/theme/WorkspaceTheme";
 import { useTheme } from "@/theme/theme_provider";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 type FieldDef = { key: string; label: string; multiline?: boolean };
 type PreviousSnapshot = { visitLabel: string; values: Record<string, string> };
@@ -14,6 +15,7 @@ type Props = {
   workspaceTitle: string;
   workspaceSubtitle: string;
   formFields: FieldDef[];
+  defaultFields?: FieldDef[];
   initialValues: Record<string, string>;
   historyRows: string[];
   previousSnapshots?: PreviousSnapshot[];
@@ -21,79 +23,17 @@ type Props = {
 
 type WorkspaceTab = "treatment" | "consultation_observation" | "treatment_history" | "consultation_history";
 
-function FlatTabs<T extends string>({
-  theme,
-  tabs,
-  activeKey,
-  onChange,
-}: {
-  theme: any;
-  tabs: { key: T; label: string; icon?: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }[];
-  activeKey: T;
-  onChange: (k: T) => void;
-}) {
-  return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingBottom: 8, marginBottom: 10, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-      {tabs.map((t) => {
-        const active = t.key === activeKey;
-        return (
-          <TouchableOpacity
-            key={t.key}
-            onPress={() => onChange(t.key)}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 14,
-              borderRadius: 6,
-              borderWidth: 1,
-              backgroundColor: active ? theme.colors.surface : theme.colors.surfaceVariant,
-              borderColor: active ? theme.colors.border : "transparent",
-            }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              {t.icon ? <MaterialCommunityIcons name={t.icon} size={15} color={active ? theme.colors.primary : theme.colors.textSecondary} /> : null}
-              <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{t.label}</Text>
-            </View>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-function ReadOnlyBlueBox({ theme, label, value, multiline }: { theme: any; label: string; value: string; multiline?: boolean }) {
-  return (
-    <View style={{ marginTop: 12, flex: 1 }}>
-      <Text style={{ color: theme.colors.primary, fontWeight: "900", marginBottom: 6 }}>{label}</Text>
-      <View style={{ borderWidth: 2, borderColor: "rgba(0, 140, 255, 0.35)", borderRadius: 10, padding: 12, minHeight: multiline ? 88 : 56, backgroundColor: theme.colors.background, justifyContent: "center" }}>
-        <Text style={{ fontWeight: "900", opacity: 0.75 }}>{value || "-"}</Text>
-      </View>
-    </View>
-  );
-}
-
-function BlueField({ theme, label, value, onChange, multiline }: { theme: any; label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) {
-  return (
-    <View style={{ marginTop: 12, flex: 1 }}>
-      <Text style={{ color: theme.colors.primary, fontWeight: "900", marginBottom: 6 }}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        multiline={!!multiline}
-        style={{
-          borderWidth: 2,
-          borderColor: "rgba(0, 140, 255, 0.35)",
-          borderRadius: 10,
-          padding: 12,
-          minHeight: multiline ? 88 : 56,
-          backgroundColor: theme.colors.background,
-          color: theme.colors.text,
-          textAlignVertical: multiline ? "top" : "center",
-          fontWeight: "700",
-        }}
-      />
-    </View>
-  );
-}
+const FIELD_ICONS: Record<string, React.ComponentProps<typeof MaterialCommunityIcons>["name"]> = {
+  weight_kg: "scale",
+  height_cm: "human-male-height",
+  temperature_c: "thermometer",
+  blood_pressure: "heart-pulse",
+  heart_rate: "heart-outline",
+  spo2: "water-percent",
+  reason_for_visit: "text-box-outline",
+  chief_complaint: "stethoscope",
+  plan: "clipboard-text-outline",
+};
 
 
 export default function GenericMedicalWorkspacePage(props: Props) {
@@ -120,6 +60,21 @@ export default function GenericMedicalWorkspacePage(props: Props) {
   const [selectedPrevIndex, setSelectedPrevIndex] = React.useState(0);
   const selectedPrev = snapshots[selectedPrevIndex];
 
+  const defaultFields = React.useMemo<FieldDef[]>(() => {
+    if (props.defaultFields) return props.defaultFields;
+    return [
+      { key: "weight_kg", label: "Weight (kg)" },
+      { key: "height_cm", label: "Height (cm)" },
+      { key: "temperature_c", label: "Temperature (°C)" },
+      { key: "blood_pressure", label: "Blood pressure" },
+      { key: "heart_rate", label: "Heart rate (bpm)" },
+      { key: "spo2", label: "SpO2 (%)" },
+    ];
+  }, [props.defaultFields]);
+
+  const defaultFieldKeys = React.useMemo(() => new Set(defaultFields.map((f) => f.key)), [defaultFields]);
+  const specialtyFields = React.useMemo(() => props.formFields.filter((f) => !defaultFieldKeys.has(f.key)), [props.formFields, defaultFieldKeys]);
+
   return (
     <PageShell>
       <SpecialtyWorkspaceScaffold
@@ -134,7 +89,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
         ]}
       >
         <View style={{ borderWidth: 0, borderRadius: 18, backgroundColor: theme.colors.surface, padding: 14 }}>
-          <FlatTabs
+          <WorkspaceFlatTabs
             theme={theme}
             tabs={[
               { key: "treatment", label: "Treatment", icon: "medical-bag" },
@@ -177,7 +132,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                   );
                 })}
               </View>
-              <BlueField theme={theme} label="Treatment note :" value={treatmentNote} onChange={setTreatmentNote} multiline />
+              <WorkspaceInputField theme={theme} label="Treatment note :" value={treatmentNote} onChange={setTreatmentNote} multiline icon="notebook-edit-outline" />
               <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
                 <TouchableOpacity
                   onPress={() => {
@@ -256,24 +211,54 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                 )}
               </View>
 
-              <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-                {props.formFields.map((f) =>
+              {!!defaultFields.length && (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontWeight: "900", color: theme.colors.text }}>Default consultation criteria</Text>
+                  <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                    {defaultFields.map((f) =>
+                      isEditingCurrentParams ? (
+                        <View key={`default-${f.key}`} style={{ flex: 1, minWidth: 220 }}>
+                          <WorkspaceInputField
+                            theme={theme}
+                            label={`${f.label} :`}
+                            value={(draftCurrentParams?.[f.key] ?? "") as string}
+                            onChange={(v) => setDraftCurrentParams((s) => ({ ...(s ?? parameters), [f.key]: v }))}
+                            multiline={f.multiline}
+                            icon={FIELD_ICONS[f.key]}
+                          />
+                        </View>
+                      ) : (
+                        <View key={`default-${f.key}`} style={{ flex: 1, minWidth: 220 }}>
+                          <WorkspaceReadOnlyField theme={theme} label={`${f.label} :`} value={parameters[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key]} />
+                        </View>
+                      )
+                    )}
+                  </View>
+                </View>
+              )}
+
+              <View style={{ marginTop: 10 }}>
+                <Text style={{ fontWeight: "900", color: theme.colors.text }}>Specialty-specific criteria</Text>
+                <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
+                  {specialtyFields.map((f) =>
                   isEditingCurrentParams ? (
-                    <View key={f.key} style={{ flex: 1, minWidth: 220 }}>
-                      <BlueField
+                    <View key={`specialty-${f.key}`} style={{ flex: 1, minWidth: 220 }}>
+                      <WorkspaceInputField
                         theme={theme}
                         label={`${f.label} :`}
                         value={(draftCurrentParams?.[f.key] ?? "") as string}
                         onChange={(v) => setDraftCurrentParams((s) => ({ ...(s ?? parameters), [f.key]: v }))}
                         multiline={f.multiline}
+                        icon={FIELD_ICONS[f.key] ?? "file-document-edit-outline"}
                       />
                     </View>
                   ) : (
-                    <View key={f.key} style={{ flex: 1, minWidth: 220 }}>
-                      <ReadOnlyBlueBox theme={theme} label={`${f.label} :`} value={parameters[f.key] ?? "-"} multiline={f.multiline} />
+                    <View key={`specialty-${f.key}`} style={{ flex: 1, minWidth: 220 }}>
+                      <WorkspaceReadOnlyField theme={theme} label={`${f.label} :`} value={parameters[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key] ?? "file-document-outline"} />
                     </View>
                   )
-                )}
+                  )}
+                </View>
               </View>
             </>
           )}
@@ -283,9 +268,9 @@ export default function GenericMedicalWorkspacePage(props: Props) {
               {snapshots.map((p, idx) => {
                 const active = idx === selectedPrevIndex;
                 return (
-                  <View key={p.visitLabel} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: active ? "rgba(245, 179, 1, 0.08)" : "#fff", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)" }}>
+                  <View key={p.visitLabel} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: active ? theme.colors.warningSoft : theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
                     <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={{ flex: 1, flexDirection: "row", alignItems: "center" }} activeOpacity={0.8}>
-                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: active ? "#F5B301" : "rgba(0,0,0,0.08)" }} />
+                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: active ? theme.colors.warning : theme.colors.border }} />
                       <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => { setSelectedPrevIndex(idx); setPreviousModalOpen(true); }} style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}>
@@ -300,18 +285,27 @@ export default function GenericMedicalWorkspacePage(props: Props) {
       </SpecialtyWorkspaceScaffold>
 
       <Modal visible={previousModalOpen} transparent animationType="fade" onRequestClose={() => setPreviousModalOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center", padding: 18 }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
           <View style={{ width: "100%", maxWidth: 920, borderRadius: 10, overflow: "hidden", backgroundColor: theme.colors.surface }}>
             <View style={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primary }}>
               <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 0.5 }}>PREVIOUS PARAMETERS</Text>
             </View>
             <ScrollView contentContainerStyle={{ padding: 16 }}>
               <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{selectedPrev?.visitLabel}</Text>
-              {(props.formFields ?? []).map((f) => (
-                <ReadOnlyBlueBox key={f.key} theme={theme} label={`${f.label} :`} value={selectedPrev?.values?.[f.key] ?? "-"} multiline={f.multiline} />
+              {!!defaultFields.length && (
+                <>
+                  <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Default consultation criteria</Text>
+                  {defaultFields.map((f) => (
+                    <WorkspaceReadOnlyField key={`prev-default-${f.key}`} theme={theme} label={`${f.label} :`} value={selectedPrev?.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key]} />
+                  ))}
+                </>
+              )}
+              <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Specialty-specific criteria</Text>
+              {specialtyFields.map((f) => (
+                <WorkspaceReadOnlyField key={`prev-specialty-${f.key}`} theme={theme} label={`${f.label} :`} value={selectedPrev?.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key] ?? "file-document-outline"} />
               ))}
             </ScrollView>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.02)" }}>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: theme.colors.border, backgroundColor: theme.colors.surfaceVariant }}>
               <TouchableOpacity onPress={() => setPreviousModalOpen(false)} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
                 <Text style={{ color: "#fff", fontWeight: "900" }}>CLOSE</Text>
               </TouchableOpacity>

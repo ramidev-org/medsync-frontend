@@ -1,4 +1,3 @@
-import { ThemedCard } from "@/components/default_card";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -76,7 +75,7 @@ export default function LettresTab({
   };
 
   return (
-    <ThemedCard>
+    <View style={styles.flatRoot}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Lettres</Text>
 
@@ -85,15 +84,15 @@ export default function LettresTab({
             style={styles.outlineBtn}
             onPress={() => Alert.alert("PDF", "Génération PDF (prototype)")}
           >
-            <Ionicons name="print-outline" size={16} color={theme.colors.primary} />
-            <Text style={[styles.outlineText, { color: theme.colors.primary }]}>IMPRIMER</Text>
+            <Ionicons name="print-outline" size={16} color={theme.colors.info} />
+            <Text style={[styles.outlineText, { color: theme.colors.info }]}>IMPRIMER</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => Alert.alert("Sauvegarde", "Lettre sauvegardée (prototype)")}
           >
-            <Ionicons name="save-outline" size={16} color="#fff" />
+            <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
             <Text style={styles.primaryText}>SAUVEGARDER</Text>
           </TouchableOpacity>
         </View>
@@ -109,11 +108,11 @@ export default function LettresTab({
               onPress={() => switchTemplate(t.id)}
               style={[
                 styles.templateItem,
-                { borderColor: theme.colors.primary },
+                { borderColor: selectedId === t.id ? theme.colors.info : theme.colors.border },
                 selectedId === t.id && styles.templateActive,
               ]}
             >
-              <Text style={[styles.templateText, selectedId === t.id && { color: "#fff" }]}>
+              <Text style={[styles.templateText, selectedId === t.id && { color: theme.colors.textOnPrimary }]}>
                 {t.name}
               </Text>
             </TouchableOpacity>
@@ -129,22 +128,23 @@ export default function LettresTab({
             multiline
             style={[
               styles.editor,
-              { borderColor: theme.colors.primary, backgroundColor: theme.colors.background },
+              { borderColor: theme.colors.border, backgroundColor: theme.colors.background },
             ]}
           />
         </View>
       </View>
-    </ThemedCard>
+    </View>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    flatRoot: { backgroundColor: "transparent" },
     headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     title: { fontSize: 16, fontWeight: "900" },
 
     primaryBtn: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.info,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -152,11 +152,11 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    primaryText: { color: "#fff", fontWeight: "900" },
+    primaryText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
 
     outlineBtn: {
       borderWidth: 2,
-      borderColor: theme.colors.primary,
+      borderColor: theme.colors.info,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -179,7 +179,7 @@ const createStyles = (theme: any) =>
       padding: 12,
       backgroundColor: theme.colors.surface,
     },
-    templateActive: { backgroundColor: theme.colors.primary },
+    templateActive: { backgroundColor: theme.colors.info },
     templateText: { fontWeight: "900" },
 
     editor: {

@@ -1,4 +1,3 @@
-import { ThemedCard } from "@/components/default_card";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -31,14 +30,14 @@ export default function SymptomesTab({ theme }: { theme: any }) {
   const remove = (s: string) => setSelected((p) => p.filter((x) => x !== s));
 
   return (
-    <ThemedCard>
+    <View style={styles.flatRoot}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Symptômes</Text>
         <TouchableOpacity
           style={styles.primaryBtn}
           onPress={() => Alert.alert("Sauvegarde", "Symptômes sauvegardés (prototype)")}
         >
-          <Ionicons name="save-outline" size={16} color="#fff" />
+          <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
           <Text style={styles.primaryText}>SAUVEGARDER</Text>
         </TouchableOpacity>
       </View>
@@ -78,24 +77,25 @@ export default function SymptomesTab({ theme }: { theme: any }) {
                 <Text style={styles.rowMain}>{s}</Text>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => remove(s)}>
-                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                  <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
                 </TouchableOpacity>
               </View>
             ))
           )}
         </View>
       </View>
-    </ThemedCard>
+    </View>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    flatRoot: { backgroundColor: "transparent" },
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     title: { fontSize: 16, fontWeight: "900" },
 
     primaryBtn: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.info,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -103,7 +103,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    primaryText: { color: "#fff", fontWeight: "900" },
+    primaryText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
 
     label: { marginTop: 14, fontWeight: "900", opacity: 0.8 },
     search: { marginTop: 8, borderRadius: 10, padding: 12, minHeight: 44 },

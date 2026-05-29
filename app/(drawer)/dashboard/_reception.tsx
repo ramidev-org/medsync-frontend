@@ -278,7 +278,7 @@ export default function ReceptionDashboardPage() {
                     key={task.id}
                     title={task.title}
                     time={`${task.dueText || "Not set"} - ${task.status.replace("_", " ")}`}
-                    icon={task.status === "done" ? "checkmark-done-outline" : task.status === "in_progress" ? "time-outline" : "checkbox-outline"}
+                    icon={task.status === "done" ? "checkmark-done-outline" : task.status === "in_progress" ? "time-outline" : "clipboard-outline"}
                     theme={theme}
                   />
                 ))}

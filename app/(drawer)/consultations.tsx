@@ -130,7 +130,7 @@ export default function ConsultationsPage() {
   return (
     <PageShell
       title="Consultations"
-      subtitle="Historique + sessions ouvertes"
+      subtitle="Historique des consultations - style analyses medicales"
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => fetchConsultations(true, 1)} />}
       actions={
         <View style={styles.filtersRow}>
@@ -175,7 +175,7 @@ export default function ConsultationsPage() {
           })}
         </View>
 
-        <View style={[tableStyles.tableHeader, { marginTop: 12 }]}>
+        <View style={[tableStyles.tableHeader, styles.tableHeaderWorkspace]}>
           <Text style={[tableStyles.headerCell, { flex: 2 }]}>Patient</Text>
           <Text style={[tableStyles.headerCell, { flex: 1.5 }]}>Médecin</Text>
           <Text style={[tableStyles.headerCell, { flex: 1.5 }]}>Date</Text>
@@ -191,7 +191,7 @@ export default function ConsultationsPage() {
         )}
 
         {rows.map((r) => (
-          <View key={r.consultation_id} style={tableStyles.tableRow}>
+          <View key={r.consultation_id} style={[tableStyles.tableRow, styles.tableRowWorkspace]}>
             <Text style={[tableStyles.cell, { flex: 2, fontWeight: "900" }]}>
               {r.patient_first_name} {r.patient_last_name}
             </Text>
@@ -247,8 +247,8 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: "#BFDBFE",
+      backgroundColor: "#EFF6FF",
       borderRadius: 12,
       paddingHorizontal: 12,
       height: 44,
@@ -259,7 +259,7 @@ const createStyles = (theme: any) =>
       height: 44,
       paddingHorizontal: 14,
       borderRadius: 12,
-      backgroundColor: theme.colors.primary,
+      backgroundColor: "#2563EB",
       alignItems: "center",
       justifyContent: "center",
     },
@@ -269,7 +269,7 @@ const createStyles = (theme: any) =>
     chip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
 
     openBtn: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: "#1D4ED8",
       paddingHorizontal: 12,
       paddingVertical: 9,
       borderRadius: 10,
@@ -293,8 +293,8 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 6,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: "#BFDBFE",
+      backgroundColor: "#EFF6FF",
       borderRadius: 12,
       paddingHorizontal: 10,
       height: 40,
@@ -306,11 +306,20 @@ const createStyles = (theme: any) =>
       padding: 12,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: "#BFDBFE",
+      backgroundColor: "#EFF6FF",
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
     },
     loadingText: { fontWeight: "800", color: theme.colors.textSecondary },
+    tableHeaderWorkspace: {
+      marginTop: 12,
+      backgroundColor: "#DBEAFE",
+      borderColor: "#BFDBFE",
+    },
+    tableRowWorkspace: {
+      backgroundColor: "#F8FAFC",
+      borderColor: "#E2E8F0",
+    },
   });

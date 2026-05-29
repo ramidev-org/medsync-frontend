@@ -19,7 +19,7 @@ export function MetricCard({
   return (
     <View style={[metricStyles.card, { borderColor: border }]}>
       <View style={[metricStyles.iconCircle, { backgroundColor: border }]}>
-        <Ionicons name={icon} size={18} color="#fff" />
+        <Ionicons name={icon} size={18} color={theme.colors.textOnPrimary} />
       </View>
 
       <View style={{ flex: 1 }}>
@@ -153,7 +153,7 @@ export function SubTabBar<T extends string>({
             ]}
           >
             <Text
-              style={[subTabStyles.pillText, { color: isActive ? "#fff" : theme.colors.primary }]}
+              style={[subTabStyles.pillText, { color: isActive ? theme.colors.textOnPrimary : theme.colors.primary }]}
               numberOfLines={1}
             >
               {t.label}

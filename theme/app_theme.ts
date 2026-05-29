@@ -35,7 +35,11 @@ export const appTheme = {
     pressedBg: "rgba(37, 99, 235, 0.16)",
 
     // UI helpers
-    primarySoft: colors.accent,
+    primarySoft: colors.soft.primary,
+    successSoft: colors.soft.success,
+    warningSoft: colors.soft.warning,
+    errorSoft: colors.soft.error,
+    neutralSoft: colors.soft.neutral,
     chipBg: colors.light.surfaceVariant,
     chipText: colors.primary,
 

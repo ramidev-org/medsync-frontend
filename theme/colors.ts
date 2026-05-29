@@ -7,6 +7,14 @@ export const colors = {
   error: "#E0565B",
   info: "#4AA3D9",
 
+  soft: {
+    primary: "#EFF6FF",
+    success: "#ECFDF5",
+    warning: "#FFF7ED",
+    error: "#FEF2F2",
+    neutral: "#F1F5F9",
+  },
+
   light: {
     background: "#F4F7FB",
     surface: "#FFFFFF",

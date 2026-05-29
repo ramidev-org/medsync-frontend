@@ -140,13 +140,13 @@ const createStyles = (theme: any) =>
     modeBtnText: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary },
     modeBtnTextActive: { color: theme.colors.primary },
     yellowBtn: {
-      backgroundColor: "#F5B301",
+      backgroundColor: theme.colors.warning,
       paddingVertical: 10,
       paddingHorizontal: 14,
       borderRadius: 8,
       alignSelf: "flex-start",
     },
-    yellowBtnText: { fontWeight: "900", color: "#fff", fontSize: 12 },
+    yellowBtnText: { fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 12 },
     panel: {
       borderWidth: 1,
       borderColor: theme.colors.border,

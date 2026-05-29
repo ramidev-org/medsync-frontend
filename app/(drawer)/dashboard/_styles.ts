@@ -16,12 +16,14 @@ export const getDashboardStyles = (theme: any) =>
 
     welcomeCard: {
       backgroundColor: theme.colors.surface,
-      padding: 20,
+      padding: 22,
+      minHeight: 174,
       borderRadius: 18,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      justifyContent: "center",
     },
-    welcomeTitle: { color: theme.colors.text, fontSize: 24, fontWeight: "800" },
+    welcomeTitle: { color: theme.colors.text, fontSize: 26, fontWeight: "900" },
     welcomeSubtitle: {
       color: theme.colors.textSecondary,
       marginTop: 6,
@@ -29,7 +31,7 @@ export const getDashboardStyles = (theme: any) =>
       fontWeight: "700",
     },
 
-    statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 14 },
+    statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 14, flexWrap: "wrap" },
 
     tabs: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
     tab: {

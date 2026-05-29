@@ -50,10 +50,8 @@ const NAV: NavItem[] = [
   { key: "users", label: "Team", route: "/users", section: "management", visible: ({ role, isClinicAdmin }) => role === "doctor" && isClinicAdmin, icon: ({ color, size }) => <Fontisto name="persons" size={size} color={color} /> },
 
   { key: "chats", label: "Chats", route: "/chats", section: "tools", icon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} /> },
-  { key: "notifications", label: "Notifications", route: "/notifications", section: "tools", icon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} /> },
 
   { key: "settings", label: "Settings", route: "/settings", section: "account", icon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> },
-  { key: "profile", label: "Profile", route: "/profile", section: "account", icon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} /> },
 ];
 
 export default function Layout() {

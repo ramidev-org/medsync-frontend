@@ -8,7 +8,8 @@ import { useTheme } from "@/theme/theme_provider";
 import { FontAwesome5, FontAwesome6, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { LineChart } from "react-native-chart-kit";
 import { getDashboardStyles } from "./_styles";
 
 const ICON_FAMILIES = {
@@ -28,6 +29,12 @@ export default function DoctorDashboardPage() {
   const router = useRouter();
   const { recentTasks } = useTasks();
   const [counts, setCounts] = useState<any | null>(null);
+  const [chartWidth, setChartWidth] = useState(420);
+  const [chartPoint, setChartPoint] = useState<{ label: string; value: number } | null>(null);
+  const chartAnim = useMemo(() => new Animated.Value(0), []);
+  const flowLabels = useMemo(() => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], []);
+  const visitsData = useMemo(() => [12, 18, 15, 22, 20, 11, 9], []);
+  const consultationsData = useMemo(() => [9, 14, 12, 17, 16, 8, 7], []);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +55,15 @@ export default function DoctorDashboardPage() {
     };
   }, [user?.id]);
 
+  useEffect(() => {
+    Animated.timing(chartAnim, {
+      toValue: 1,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [chartAnim]);
+
   const doctorSpecialityKey = useMemo(() => normalizeSpeciality((user as any)?.doctorProfile?.speciality), [user]);
 
   return (
@@ -62,25 +78,73 @@ export default function DoctorDashboardPage() {
             </View>
 
             <View style={styles.statsRow}>
-              <StatCard title="Patients" value={String(counts?.patients ?? 0)} percentage="" icon="personal-injury" color="#8b5cf6" iconFamily="material" theme={theme} />
-              <StatCard title="Appointments" value={String(counts?.appointments_total ?? 0)} percentage="" icon="eye" color="#f59e0b" iconFamily="fontAwesome5" theme={theme} />
-              <StatCard title="Pending" value={String(counts?.appointments_pending ?? 0)} percentage="" icon="calendar-check" color="#06b6d4" iconFamily="fontAwesome5" theme={theme} />
-              <StatCard title="Payments (paid)" value={String(counts?.payments_paid ?? 0)} percentage="" icon="truck-medical" color="#ef4444" iconFamily="fontAwesome6" theme={theme} />
+              <StatCard title="Patients" value={String(counts?.patients ?? 0)} icon="personal-injury" color="#8b5cf6" iconFamily="material" theme={theme} />
+              <StatCard title="Appointments" value={String(counts?.appointments_total ?? 0)} icon="eye" color="#f59e0b" iconFamily="fontAwesome5" theme={theme} />
+              <StatCard title="Completed visits" value={String(counts?.appointments_completed ?? 0)} icon="check-decagram" color="#16a34a" iconFamily="materialCommunity" theme={theme} />
             </View>
 
-            <View style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Clinical Insights</Text>
-                <TouchableOpacity onPress={() => router.push("/statistiques")} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: theme.colors.border }}>
-                  <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: 12 }}>Open statistiques</Text>
+            <Animated.View
+              style={[
+                styles.chartCard,
+                {
+                  backgroundColor: theme.colors.surface,
+                  minHeight: 330,
+                  transform: [{ translateY: chartAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
+                  opacity: chartAnim,
+                },
+              ]}
+            >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Patient Flow</Text>
+                <TouchableOpacity onPress={() => router.push("/statistiques")} style={{ paddingVertical: 4 }}>
+                  <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: 12, textDecorationLine: "underline" }}>View more data</Text>
                 </TouchableOpacity>
               </View>
-              <View style={{ gap: 10 }}>
-                <InsightRow title="Follow-up required" value={String(counts?.appointments_pending ?? 0)} hint="Patients waiting for next action" icon="refresh" tone="info" theme={theme} />
-                <InsightRow title="Paid payments" value={String(counts?.payments_paid ?? 0)} hint="Validated in this period" icon="cash" tone="success" theme={theme} />
-                <InsightRow title="Clinic flow" value={String(counts?.appointments_total ?? 0)} hint="Total appointment pipeline" icon="pulse" tone="warning" theme={theme} />
+              <View
+                onLayout={(e) => setChartWidth(Math.max(320, e.nativeEvent.layout.width - 24))}
+                style={{ alignItems: "center", justifyContent: "center", position: "relative" }}
+              >
+                <LineChart
+                  data={{
+                    labels: flowLabels,
+                    datasets: [
+                      { data: visitsData, strokeWidth: 3, color: (o = 1) => `rgba(37,99,235,${o})` },
+                      { data: consultationsData, strokeWidth: 3, color: (o = 1) => `rgba(6,182,212,${o})` },
+                    ],
+                    legend: ["Visits", "Consultations"],
+                  }}
+                  width={chartWidth}
+                  height={250}
+                  chartConfig={{
+                    backgroundColor: theme.colors.surface,
+                    backgroundGradientFrom: theme.colors.surface,
+                    backgroundGradientTo: theme.colors.surface,
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(37,99,235,${opacity})`,
+                    labelColor: () => theme.colors.textSecondary,
+                    propsForBackgroundLines: { stroke: theme.colors.border, strokeWidth: 1 },
+                  }}
+                  bezier
+                />
+                <View
+                  style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+                  onPointerMove={(e: any) => {
+                    const x = Number(e?.nativeEvent?.locationX ?? 0);
+                    const idx = Math.max(0, Math.min(flowLabels.length - 1, Math.round((x / Math.max(1, chartWidth)) * (flowLabels.length - 1))));
+                    setChartPoint({
+                      label: `${flowLabels[idx]}: Visits ${visitsData[idx]} / Consultations ${consultationsData[idx]}`,
+                      value: visitsData[idx],
+                    });
+                  }}
+                  onPointerLeave={() => setChartPoint(null)}
+                />
+                {chartPoint ? (
+                  <View style={{ marginTop: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
+                    <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>{chartPoint.label}</Text>
+                  </View>
+                ) : null}
               </View>
-            </View>
+            </Animated.View>
           </View>
 
           <View style={styles.rightColumn}>
@@ -99,7 +163,7 @@ export default function DoctorDashboardPage() {
               </View>
             </View>
 
-            <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface, marginTop: 16 }]}>
+            <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface, minHeight: 330, marginTop: 12 }]}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
                 <TouchableOpacity onPress={() => router.push("/tasks")}>
@@ -129,14 +193,13 @@ export default function DoctorDashboardPage() {
 interface StatCardProps {
   title: string;
   value: string | number;
-  percentage: string;
   icon: string;
   iconFamily?: IconFamily;
   color: string;
   theme: { colors: { surface: string; border: string; text: string; textSecondary: string } };
 }
 
-const StatCard = ({ title, value, percentage, icon, iconFamily = "ion", color, theme }: StatCardProps) => {
+const StatCard = ({ title, value, icon, iconFamily = "ion", color, theme }: StatCardProps) => {
   const IconComponent = ICON_FAMILIES[iconFamily];
   const cardStyles = StyleSheet.create({
     statCard: {
@@ -144,6 +207,7 @@ const StatCard = ({ title, value, percentage, icon, iconFamily = "ion", color, t
       padding: 20,
       borderRadius: 16,
       flex: 1,
+      minWidth: 180,
       borderWidth: 1,
       borderColor: theme.colors.border,
       shadowColor: "#000",
@@ -155,58 +219,32 @@ const StatCard = ({ title, value, percentage, icon, iconFamily = "ion", color, t
       overflow: "hidden",
     },
     contentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-    textColumn: { flexDirection: "column" },
+    textColumn: { flex: 1, minWidth: 0 },
     iconContainer: {
-      width: 60,
-      height: 60,
+      width: 56,
+      height: 56,
       borderRadius: 12,
       backgroundColor: color,
       alignItems: "center",
       justifyContent: "center",
     },
-    statValue: { fontSize: 32, fontWeight: "800", marginBottom: 4, color: theme.colors.text },
-    statTitle: { fontSize: 14, fontWeight: "600", color: theme.colors.textSecondary, marginBottom: 8 },
-    percentageBadge: { position: "absolute", top: 16, right: 16, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: color + "20" },
-    percentageText: { fontSize: 12, fontWeight: "700", color: color },
+    statValue: { fontSize: 28, fontWeight: "800", marginBottom: 2, color: theme.colors.text },
+    statTitle: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary },
   });
   return (
     <View style={cardStyles.statCard}>
       <View style={cardStyles.contentRow}>
         <View style={cardStyles.iconContainer}>
-          <IconComponent name={icon as any} size={32} color="#fff" />
+          <IconComponent name={icon as any} size={28} color="#fff" />
         </View>
         <View style={cardStyles.textColumn}>
           <Text style={cardStyles.statValue}>{value}</Text>
-          <Text style={cardStyles.statTitle}>{title}</Text>
+          <Text style={cardStyles.statTitle} numberOfLines={2}>{title}</Text>
         </View>
-      </View>
-      <View style={cardStyles.percentageBadge}>
-        <Text style={cardStyles.percentageText}>{percentage}</Text>
       </View>
     </View>
   );
 };
-
-const toneColors = (tone: "info" | "success" | "warning", theme: any) => {
-  if (tone === "success") return { bg: "rgba(34,197,94,0.10)", border: "rgba(34,197,94,0.28)", icon: "#16A34A" };
-  if (tone === "warning") return { bg: "rgba(245,158,11,0.11)", border: "rgba(245,158,11,0.28)", icon: "#D97706" };
-  return { bg: "rgba(37,99,235,0.10)", border: "rgba(37,99,235,0.28)", icon: "#2563EB" };
-};
-
-const InsightRow = ({ title, value, hint, icon, tone = "info", theme }: any) => {
-  const c = toneColors(tone, theme);
-  return (
-  <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderWidth: 1, borderColor: c.border, borderRadius: 12, backgroundColor: c.bg }}>
-    <View style={{ width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
-      <Ionicons name={icon} size={18} color={c.icon} />
-    </View>
-    <View style={{ flex: 1 }}>
-      <Text style={{ fontWeight: "900", color: theme.colors.text }}>{title}</Text>
-      <Text style={{ marginTop: 2, fontSize: 12, fontWeight: "700", color: theme.colors.textSecondary }}>{hint}</Text>
-    </View>
-    <Text style={{ fontWeight: "900", fontSize: 18, color: theme.colors.text }}>{value}</Text>
-  </View>
-);};
 
 const DoctorStat = ({ label, value, theme, progress }: any) => {
   const statStyles = StyleSheet.create({
@@ -247,7 +285,7 @@ function taskStatusLabel(status: TaskStatus) {
 function taskIcon(status: TaskStatus) {
   if (status === "in_progress") return "time-outline";
   if (status === "done") return "checkmark-done-outline";
-  return "checkbox-outline";
+  return "clipboard-outline";
 }
 function priorityColor(priority: TaskPriority, theme: any) {
   if (priority === "high") return theme.colors.error;

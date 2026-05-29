@@ -21,6 +21,7 @@ import MaladiesTab from "./_tabs/_maladies";
 import ObservationMedicalTab from "./_tabs/_observation";
 import OrdonnancesTab from "./_tabs/_ordonnance";
 import SymptomesTab from "./_tabs/_symptomes";
+import { normalizeSpeciality } from "@/config/speciality";
 
 
 
@@ -150,13 +151,29 @@ type MainTabKey =
 /* ================= UI CONST ================= */
 
 const MAIN_TABS: { key: MainTabKey; label: string }[] = [
-  { key: "observation", label: "Observation mÃ©dicale" },
+  { key: "observation", label: "Observation médicale" },
   { key: "prescriptions", label: "Ordonnances" },
   { key: "letters", label: "Lettres" },
   { key: "diagnoses", label: "Maladies" },
-  { key: "symptoms", label: "SymptÃ´mes" },
+  { key: "symptoms", label: "Symptômes" },
   { key: "documents", label: "Documents" },
 ];
+
+const WORKSPACE_OPTIONS = [
+  { key: "general_medicine", label: "Medecine Generale" },
+  { key: "cardiology", label: "Cardiologie" },
+  { key: "dermatology", label: "Dermatologie" },
+  { key: "orthopedics", label: "Orthopedie" },
+  { key: "dentistry", label: "Dentisterie" },
+  { key: "gynecology", label: "Gynecologie" },
+  { key: "pediatrics", label: "Pediatrie" },
+  { key: "endocrinology_diabetes", label: "Endocrino / Diabete" },
+  { key: "ent", label: "ORL" },
+  { key: "ophthalmology", label: "Ophtalmologie" },
+  { key: "pulmonology", label: "Pneumologie" },
+  { key: "gastroenterology", label: "Gastroenterologie" },
+  { key: "analyses_medicales", label: "Analyses Medicales" },
+] as const;
 
 const initialVitals = {
   taille_cm: "",
@@ -173,13 +190,27 @@ const initialParams = {
   conclusion: "",
 };
 
+function formatVisitDateLabel(input?: string | null): string {
+  if (!input) return "-";
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return String(input);
+  return d.toLocaleString("fr-FR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /* ================= PAGE ================= */
 
 export default function ConsultationPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const consultationTheme = theme;
+  const styles = createStyles(consultationTheme);
 
   const { user } = useAuth();
   const { clinic } = useAppData();
@@ -195,6 +226,10 @@ export default function ConsultationPage() {
     : null;
   const doctorSpeciality =
     (user as any)?.doctorProfile?.speciality ?? null;
+  const [activeWorkspaceKey, setActiveWorkspaceKey] = useState<string>(() => {
+    const normalized = normalizeSpeciality((user as any)?.doctorProfile?.speciality ?? null);
+    return String(normalized || "general_medicine");
+  });
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
@@ -441,14 +476,14 @@ export default function ConsultationPage() {
 
   if (loading) {
     return (
-      <View style={[styles.page, { backgroundColor: theme.colors.background, padding: 20 }]}> 
+      <View style={[styles.page, { backgroundColor: consultationTheme.colors.background, padding: 20 }]}> 
         <Text>Chargement de la consultation...</Text>
       </View>
     );
   }
   if (!appointment) {
     return (
-      <View style={[styles.page, { backgroundColor: theme.colors.background, padding: 20 }]}>
+      <View style={[styles.page, { backgroundColor: consultationTheme.colors.background, padding: 20 }]}>
         <Text>Consultation introuvable</Text>
       </View>
     );
@@ -457,115 +492,137 @@ export default function ConsultationPage() {
   /* ================= UI ================= */
 
   return (
-    <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
-      <TopBar theme={theme} />
+    <View style={[styles.page, { backgroundColor: consultationTheme.colors.background }]}>
+      <TopBar theme={consultationTheme} />
 
-      {/* Title row */}
-      <ConsultationHeader
-        theme={theme}
-        title="CONSULTATION"
-        stepText="1/4"
-        onBack={() => router.push("/visits")}
-        onLastVisit={() => Alert.alert("DerniÃ¨re visite", "Prototype")}
-        onSave={save}
-        onClose={() => Alert.alert("ClÃ´turer", "Prototype")}
-        onPrint={handlePrintOrdonnance}
-        status={appointment?.status === "completed" ? "closed" : "in_consultation"}
-        patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
-        patientMeta={`${appointment?.patient?.age ?? "-"} ans â€¢ ${appointment?.patient?.sex === "female" ? "F" : "M"} â€¢ ID: ${appointment?.patient?.id ?? "-"}`}
-        visitMeta={`Visite #${appointment?.id ?? "-"} â€¢ ${appointment?.time ?? ""}`}
-      />
+      <View
+        style={{
+          paddingHorizontal: PAGE_GUTTER,
+          position: "relative",
+          zIndex: 40,
+          ...(Platform.OS === "web" ? ({ overflow: "visible" } as any) : null),
+        }}
+      >
+        <ConsultationHeader
+          theme={consultationTheme}
+          title="CONSULTATION"
+          stepText="1/4"
+          onBack={() => router.push("/visits")}
+          onLastVisit={() => Alert.alert("Dernière visite", "Prototype")}
+          onSave={save}
+          onClose={() => Alert.alert("Clôturer", "Prototype")}
+          onPrint={handlePrintOrdonnance}
+          status={appointment?.status === "completed" ? "closed" : "in_consultation"}
+          patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
+          patientMeta={`${appointment?.patient?.age ?? "-"} ans • ${appointment?.patient?.sex === "female" ? "F" : "M"}`}
+          workspaceLabel={WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace"}
+          workspaceOptions={[...WORKSPACE_OPTIONS]}
+          onWorkspaceChange={(key) => setActiveWorkspaceKey(key)}
+          visitMeta={`Visite • ${formatVisitDateLabel(appointment?.time)}`}
+          consultationStats={{
+            statusLabel: appointment?.status === "completed" ? "TERMINEE" : "EN COURS",
+            specialtyLabel: WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace",
+            visitLabel: formatVisitDateLabel(appointment?.time),
+          }}
+        />
+      </View>
 
       {/* Main tabs (simplified: wrapped layout, no horizontal scrolling) */}
-      <View style={styles.tabsContainer}>
-        {MAIN_TABS.map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            onPress={() => setActiveMainTab(t.key)}
-            style={[
-              styles.mainTab,
-              activeMainTab === t.key && styles.mainTabActive,
-            ]}
-          >
-            <Text style={[styles.mainTabText, activeMainTab === t.key && styles.mainTabTextActive]}>
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View style={{ paddingHorizontal: PAGE_GUTTER, position: "relative", zIndex: 5 }}>
+        <View style={styles.tabsContainer}>
+          {MAIN_TABS.map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              onPress={() => setActiveMainTab(t.key)}
+              style={[
+                styles.mainTab,
+                activeMainTab === t.key && styles.mainTabActive,
+              ]}
+            >
+              <Text style={[styles.mainTabText, activeMainTab === t.key && styles.mainTabTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* Content */}
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: PAGE_GUTTER,
-          paddingTop: 12,
-          paddingBottom: 30,
+          paddingTop: 14,
+          paddingBottom: 34,
+          gap: 10,
           ...getWebContainerFill(),
         }}
       >
-        {activeMainTab === "observation" && (
-          <ObservationMedicalTab
-            theme={theme}
-            doctorSpeciality={doctorSpeciality}
-            vitals={vitals}
-            setVitals={setVitals}
-            parameters={parameters}
-            setParameters={setParameters}
-            observations={observations}
-            setObservations={setObservations}
-            onSave={save}
-          />
-        )}
+        <View style={styles.contentCard}>
+          {activeMainTab === "observation" && (
+            <ObservationMedicalTab
+              theme={consultationTheme}
+              doctorSpeciality={doctorSpeciality}
+              workspaceKey={activeWorkspaceKey}
+              vitals={vitals}
+              setVitals={setVitals}
+              parameters={parameters}
+              setParameters={setParameters}
+              observations={observations}
+              setObservations={setObservations}
+              onSave={save}
+              workspaceMode
+            />
+          )}
 
-        {activeMainTab === "prescriptions" && (
-          <OrdonnancesTab
-            theme={theme}
-            requesterId={user?.id}
-            signedBy={currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin"}
-            onSelectedPrescriptionChange={(rx) => {
-              if (!rx) return setSelectedOrdonnance(null);
-              setSelectedOrdonnance({
-                ref: String(rx.ref || ""),
-                drugs: (rx.drugs || []).map((d) => ({
-                  name: String(d.name || ""),
-                  qty: d.qty ?? "",
-                  dose: d.dose ?? "",
-                  frequency: d.frequency ?? "",
-                  duration: d.duration ?? "",
-                  instructions: d.instructions ?? "",
-                })),
-              });
-            }}
-            onPrint={(rx) => {
-              if (!rx) return;
-              printOrdonnanceA4({
-                reference: String(rx.ref || ""),
-                clinicName: String((clinic as any)?.name || "Clinique"),
-                clinicAddress: String((clinic as any)?.google_maps_address || (clinic as any)?.address || ""),
-                clinicPhone: String((clinic as any)?.phone || ""),
-                patientName: `${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim(),
-                patientAge: appointment?.patient?.age != null ? `${appointment.patient.age} ans` : "",
-                patientSex: appointment?.patient?.sex === "female" ? "F" : "M",
-                doctorName: (doctor as any)?.nom_complet || "MÃ©decin",
-      doctorSpeciality: (doctor as any)?.specialite || "",
-      doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
-      signedBy: currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin",
-                drugs: (rx.drugs || []).map((d) => ({
-                  name: String(d.name || ""),
-                  qty: d.qty ?? "",
-                  dose: d.dose ?? "",
-                  frequency: d.frequency ?? "",
-                  duration: d.duration ?? "",
-                  instructions: d.instructions ?? "",
-                })),
-              });
-            }}
-          />
-        )}
+          {activeMainTab === "prescriptions" && (
+            <OrdonnancesTab
+              theme={consultationTheme}
+              requesterId={user?.id}
+              signedBy={currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin"}
+              onSelectedPrescriptionChange={(rx) => {
+                if (!rx) return setSelectedOrdonnance(null);
+                setSelectedOrdonnance({
+                  ref: String(rx.ref || ""),
+                  drugs: (rx.drugs || []).map((d) => ({
+                    name: String(d.name || ""),
+                    qty: d.qty ?? "",
+                    dose: d.dose ?? "",
+                    frequency: d.frequency ?? "",
+                    duration: d.duration ?? "",
+                    instructions: d.instructions ?? "",
+                  })),
+                });
+              }}
+              onPrint={(rx) => {
+                if (!rx) return;
+                printOrdonnanceA4({
+                  reference: String(rx.ref || ""),
+                  clinicName: String((clinic as any)?.name || "Clinique"),
+                  clinicAddress: String((clinic as any)?.google_maps_address || (clinic as any)?.address || ""),
+                  clinicPhone: String((clinic as any)?.phone || ""),
+                  patientName: `${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim(),
+                  patientAge: appointment?.patient?.age != null ? `${appointment.patient.age} ans` : "",
+                  patientSex: appointment?.patient?.sex === "female" ? "F" : "M",
+                  doctorName: (doctor as any)?.nom_complet || "MÃ©decin",
+        doctorSpeciality: (doctor as any)?.specialite || "",
+        doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
+        signedBy: currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin",
+                  drugs: (rx.drugs || []).map((d) => ({
+                    name: String(d.name || ""),
+                    qty: d.qty ?? "",
+                    dose: d.dose ?? "",
+                    frequency: d.frequency ?? "",
+                    duration: d.duration ?? "",
+                    instructions: d.instructions ?? "",
+                  })),
+                });
+              }}
+            />
+          )}
 
-        {activeMainTab === "letters" && (
+          {activeMainTab === "letters" && (
           <LettresTab
-            theme={theme}
+            theme={consultationTheme}
             patient={appointment!.patient}
             doctor={doctor}
             consultationSummary={{
@@ -575,24 +632,21 @@ export default function ConsultationPage() {
           />
         )}
 
-        {activeMainTab === "diagnoses" && (
-          <MaladiesTab theme={theme} initialDiagnosisCodes={consultation?.diagnosis || []} />
+          {activeMainTab === "diagnoses" && (
+          <MaladiesTab theme={consultationTheme} initialDiagnosisCodes={consultation?.diagnosis || []} />
         )}
 
-        {activeMainTab === "symptoms" && <SymptomesTab theme={theme} />}
+          {activeMainTab === "symptoms" && <SymptomesTab theme={consultationTheme} />}
 
-        {activeMainTab === "documents" && (
+          {activeMainTab === "documents" && (
           <DocumentsTab
-            theme={theme}
+            theme={consultationTheme}
             consultationId={consultation!.id}
             patientId={appointment!.patient!.id}
           />
         )}
 
-        <TouchableOpacity style={styles.backFooter} onPress={() => router.push("/visits")}>
-          <Ionicons name="arrow-back-outline" size={18} color={theme.colors.primary} />
-          <Text style={styles.backFooterText}>Retour aux visites</Text>
-        </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -620,21 +674,22 @@ const createStyles = (theme: any) =>
       paddingVertical: 4,
       borderRadius: 999,
     },
-    titlePillText: { color: "#fff", fontWeight: "900" },
+    titlePillText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
     lastVisitText: { color: theme.colors.text, opacity: 0.7, fontWeight: "800" },
 
     tabsContainer: {
-      paddingHorizontal: 12,
+      paddingHorizontal: 0,
       paddingTop: 10,
-      paddingBottom: 6,
+      paddingBottom: 10,
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 8,
+      backgroundColor: "transparent",
       ...(Platform.OS === "web"
         ? ({
             position: "sticky",
             top: 64,
-            zIndex: 10,
+            zIndex: 5,
             backgroundColor: theme.colors.background,
             borderBottomWidth: 1,
             borderBottomColor: theme.colors.border,
@@ -642,28 +697,40 @@ const createStyles = (theme: any) =>
         : null),
     },
     mainTab: {
-      minWidth: 180,
+      minWidth: 170,
       flexGrow: 1,
-      backgroundColor: theme.colors.surface,
       borderColor: theme.colors.border,
       borderWidth: 1,
-      borderRadius: 10,
+      borderRadius: 14,
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: 11,
+      paddingVertical: 12,
       paddingHorizontal: 12,
+      backgroundColor: theme.colors.surface,
     },
     mainTabActive: {
       backgroundColor: theme.colors.primary,
       borderColor: theme.colors.primary,
     },
     mainTabText: {
-      color: theme.colors.text,
+      color: theme.colors.textSecondary,
       fontWeight: "900",
       textAlign: "center",
     },
     mainTabTextActive: {
-      color: "#fff",
+      color: theme.colors.textOnPrimary,
+    },
+    contentCard: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface,
+      padding: 14,
+      ...(Platform.OS === "web"
+        ? ({
+            boxShadow: "0 14px 30px rgba(15,23,42,0.07)",
+          } as any)
+        : null),
     },
 
     backFooter: {
@@ -678,12 +745,4 @@ const createStyles = (theme: any) =>
       color: theme.colors.primary,
       fontWeight: "900",
     },
-    
   });
-
-
-
-
-
-
-

@@ -336,6 +336,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const styles = StyleSheet.create({
     container: {
       marginBottom: 16,
+      position: "relative",
     },
     labelContainer: {
       flexDirection: "row",
@@ -385,7 +386,18 @@ export const Dropdown: React.FC<DropdownProps> = ({
   });
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View
+      style={[
+        styles.container,
+        isFocus
+          ? {
+              zIndex: 9999,
+              elevation: 20,
+            }
+          : null,
+        containerStyle,
+      ]}
+    >
       {label && (
         <View style={styles.labelContainer}>
           <Text style={styles.label}>{label}</Text>
@@ -435,6 +447,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
           borderRadius: 8,
           backgroundColor: theme.colors.background,
           borderColor: theme.colors.border,
+          zIndex: 9999,
+          elevation: 24,
         }}
       />
 

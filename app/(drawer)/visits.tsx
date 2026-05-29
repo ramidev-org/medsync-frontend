@@ -134,6 +134,8 @@ export default function VisitsPage() {
   const [doctorOptions, setDoctorOptions] = useState<{ id: string; label: string }[]>([]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [actionsTarget, setActionsTarget] = useState<Appointment | null>(null);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -324,6 +326,11 @@ export default function VisitsPage() {
     router.push(`/consultation?id=${a.id}`);
   };
 
+  const openRowActions = (a: Appointment) => {
+    setActionsTarget(a);
+    setIsActionsMenuOpen(true);
+  };
+
   const submitForm = async () => {
     try {
       if (!user?.id) return;
@@ -383,6 +390,8 @@ export default function VisitsPage() {
   };
 
   const styles = createStyles(theme);
+  const TABLE_FIXED_HEIGHT = 560;
+  const RIGHT_CARD_HEIGHT = TABLE_FIXED_HEIGHT + 126;
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -434,18 +443,7 @@ export default function VisitsPage() {
               ))}
             </View>
 
-            <ThemedCard style={{ marginBottom: 16 }}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>Etat d&apos;avancement</Text>
-                <Text style={[styles.progressValue, { color: theme.colors.primary }]}>{progress}%</Text>
-              </View>
-              <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}> 
-                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary }]} />
-              </View>
-              <Text style={styles.progressText}>{completedCount} sur {appointments.length} patients traites</Text>
-            </ThemedCard>
-
-            <View style={styles.tableContainer}>
+            <View style={[styles.tableContainer, { height: TABLE_FIXED_HEIGHT }]}>
               <View style={[styles.tableRow, styles.header]}>
                 <Text style={[styles.cell, { flex: 0.6 }]}>Avatar</Text>
                 <Text style={[styles.cell, { flex: 1.2 }]}>Patient</Text>
@@ -453,10 +451,10 @@ export default function VisitsPage() {
                 <Text style={[styles.cell, { flex: 0.9 }]}>Heure</Text>
                 <Text style={[styles.cell, { flex: 0.9 }]}>Type</Text>
                 <Text style={[styles.cell, { flex: 1, textAlign: "center" }]}>Status</Text>
-                <Text style={{ flex: 1.8, textAlign: "center" }}>Actions</Text>
+                <Text style={{ flex: 1.25, textAlign: "center" }}>Actions</Text>
               </View>
 
-              <ScrollView style={{ maxHeight: 420 }}>
+              <ScrollView style={{ maxHeight: TABLE_FIXED_HEIGHT - 68 }}>
                 {filteredAppointments.map((a) => (
                   <View key={a.id} style={styles.tableRow}>
                     <View style={{ flex: 0.6 }}>
@@ -476,21 +474,13 @@ export default function VisitsPage() {
                       </View>
                     </View>
 
-                    <View style={[styles.row, { flex: 1.8, justifyContent: "center", gap: 8 }]}>
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => openEditForm(a)}>
-                        <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+                    <View style={[styles.row, { flex: 1.25, justifyContent: "center", gap: 8 }]}>
+                      <TouchableOpacity style={[styles.actionBtn, styles.primaryActionBtn]} onPress={() => startConsultation(a)}>
+                        <Ionicons name="medkit-outline" size={16} color="#fff" />
                       </TouchableOpacity>
 
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => startConsultation(a)}>
-                        <Ionicons name="medkit-outline" size={16} color={theme.colors.primary} />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => updateStatus(a.id, "completed")}> 
-                        <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.success} />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => cancelAppointment(a.id)}>
-                        <Ionicons name="close-circle-outline" size={16} color={theme.colors.error} />
+                      <TouchableOpacity style={styles.actionBtn} onPress={() => openRowActions(a)}>
+                        <Ionicons name="ellipsis-horizontal" size={16} color={theme.colors.textSecondary} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -508,10 +498,21 @@ export default function VisitsPage() {
 
           <View style={styles.right}>
             <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            <ThemedCard>
+            <ThemedCard style={{ height: RIGHT_CARD_HEIGHT }}>
+              <View style={styles.waitingProgressTop}>
+                <View>
+                  <Text style={styles.progressTitle}>Etat d&apos;avancement</Text>
+                  <Text style={styles.progressText}>{completedCount} sur {appointments.length} patients traites</Text>
+                </View>
+                <Text style={[styles.waitingProgressValue, { color: theme.colors.primary }]}>{progress}%</Text>
+              </View>
+              <View style={[styles.progressBg, { backgroundColor: theme.colors.border, marginBottom: 14 }]}> 
+                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary }]} />
+              </View>
+
               <Text style={styles.waitingTitle}>Salle d&apos;attente</Text>
               <Text style={styles.waitingSubtitle}>Patients en attente ou en consultation</Text>
-              <View style={{ marginTop: 16 }}>
+              <ScrollView style={{ marginTop: 16 }} contentContainerStyle={{ paddingBottom: 8 }}>
                 {waitingRoomAppointments.map((a) => (
                   <View key={a.id} style={styles.waitingCard}>
                     <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={56} borderRadius={12} />
@@ -528,7 +529,7 @@ export default function VisitsPage() {
                 {waitingRoomAppointments.length === 0 && (
                   <Text style={{ color: theme.colors.textSecondary }}>Aucun patient en attente.</Text>
                 )}
-              </View>
+              </ScrollView>
             </ThemedCard>
             </ScrollView>
           </View>
@@ -622,6 +623,73 @@ export default function VisitsPage() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={isActionsMenuOpen} transparent animationType="fade" onRequestClose={() => setIsActionsMenuOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.actionsMenuCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Actions rendez-vous</Text>
+              <TouchableOpacity onPress={() => setIsActionsMenuOpen(false)}>
+                <Ionicons name="close" size={20} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ padding: 14, gap: 10 }}>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: "700" }}>
+                {`${actionsTarget?.patient?.first_name ?? ""} ${actionsTarget?.patient?.last_name ?? ""}`.trim() || "Patient"}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.actionsMenuBtn}
+                onPress={() => {
+                  if (!actionsTarget) return;
+                  setIsActionsMenuOpen(false);
+                  openEditForm(actionsTarget);
+                }}
+              >
+                <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+                <Text style={styles.actionsMenuText}>Modifier</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionsMenuBtn}
+                onPress={() => {
+                  if (!actionsTarget) return;
+                  setIsActionsMenuOpen(false);
+                  startConsultation(actionsTarget);
+                }}
+              >
+                <Ionicons name="medkit-outline" size={16} color={theme.colors.primary} />
+                <Text style={styles.actionsMenuText}>Demarrer consultation</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionsMenuBtn}
+                onPress={() => {
+                  if (!actionsTarget) return;
+                  setIsActionsMenuOpen(false);
+                  updateStatus(actionsTarget.id, "completed");
+                }}
+              >
+                <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.success} />
+                <Text style={styles.actionsMenuText}>Marquer termine</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionsMenuBtn}
+                onPress={() => {
+                  if (!actionsTarget) return;
+                  setIsActionsMenuOpen(false);
+                  cancelAppointment(actionsTarget.id);
+                }}
+              >
+                <Ionicons name="close-circle-outline" size={16} color={theme.colors.error} />
+                <Text style={[styles.actionsMenuText, { color: theme.colors.error }]}>Annuler le RDV</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -650,8 +718,8 @@ const createStyles = (theme: any) =>
       paddingBottom: 30,
       ...getWebContainerFill(),
     },
-    row: { flexDirection: "row" },
-    left: { flex: 2, padding: 0 },
+    row: { flexDirection: "row", gap: 18 },
+    left: { flex: 2.25, padding: 0 },
     right: { flex: 1, padding: 0 },
 
     filterSection: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
@@ -693,7 +761,7 @@ const createStyles = (theme: any) =>
     progressFill: { height: 10, borderRadius: 10 },
     progressText: { marginTop: 12, fontSize: 13, color: "#6b7280" },
 
-    tableContainer: { height: 470, backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
+    tableContainer: { backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
     tableRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -722,9 +790,23 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
     },
+    primaryActionBtn: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
 
     waitingTitle: { fontSize: 16, fontWeight: "700" },
     waitingSubtitle: { fontSize: 13, color: "#6b7280" },
+    waitingProgressTop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
+    waitingProgressValue: {
+      fontSize: 24,
+      fontWeight: "800",
+    },
     waitingCard: {
       flexDirection: "row",
       alignItems: "center",
@@ -784,6 +866,30 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.primary,
     },
     saveBtnText: { color: "#fff", fontWeight: "700" },
+    actionsMenuCard: {
+      width: "100%",
+      maxWidth: 420,
+      backgroundColor: "#fff",
+      borderRadius: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    actionsMenuBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: theme.colors.surface,
+    },
+    actionsMenuText: {
+      color: theme.colors.text,
+      fontWeight: "700",
+    },
 
     formRow: { flexDirection: "row", gap: 12, marginBottom: 8 },
     fieldLabel: { fontWeight: "700", color: theme.colors.text, marginBottom: 8 },
