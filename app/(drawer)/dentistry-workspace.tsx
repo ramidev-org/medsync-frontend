@@ -2,6 +2,7 @@ import { PageShell } from "@/components/page_shell";
 import { SpecialtyWorkspaceScaffold } from "@/components/workspaces/SpecialtyWorkspaceScaffold";
 import { ToothTreatmentPanel } from "@/components/dentistry/ToothTreatmentPanel";
 import { DentistryHistoryFilters, DentistryTreatmentHistoryCards } from "@/components/dentistry/DentistryTreatmentHistoryCards";
+import { TreatmentSwipeSelector, type TreatmentSwipeOption } from "@/components/dentistry/TreatmentSwipeSelector";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -18,6 +19,13 @@ type PreviousConsultationRow = {
   nextStep: string;
   notes: string;
 };
+
+type DentistryWorkspaceTreatmentKey =
+  | "full_cleanup"
+  | "braces"
+  | "whitening"
+  | "retainer"
+  | "other";
 
 const PREVIOUS_CONSULTATIONS: PreviousConsultationRow[] = [
   {
@@ -43,6 +51,54 @@ const PREVIOUS_CONSULTATIONS: PreviousConsultationRow[] = [
     materialsUsed: "Local anesthesia",
     nextStep: "Start root canal treatment",
     notes: "Initial consultation.",
+  },
+];
+
+const DENTISTRY_TREATMENT_OPTIONS: TreatmentSwipeOption<DentistryWorkspaceTreatmentKey>[] = [
+  {
+    key: "full_cleanup",
+    label: "Teeth Cleaning",
+    shortLabel: "Cleaning",
+    tag: "Hygiene",
+    description: "Cleaning and polishing.",
+    icon: "toothbrush",
+    accentColor: "#0F766E",
+  },
+  {
+    key: "braces",
+    label: "Braces Review",
+    shortLabel: "Braces",
+    tag: "Orthodontics",
+    description: "Adjustments and wire check.",
+    icon: "tooth",
+    accentColor: "#2563EB",
+  },
+  {
+    key: "whitening",
+    label: "Whitening",
+    shortLabel: "Whitening",
+    tag: "Cosmetic",
+    description: "Brightening and shade care.",
+    icon: "star-four-points",
+    accentColor: "#D97706",
+  },
+  {
+    key: "retainer",
+    label: "Retainer Check",
+    shortLabel: "Retainer",
+    tag: "Retention",
+    description: "Fit and stability check.",
+    icon: "shield-check",
+    accentColor: "#7C3AED",
+  },
+  {
+    key: "other",
+    label: "Other Treatment",
+    shortLabel: "Custom",
+    tag: "Custom",
+    description: "Any custom dental session.",
+    icon: "medical-bag",
+    accentColor: "#475569",
   },
 ];
 
@@ -106,7 +162,8 @@ export default function DentistryWorkspacePage() {
   const selectedPrev = PREVIOUS_CONSULTATIONS[selectedPrevIndex];
 
   const [state, setState] = React.useState<{ activeProcedure?: any; selectedTeeth?: string[]; odontogram?: any }>({});
-  const [generalTreatmentType, setGeneralTreatmentType] = React.useState("full_cleanup");
+  const [generalTreatmentType, setGeneralTreatmentType] =
+    React.useState<DentistryWorkspaceTreatmentKey>("full_cleanup");
   const [generalTreatmentNote, setGeneralTreatmentNote] = React.useState("");
   const [generalTreatmentHistory, setGeneralTreatmentHistory] = React.useState<Array<{ id: string; type: string; note: string; createdAt: string }>>([]);
   const [from, setFrom] = React.useState<Date>(() => {
@@ -131,6 +188,10 @@ export default function DentistryWorkspacePage() {
     setFrom(f);
     setTo(d);
   }, []);
+
+  const activeTreatmentCard =
+    DENTISTRY_TREATMENT_OPTIONS.find((option) => option.key === generalTreatmentType) ??
+    DENTISTRY_TREATMENT_OPTIONS[0];
 
   return (
     <PageShell>
@@ -162,50 +223,23 @@ export default function DentistryWorkspacePage() {
             {workspaceTab === "treatment" && (
               <View style={{ padding: 2 }}>
                 <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface, padding: 12, gap: 12, marginBottom: 12 }}>
-                  <Text style={{ fontWeight: "900", color: theme.colors.primary }}>Treatments without teeth selection</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {[
-                      { key: "full_cleanup", label: "Full Cleanup" },
-                      { key: "braces", label: "Braces" },
-                      { key: "whitening", label: "Whitening" },
-                      { key: "retainer", label: "Retainer Check" },
-                      { key: "other", label: "Other Treatment" },
-                    ].map((t) => {
-                      const active = generalTreatmentType === t.key;
-                      return (
-                        <TouchableOpacity
-                          key={t.key}
-                          onPress={() => setGeneralTreatmentType(t.key)}
-                          style={{
-                            borderWidth: 1,
-                            borderColor: active ? theme.colors.primary : theme.colors.border,
-                            backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
-                            borderRadius: 999,
-                            paddingHorizontal: 12,
-                            paddingVertical: 8,
-                          }}
-                        >
-                          <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.textSecondary, fontSize: 12 }}>{t.label}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  <BlueField theme={theme} label="Treatment note" value={generalTreatmentNote} onChange={setGeneralTreatmentNote} multiline minHeight={88} />
+                  <TreatmentSwipeSelector
+                    theme={theme}
+                    options={DENTISTRY_TREATMENT_OPTIONS}
+                    value={generalTreatmentType}
+                    onChange={setGeneralTreatmentType}
+                  />
+                  <BlueField theme={theme} label={`Treatment note - ${activeTreatmentCard.label}`} value={generalTreatmentNote} onChange={setGeneralTreatmentNote} multiline minHeight={88} />
                   <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
                     <TouchableOpacity
                       onPress={() => {
-                        const typeLabel =
-                          generalTreatmentType === "full_cleanup"
-                            ? "Full Cleanup"
-                            : generalTreatmentType === "braces"
-                              ? "Braces"
-                              : generalTreatmentType === "whitening"
-                                ? "Whitening"
-                                : generalTreatmentType === "retainer"
-                                  ? "Retainer Check"
-                                  : "Other Treatment";
                         setGeneralTreatmentHistory((rows) => [
-                          { id: `${Date.now()}`, type: typeLabel, note: generalTreatmentNote.trim(), createdAt: new Date().toLocaleString() },
+                          {
+                            id: `${Date.now()}`,
+                            type: activeTreatmentCard.label,
+                            note: generalTreatmentNote.trim(),
+                            createdAt: new Date().toLocaleString(),
+                          },
                           ...rows,
                         ]);
                         setGeneralTreatmentNote("");

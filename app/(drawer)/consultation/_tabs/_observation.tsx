@@ -561,7 +561,7 @@ export default function ObservationMedicalTab({
   const hasSpecialtyWidgetTab = ["gynecology", "cardiology", "dermatology", "orthopedics", "dentistry"].includes(selectedWorkspace);
   const renderSpecialtyDialogPanel = () => {
     if (selectedWorkspace === "gynecology") {
-      return <GynecologyTab theme={theme} value={specialities.gynecology} onChange={(next) => setSpecialities((prev) => ({ ...prev, gynecology: next }))} />;
+      return <GynecologyTab theme={theme} onModifyLabel={openLabelModal} value={specialities.gynecology} onChange={(next) => setSpecialities((prev) => ({ ...prev, gynecology: next }))} />;
     }
     if (selectedWorkspace === "cardiology") {
       return <CardiologyTab theme={theme} value={specialities.cardiology} onChange={(next) => setSpecialities((prev) => ({ ...prev, cardiology: next }))} />;
@@ -942,7 +942,7 @@ export default function ObservationMedicalTab({
                         ) : hasSpecialtyWidgetTab ? (
                           <View pointerEvents="none" style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.background, padding: 8 }}>
                             {row.workspace === "gynecology" ? (
-                              <GynecologyTab theme={theme} value={row.specialtySnapshot || {}} onChange={() => {}} />
+                              <GynecologyTab theme={theme} onModifyLabel={() => {}} value={row.specialtySnapshot || {}} onChange={() => {}} />
                             ) : row.workspace === "cardiology" ? (
                               <CardiologyTab theme={theme} value={row.specialtySnapshot || {}} onChange={() => {}} />
                             ) : row.workspace === "dermatology" ? (
