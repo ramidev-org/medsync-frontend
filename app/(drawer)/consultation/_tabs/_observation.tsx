@@ -20,6 +20,16 @@ import { DentistryState, DentistryTab } from "./observation_specialities/_dentis
 import { DermatologyState, DermatologyTab } from "./observation_specialities/_dermatologie";
 import { GynecologyState, GynecologyTab } from "./observation_specialities/_gynecologie";
 import { OrthopedicsState, OrthopedicsTab } from "./observation_specialities/_orthopedie";
+import ConsultationChartsTab from "./_consultation_charts";
+import {
+  FIELD_ICON_MAP,
+  SPECIALTY_TABS,
+  getConsultationFields,
+  getTreatmentExtraFields,
+  isSpecialtyKey,
+  type ParameterField,
+  type SpecialtyKey,
+} from "./_observation_fields";
 
 
 
@@ -41,21 +51,6 @@ import { OrthopedicsState, OrthopedicsTab } from "./observation_specialities/_or
    Sub-tab definitions
 ========================== */
 
-type SpecialtyKey =
-  | "general_medicine"
-  | "gynecology"
-  | "cardiology"
-  | "dermatology"
-  | "orthopedics"
-  | "dentistry"
-  | "pediatrics"
-  | "endocrinology_diabetes"
-  | "ent"
-  | "ophthalmology"
-  | "pulmonology"
-  | "gastroenterology"
-  | "analyses_medicales";
-
 type LeftTabKey =
   | "label"
   | "history_comment"
@@ -71,24 +66,6 @@ const BASE_LEFT_TABS: Array<{ key: Exclude<LeftTabKey, SpecialtyKey>; label: str
   { key: "previous_labels", label: "Étiquettes précédentes" },
 ];
 
-const SPECIALTY_TABS: Array<{
-  key: SpecialtyKey;
-  label: string;
-}> = [
-  { key: "general_medicine", label: "Medecine Generale" },
-  { key: "gynecology", label: "Gynecologie" },
-  { key: "cardiology", label: "Cardiologie" },
-  { key: "dermatology", label: "Dermatologie" },
-  { key: "orthopedics", label: "Orthopedie" },
-  { key: "dentistry", label: "Dentisterie" },
-  { key: "pediatrics", label: "Pediatrie" },
-  { key: "endocrinology_diabetes", label: "Endocrino / Diabete" },
-  { key: "ent", label: "ORL" },
-  { key: "ophthalmology", label: "Ophtalmologie" },
-  { key: "pulmonology", label: "Pneumologie" },
-  { key: "gastroenterology", label: "Gastroenterologie" },
-  { key: "analyses_medicales", label: "Analyses Medicales" },
-];
 const MAIN_PAGE_TABS: Array<{
   key: MainPageKey;
   label: string;
@@ -115,12 +92,6 @@ type PreviousLabelRow = {
 type PreviousParamsRow = {
   visitLabel: string;
   data: Record<string, string>;
-};
-
-type ParameterField = {
-  key: string;
-  label: string;
-  multiline?: boolean;
 };
 
 const PROTO_PREVIOUS_LABELS: PreviousLabelRow[] = [
@@ -150,212 +121,8 @@ const PROTO_PREVIOUS_PARAMS: PreviousParamsRow[] = [
   { visitLabel: "N de visite : 1 - 17.03.2022", data: {} },
 ];
 
-const GENERIC_PARAMETER_FIELDS: ParameterField[] = [
-  { key: "motif_consultation", label: "Motif de consultation :" },
-  { key: "glycemie", label: "Glycemie :" },
-  { key: "hba1c", label: "HbA1c :" },
-  { key: "examen_clinique", label: "Examen clinique :", multiline: true },
-  { key: "conclusion", label: "Conclusion :", multiline: true },
-];
-
-const SPECIALTY_PARAMETER_FIELDS: Record<SpecialtyKey, ParameterField[]> = {
-  general_medicine: [
-    { key: "reason_for_visit", label: "Motif de consultation :" },
-    { key: "chief_complaint", label: "Plainte principale :" },
-    { key: "systems_review", label: "Revue des systemes :", multiline: true },
-    { key: "general_exam", label: "Examen general :", multiline: true },
-    { key: "plan", label: "Plan :", multiline: true },
-  ],
-  cardiology: [
-    { key: "chestPain", label: "Douleur thoracique :" },
-    { key: "dyspnea", label: "Dyspnee :" },
-    { key: "bloodPressure", label: "TA :" },
-    { key: "heartRate", label: "Frequence cardiaque :" },
-    { key: "ecgSummary", label: "Resume ECG :", multiline: true },
-    { key: "assessmentPlan", label: "Evaluation et plan :", multiline: true },
-  ],
-  dermatology: [
-    { key: "chiefComplaint", label: "Plainte principale :" },
-    { key: "lesionSite", label: "Site lesionnel :" },
-    { key: "morphology", label: "Morphologie :" },
-    { key: "dermoscopy", label: "Dermoscopie :", multiline: true },
-    { key: "biopsyDecision", label: "Decision biopsie :" },
-    { key: "plan", label: "Plan therapeutique :", multiline: true },
-  ],
-  gynecology: [
-    { key: "reason", label: "Motif de consultation :" },
-    { key: "lmpDate", label: "DDR :" },
-    { key: "pregnancyStatus", label: "Statut grossesse :" },
-    { key: "gestationalAgeWeeks", label: "Age gestationnel (SA) :" },
-    { key: "redFlags", label: "Signes d'alerte :" },
-    { key: "planFollowUp", label: "Plan et suivi :", multiline: true },
-  ],
-  orthopedics: [
-    { key: "mechanism", label: "Mecanisme :" },
-    { key: "painSite", label: "Site de la douleur :" },
-    { key: "painScale", label: "EVA douleur :" },
-    { key: "rangeOfMotion", label: "Amplitude articulaire (ROM) :" },
-    { key: "imagingSummary", label: "Resume imagerie :", multiline: true },
-    { key: "treatmentPlan", label: "Plan de traitement :", multiline: true },
-  ],
-  dentistry: [
-    { key: "chief_dental_complaint", label: "Plainte dentaire principale :", multiline: true },
-    { key: "tooth_records_summary", label: "Resume dents / lesions :", multiline: true },
-    { key: "materials_used", label: "Materiaux utilises :" },
-    { key: "next_dental_step", label: "Prochaine etape :" },
-    { key: "clinical_notes", label: "Notes cliniques :", multiline: true },
-  ],
-  pediatrics: [
-    { key: "birth_history", label: "Antecedents de naissance :", multiline: true },
-    { key: "feeding", label: "Alimentation :" },
-    { key: "vaccination_status", label: "Statut vaccinal :", multiline: true },
-    { key: "development_notes", label: "Developpement :", multiline: true },
-  ],
-  endocrinology_diabetes: [
-    { key: "diabetes_type", label: "Type de diabete :" },
-    { key: "fasting_glucose", label: "Glycemie a jeun :" },
-    { key: "hba1c", label: "HbA1c :" },
-    { key: "endocrine_plan", label: "Plan endocrino :", multiline: true },
-  ],
-  ent: [
-    { key: "ear_symptoms", label: "Symptomes oreille :", multiline: true },
-    { key: "nose_symptoms", label: "Symptomes nez :", multiline: true },
-    { key: "throat_symptoms", label: "Symptomes gorge :", multiline: true },
-    { key: "ent_plan", label: "Plan ORL :", multiline: true },
-  ],
-  ophthalmology: [
-    { key: "visual_acuity_right", label: "Acuite OD :" },
-    { key: "visual_acuity_left", label: "Acuite OG :" },
-    { key: "fundus_exam", label: "Fond d'oeil :", multiline: true },
-    { key: "ophtha_plan", label: "Plan ophtalmo :", multiline: true },
-  ],
-  pulmonology: [
-    { key: "cough", label: "Toux :" },
-    { key: "dyspnea_grade", label: "Dyspnee :" },
-    { key: "lung_auscultation", label: "Auscultation :", multiline: true },
-    { key: "pulmo_plan", label: "Plan pneumo :", multiline: true },
-  ],
-  gastroenterology: [
-    { key: "abdominal_pain_site", label: "Site douleur abdominale :" },
-    { key: "bowel_habits", label: "Transit :", multiline: true },
-    { key: "abdominal_exam", label: "Examen abdominal :", multiline: true },
-    { key: "gastro_plan", label: "Plan gastro :", multiline: true },
-  ],
-  analyses_medicales: [
-    { key: "order_priority", label: "Priorite demande :" },
-    { key: "clinical_context", label: "Contexte clinique :", multiline: true },
-    { key: "requested_tests", label: "Tests demandes :", multiline: true },
-    { key: "lab_comments", label: "Commentaires labo :", multiline: true },
-  ],
-};
-
-const FIELD_ICON_MAP: Record<string, React.ComponentProps<typeof MaterialCommunityIcons>["name"]> = {
-  taille_cm: "human-male-height",
-  poids_kg: "scale",
-  tension: "heart-pulse",
-  temperature_c: "thermometer",
-  motif_consultation: "text-box-outline",
-  glycemie: "test-tube",
-  hba1c: "chart-line",
-  examen_clinique: "stethoscope",
-  conclusion: "clipboard-check-outline",
-  bloodPressure: "heart-pulse",
-  heartRate: "heart-outline",
-  ecgSummary: "chart-line",
-  plan: "clipboard-text-outline",
-  reason_for_visit: "text-box-outline",
-  chief_complaint: "stethoscope",
-  chief_dental_complaint: "tooth-outline",
-};
-
-function normalizeFieldLabel(label: string) {
-  return String(label ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function fieldMeaningToken(field: ParameterField) {
-  const key = String(field.key ?? "").trim().toLowerCase();
-  const label = normalizeFieldLabel(field.label);
-  const raw = `${key} ${label}`;
-
-  // Semantic groups for fields that are effectively the same criterion.
-  if (
-    raw.includes("motif consultation") ||
-    raw.includes("reason for visit") ||
-    key === "motif_consultation" ||
-    key === "reason_for_visit"
-  ) {
-    return "consultation_reason";
-  }
-
-  if (
-    raw.includes("examen clinique") ||
-    raw.includes("clinical exam") ||
-    raw.includes("general exam") ||
-    raw.includes("examen general") ||
-    key === "examen_clinique" ||
-    key === "general_exam"
-  ) {
-    return "clinical_exam";
-  }
-
-  return "";
-}
-
-function dedupeFields(fields: ParameterField[]) {
-  const seenKeys = new Set<string>();
-  const seenLabels = new Set<string>();
-  const seenMeaning = new Set<string>();
-  return fields.filter((f) => {
-    const key = String(f.key ?? "").trim().toLowerCase();
-    const label = normalizeFieldLabel(f.label);
-    const meaning = fieldMeaningToken(f);
-    if (!key && !label) return false;
-    if (seenKeys.has(key) || seenLabels.has(label)) return false;
-    if (meaning && seenMeaning.has(meaning)) return false;
-    seenKeys.add(key);
-    seenLabels.add(label);
-    if (meaning) seenMeaning.add(meaning);
-    return true;
-  });
-}
-
-function getTreatmentExtraFields(workspace: string): ParameterField[] {
-  return dedupeFields(SPECIALTY_PARAMETER_FIELDS[workspace as SpecialtyKey] ?? []);
-}
-
-const WORKSPACES_WITH_DEFAULT_CRITERIA = new Set<SpecialtyKey>([
-  "general_medicine",
-  "dentistry",
-  "gynecology",
-  "cardiology",
-  "dermatology",
-  "orthopedics",
-  "pediatrics",
-  "endocrinology_diabetes",
-  "ent",
-  "ophthalmology",
-  "pulmonology",
-  "gastroenterology",
-  "analyses_medicales",
-]);
-
-function getConsultationFields(workspace: SpecialtyKey): ParameterField[] {
-  const specialtyFields = SPECIALTY_PARAMETER_FIELDS[workspace] ?? [];
-  if (!specialtyFields.length) return dedupeFields(GENERIC_PARAMETER_FIELDS);
-
-  const useDefaultCriteria = WORKSPACES_WITH_DEFAULT_CRITERIA.has(workspace);
-  // Put specialty fields first so when a default and specialty field share the same meaning,
-  // the specialty wording is kept for that workspace.
-  const merged = useDefaultCriteria ? [...specialtyFields, ...GENERIC_PARAMETER_FIELDS] : specialtyFields;
-  return dedupeFields(merged);
-}
 /* ==========================
-   Main component
+  Main component
 ========================== */
 
 export default function ObservationMedicalTab({
@@ -371,10 +138,13 @@ export default function ObservationMedicalTab({
   workspaceMode,
   initialLeftTab,
   workspaceKey,
+  patientId,
+  consultationId,
+  currentPayload,
 }: any) {
   const styles = createStyles(theme);
 
-  const isSpecialtyTab = (k: string): k is SpecialtyKey => SPECIALTY_TABS.some((x) => x.key === (k as SpecialtyKey));
+  const isSpecialtyTab = (k: string): k is SpecialtyKey => isSpecialtyKey(k);
 
   const doctorSpecialtyKey = React.useMemo<SpecialtyKey>(() => {
     const normalized = normalizeSpeciality(doctorSpeciality ?? null);
@@ -475,7 +245,7 @@ export default function ObservationMedicalTab({
     return null;
   }, [workspaceMode, selectedWorkspace, leftTab]);
   const parameterFields = React.useMemo<ParameterField[]>(
-    () => (activeSpecialtyKey ? SPECIALTY_PARAMETER_FIELDS[activeSpecialtyKey] ?? GENERIC_PARAMETER_FIELDS : GENERIC_PARAMETER_FIELDS),
+    () => getConsultationFields(activeSpecialtyKey ?? "general_medicine"),
     [activeSpecialtyKey]
   );
 
@@ -500,7 +270,7 @@ export default function ObservationMedicalTab({
     dentistry: {},
   });
 
-  const [workspaceTab, setWorkspaceTab] = React.useState<"treatment" | "consultation_history">("treatment");
+  const [workspaceTab, setWorkspaceTab] = React.useState<"summary" | "consultation_history" | "charts">("summary");
   const [treatmentType, setTreatmentType] = React.useState("follow_up_treatment");
   const [treatmentNote, setTreatmentNote] = React.useState("");
   const [treatmentExtra, setTreatmentExtra] = React.useState<Record<string, string>>({});
@@ -584,94 +354,246 @@ export default function ObservationMedicalTab({
   }, [treatmentOptions, treatmentType]);
 
   if (workspaceMode) {
+    const summaryCards = [
+      {
+        title: parameters.conclusion || "Aucun signe critique",
+        subtitle: "État général",
+      },
+      {
+        title: parameters.plan || parameters.assessmentPlan || observations || "Suivi recommandé",
+        subtitle: "Plan médical",
+      },
+    ];
+    const sidebarTabs: Array<{
+      key: "summary" | "consultation_history" | "charts";
+      label: string;
+      icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+    }> = [
+      { key: "summary", label: "Résumé", icon: "text-box-check-outline" },
+      { key: "consultation_history", label: "Historique", icon: "history" },
+      { key: "charts", label: "Graphiques", icon: "chart-line" },
+    ];
+    const visibleSummaryFields = activeFields.filter((field) => String(parameters?.[field.key] ?? "").trim());
+
     return (
       <View style={styles.singlePaneWrap}>
-        <View>
-            <WorkspaceFlatTabs
-              theme={theme}
-              tabs={[
-                { key: "treatment", label: "Treatment", icon: "medical-bag" },
-                { key: "consultation_history", label: "Consultation History", icon: "history" },
-              ]}
-              activeKey={workspaceTab}
-              onChange={setWorkspaceTab}
-            />
-
-            {workspaceTab === "treatment" && (
-              <View style={{ marginTop: 10, paddingBottom: 14 }}>
-                <View style={{ marginBottom: 12, flexDirection: "row", justifyContent: "flex-end" }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setTreatmentModalTab("core");
-                      setTreatmentCreateOpen(true);
-                    }}
-                    style={{ backgroundColor: theme.colors.info, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9 }}
-                  >
-                    <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 12 }}>+ New Treatment</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, overflow: "hidden" }}>
-                  {(treatmentHistory.length ? treatmentHistory : [
-                    { id: "seed-1", type: "follow_up_treatment", note: "Initial treatment session.", createdAt: "Session #1 - Recent", workspace: "general_medicine" },
-                  ]).map((row, idx) => (
-                    <View key={row.id} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: idx === 0 ? theme.colors.primarySoft : theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: idx === 0 ? theme.colors.info : theme.colors.border }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "900", color: theme.colors.text }}>{treatmentTypeLabel(row.type)}</Text>
-                        <Text style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>{row.createdAt}</Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setTreatmentViewTab("core");
-                          setTreatmentViewId(row.id);
-                        }}
-                        style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}
-                      >
-                        <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {workspaceTab === "consultation_history" && (
-              <View style={{ marginTop: 10 }}>
-                <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const seeded: Record<string, string> = {};
-                      for (const field of activeFields) {
-                        seeded[field.key] = String(parameters?.[field.key] ?? "");
-                      }
-                      setConsultationDraft(seeded);
-                      setConsultationModalTab("fields");
-                      setConsultationCreateOpen(true);
-                    }}
-                    style={{ backgroundColor: theme.colors.info, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 9 }}
-                  >
-                    <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 12 }}>+ New Consultation</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, overflow: "hidden" }}>
-                {PROTO_PREVIOUS_PARAMS.map((p, idx) => {
-                  const active = idx === selectedPrevIndex;
-                  return (
-                    <View key={p.visitLabel} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-                      <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={{ flex: 1, flexDirection: "row", alignItems: "center" }} activeOpacity={0.8}>
-                        <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: active ? theme.colors.info : theme.colors.border }} />
-                        <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { setSelectedPrevIndex(idx); setPreviousParamsModalOpen(true); }} style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}>
-                        <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-                </View>
-              </View>
-            )}
+        <View style={{ gap: 18 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 12,
+              paddingBottom: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.colors.border,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 20, fontWeight: "900", color: theme.colors.text }}>Observation médicale</Text>
+              <Text style={{ marginTop: 4, color: theme.colors.textSecondary, fontSize: 13 }}>
+                Données cliniques, historique et graphiques.
+              </Text>
+            </View>
+            {workspaceTab === "consultation_history" ? (
+              <TouchableOpacity
+                onPress={() => {
+                  const seeded: Record<string, string> = {};
+                  for (const field of activeFields) {
+                    seeded[field.key] = String(parameters?.[field.key] ?? "");
+                  }
+                  setConsultationDraft(seeded);
+                  setConsultationModalTab("fields");
+                  setConsultationCreateOpen(true);
+                }}
+                style={{ backgroundColor: theme.colors.info, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 11 }}
+              >
+                <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 14 }}>
+                  + Nouvelle consultation
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
+
+          <View style={{ flexDirection: "row", gap: 18, alignItems: "stretch" }}>
+            <View
+              style={{
+                width: 220,
+                borderRadius: 20,
+                padding: 14,
+                backgroundColor: theme.colors.surfaceVariant,
+                gap: 8,
+                alignSelf: "stretch",
+              }}
+            >
+              {sidebarTabs.map((tab) => {
+                const active = workspaceTab === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    onPress={() => setWorkspaceTab(tab.key)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: active ? theme.colors.border : "transparent",
+                      backgroundColor: active ? theme.colors.surface : "transparent",
+                      paddingHorizontal: 14,
+                      paddingVertical: 14,
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={tab.icon}
+                      size={18}
+                      color={active ? theme.colors.primary : theme.colors.textSecondary}
+                    />
+                    <Text
+                      style={{
+                        fontWeight: "900",
+                        color: active ? theme.colors.primary : theme.colors.textSecondary,
+                        fontSize: 14,
+                      }}
+                    >
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={{ flex: 1 }}>
+              {workspaceTab === "summary" && (
+                <View style={{ gap: 12 }}>
+                  <Text style={{ fontSize: 18, fontWeight: "900", color: theme.colors.text }}>Résumé clinique</Text>
+
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                    {summaryCards.map((card) => (
+                      <View
+                        key={card.subtitle}
+                        style={{
+                          flex: 1,
+                          minWidth: 220,
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.surface,
+                          paddingHorizontal: 16,
+                          paddingVertical: 14,
+                        }}
+                      >
+                        <Text style={{ color: theme.colors.text, fontWeight: "900", fontSize: 16 }}>
+                          {card.title}
+                        </Text>
+                        <Text style={{ color: theme.colors.textSecondary, marginTop: 6, fontWeight: "700", fontSize: 13 }}>
+                          {card.subtitle}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                    <MetricCard theme={theme} icon="resize-outline" label="Taille (Cm)" value={vitals.taille_cm || "-"} />
+                    <MetricCard theme={theme} icon="scale-outline" label="Poids (Kg)" value={vitals.poids_kg || "-"} />
+                    <MetricCard theme={theme} icon="heart-outline" label="Tension" value={vitals.tension || "-"} />
+                    <MetricCard theme={theme} icon="thermometer-outline" label="Température (°C)" value={vitals.temperature_c || "-"} />
+                  </View>
+
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      borderRadius: 18,
+                      backgroundColor: theme.colors.surface,
+                      padding: 16,
+                    }}
+                  >
+                    <Text style={{ fontWeight: "900", color: theme.colors.text, fontSize: 16 }}>
+                      Champs cliniques du workspace
+                    </Text>
+                    <View style={{ marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                      {(visibleSummaryFields.length ? visibleSummaryFields : activeFields).map((field) => (
+                        <View key={field.key} style={{ flex: 1, minWidth: 220 }}>
+                          <WorkspaceReadOnlyField
+                            theme={theme}
+                            label={field.label}
+                            value={String(parameters?.[field.key] ?? "-")}
+                            multiline={!!field.multiline}
+                            icon={FIELD_ICON_MAP[field.key] ?? "file-document-outline"}
+                          />
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {workspaceTab === "consultation_history" && (
+                <View style={{ gap: 12 }}>
+                  <Text style={{ fontSize: 18, fontWeight: "900", color: theme.colors.text }}>
+                    Historique des consultations
+                  </Text>
+                  <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 16, overflow: "hidden" }}>
+                    {PROTO_PREVIOUS_PARAMS.map((p, idx) => {
+                      const active = idx === selectedPrevIndex;
+                      return (
+                        <View
+                          key={p.visitLabel}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingVertical: 12,
+                            paddingHorizontal: 12,
+                            backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
+                            borderBottomWidth: 1,
+                            borderBottomColor: theme.colors.border,
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => setSelectedPrevIndex(idx)}
+                            style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+                            activeOpacity={0.8}
+                          >
+                            <View
+                              style={{
+                                width: 6,
+                                height: 22,
+                                borderRadius: 6,
+                                marginRight: 10,
+                                backgroundColor: active ? theme.colors.info : theme.colors.border,
+                              }}
+                            />
+                            <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedPrevIndex(idx);
+                              setPreviousParamsModalOpen(true);
+                            }}
+                            style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}
+                          >
+                            <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {workspaceTab === "charts" && (
+                <ConsultationChartsTab
+                  theme={theme}
+                  workspaceKey={selectedWorkspace}
+                  patientId={patientId}
+                  consultationId={consultationId}
+                  currentPayload={currentPayload}
+                />
+              )}
+            </View>
+          </View>
+        </View>
 
           <PreviousParametersModal
             theme={theme}
@@ -680,124 +602,6 @@ export default function ObservationMedicalTab({
             row={selectedPrev}
             fields={activeFields}
           />
-
-          <Modal visible={treatmentCreateOpen} transparent animationType="fade" onRequestClose={() => setTreatmentCreateOpen(false)}>
-            <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
-              <View style={[styles.workspaceDialogCard, { maxWidth: 1100 }]}>
-                <View style={[styles.workspaceDialogHeader, { backgroundColor: theme.colors.primary }]}>
-                  <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "900" }}>Add New Treatment</Text>
-                </View>
-                {(
-                  [
-                    { key: "core", label: "Treatment form", icon: "clipboard-text-outline" },
-                    ...(hasSpecialtyWidgetTab
-                      ? ([{ key: "specialty", label: "Specialty widgets", icon: "stethoscope" }] as const)
-                      : []),
-                  ] as const
-                ).length > 1 ? (
-                  <View style={styles.workspaceDialogTabsWrap}>
-                    <WorkspaceFlatTabs
-                      theme={theme}
-                      tabs={[
-                        { key: "core", label: "Treatment form", icon: "clipboard-text-outline" },
-                        ...(hasSpecialtyWidgetTab
-                          ? ([{ key: "specialty", label: "Specialty widgets", icon: "stethoscope" }] as const)
-                          : []),
-                      ]}
-                      activeKey={treatmentModalTab}
-                      onChange={(k: any) => setTreatmentModalTab(k)}
-                    />
-                  </View>
-                ) : null}
-                <ScrollView contentContainerStyle={styles.workspaceDialogBody}>
-                  {treatmentModalTab === "core" && (
-                    <View style={{ gap: 8 }}>
-                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                        {treatmentOptions.map((t) => {
-                          const active = treatmentType === t.key;
-                          return (
-                            <TouchableOpacity
-                              key={`modal-${t.key}`}
-                              onPress={() => setTreatmentType(t.key)}
-                              style={{
-                                borderWidth: 1,
-                                borderColor: active ? theme.colors.primary : theme.colors.border,
-                                backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
-                                borderRadius: 999,
-                                paddingHorizontal: 12,
-                                paddingVertical: 8,
-                              }}
-                            >
-                              <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.textSecondary, fontSize: 12 }}>
-                                {t.label}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-
-                      <WorkspaceInputField theme={theme} label="Treatment note :" value={treatmentNote} onChange={setTreatmentNote} multiline icon="notebook-edit-outline" />
-                      {getTreatmentExtraFields(selectedWorkspace).map((f) => (
-                        <WorkspaceInputField
-                          key={`treatment-extra-${selectedWorkspace}-${f.key}`}
-                          theme={theme}
-                          label={f.label}
-                          value={treatmentExtra[f.key] ?? ""}
-                          onChange={(v) => setTreatmentExtra((s) => ({ ...s, [f.key]: v }))}
-                          multiline={!!f.multiline}
-                          icon={FIELD_ICON_MAP[f.key] ?? "file-document-edit-outline"}
-                        />
-                      ))}
-                    </View>
-                  )}
-
-                  {hasSpecialtyWidgetTab && treatmentModalTab === "specialty" && (
-                    <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.background, padding: 8 }}>
-                      {renderSpecialtyDialogPanel()}
-                    </View>
-                  )}
-                </ScrollView>
-                <View style={styles.workspaceDialogFooter}>
-                  <TouchableOpacity onPress={() => setTreatmentCreateOpen(false)} style={{ backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}>
-                    <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setTreatmentHistory((rows) => [
-                        {
-                          id: `${Date.now()}`,
-                          type: treatmentType,
-                          note: treatmentNote.trim(),
-                          createdAt: new Date().toLocaleString(),
-                          workspace: selectedWorkspace,
-                          extra: { ...treatmentExtra },
-                          specialtySnapshot:
-                            selectedWorkspace === "dentistry"
-                              ? { ...specialities.dentistry }
-                              : selectedWorkspace === "gynecology"
-                              ? { ...specialities.gynecology }
-                              : selectedWorkspace === "cardiology"
-                              ? { ...specialities.cardiology }
-                              : selectedWorkspace === "dermatology"
-                              ? { ...specialities.dermatology }
-                              : selectedWorkspace === "orthopedics"
-                              ? { ...specialities.orthopedics }
-                              : null,
-                        },
-                        ...rows,
-                      ]);
-                      setTreatmentNote("");
-                      setTreatmentExtra({});
-                      setTreatmentCreateOpen(false);
-                    }}
-                    style={{ backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}
-                  >
-                    <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Add treatment</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
 
           <Modal visible={consultationCreateOpen} transparent animationType="fade" onRequestClose={() => setConsultationCreateOpen(false)}>
             <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
@@ -863,104 +667,6 @@ export default function ObservationMedicalTab({
                     style={{ backgroundColor: theme.colors.info, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}
                   >
                     <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
-          <Modal visible={!!treatmentViewId} transparent animationType="fade" onRequestClose={() => setTreatmentViewId(null)}>
-            <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
-              <View style={[styles.workspaceDialogCard, { maxWidth: 1100 }]}>
-                <View style={[styles.workspaceDialogHeader, { backgroundColor: theme.colors.primary }]}>
-                  <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "900" }}>Treatment View</Text>
-                </View>
-                {(
-                  [
-                    { key: "core", label: "Treatment form", icon: "clipboard-text-outline" },
-                    ...(hasSpecialtyWidgetTab ? ([{ key: "specialty", label: "Specialty widgets", icon: "stethoscope" }] as const) : []),
-                  ] as const
-                ).length > 1 ? (
-                  <View style={styles.workspaceDialogTabsWrap}>
-                    <WorkspaceFlatTabs
-                      theme={theme}
-                      tabs={[
-                        { key: "core", label: "Treatment form", icon: "clipboard-text-outline" },
-                        ...(hasSpecialtyWidgetTab ? ([{ key: "specialty", label: "Specialty widgets", icon: "stethoscope" }] as const) : []),
-                      ]}
-                      activeKey={treatmentViewTab}
-                      onChange={(k: any) => setTreatmentViewTab(k)}
-                    />
-                  </View>
-                ) : null}
-                <ScrollView contentContainerStyle={styles.workspaceDialogBody}>
-                  {(() => {
-                    const row = (
-                      treatmentHistory.length
-                        ? treatmentHistory
-                        : [{ id: "seed-1", type: "follow_up_treatment", note: "Initial treatment session.", createdAt: "Session #1 - Recent", workspace: "general_medicine" }]
-                    ).find((x) => x.id === treatmentViewId) || null;
-                    if (!row) return <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>Not found</Text>;
-                    return (
-                      <>
-                        {treatmentViewTab === "core" ? (
-                          <View style={{ gap: 8 }}>
-                            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                              {(treatmentOptionsBySpecialty[row.workspace] ?? treatmentOptionsBySpecialty.default).map((t) => {
-                                const active = row.type === t.key;
-                                return (
-                                  <View
-                                    key={`view-${t.key}`}
-                                    style={{
-                                      borderWidth: 1,
-                                      borderColor: active ? theme.colors.primary : theme.colors.border,
-                                      backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
-                                      borderRadius: 999,
-                                      paddingHorizontal: 12,
-                                      paddingVertical: 8,
-                                    }}
-                                  >
-                                    <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.textSecondary, fontSize: 12 }}>{t.label}</Text>
-                                  </View>
-                                );
-                              })}
-                            </View>
-                            <WorkspaceReadOnlyField theme={theme} label="Treatment note :" value={row.note || "-"} multiline icon="notebook-outline" />
-                            {getTreatmentExtraFields(row.workspace)
-                              .filter((f) => row.extra?.[f.key])
-                              .map((f) => (
-                                <WorkspaceReadOnlyField
-                                  key={`view-extra-${row.id}-${f.key}`}
-                                  theme={theme}
-                                  label={f.label}
-                                  value={String(row.extra?.[f.key] ?? "-")}
-                                  multiline={!!f.multiline}
-                                  icon={FIELD_ICON_MAP[f.key] ?? "file-document-outline"}
-                                />
-                              ))}
-                          </View>
-                        ) : hasSpecialtyWidgetTab ? (
-                          <View pointerEvents="none" style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.background, padding: 8 }}>
-                            {row.workspace === "gynecology" ? (
-                              <GynecologyTab theme={theme} onModifyLabel={() => {}} value={row.specialtySnapshot || {}} onChange={() => {}} />
-                            ) : row.workspace === "cardiology" ? (
-                              <CardiologyTab theme={theme} value={row.specialtySnapshot || {}} onChange={() => {}} />
-                            ) : row.workspace === "dermatology" ? (
-                              <DermatologyTab theme={theme} value={row.specialtySnapshot || {}} onChange={() => {}} />
-                            ) : row.workspace === "orthopedics" ? (
-                              <OrthopedicsTab theme={theme} value={row.specialtySnapshot || {}} onChange={() => {}} />
-                            ) : row.workspace === "dentistry" ? (
-                              <DentistryTab theme={theme} value={row.specialtySnapshot || {}} onChange={() => {}} />
-                            ) : null}
-                          </View>
-                        ) : null}
-                      </>
-                    );
-                  })()}
-                </ScrollView>
-                <View style={[styles.workspaceDialogFooter, { justifyContent: "flex-end" }]}>
-                  <TouchableOpacity onPress={() => setTreatmentViewId(null)} style={{ backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}>
-                    <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Close</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1238,7 +944,7 @@ export default function ObservationMedicalTab({
               This workspace uses dynamic consultation fields below.
             </Text>
             <View style={{ marginTop: 8, flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-              {(SPECIALTY_PARAMETER_FIELDS[leftTab] ?? GENERIC_PARAMETER_FIELDS).map((f) => (
+              {(isSpecialtyTab(leftTab) ? getConsultationFields(leftTab) : getConsultationFields("general_medicine")).map((f) => (
                 <View key={f.key} style={{ flex: 1, minWidth: 220 }}>
                   <WorkspaceReadOnlyField
                     theme={theme}
@@ -1599,7 +1305,7 @@ function PreviousParametersModal({
           <ScrollView contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12, paddingTop: 12 }}>
             <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-              {(fields ?? GENERIC_PARAMETER_FIELDS).map((field: ParameterField) => (
+              {(fields ?? getConsultationFields("general_medicine")).map((field: ParameterField) => (
                 <View key={field.key} style={{ flex: 1, minWidth: field.multiline ? 320 : 230 }}>
                   <WorkspaceReadOnlyField
                     theme={theme}

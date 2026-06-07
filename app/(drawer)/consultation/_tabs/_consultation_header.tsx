@@ -1,6 +1,6 @@
 ﻿import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   theme: any;
@@ -174,7 +174,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 0,
       paddingTop: 10,
       paddingBottom: 10,
-      backgroundColor: theme.colors.background,
+      backgroundColor: Platform.OS === "web" ? "rgba(255,255,255,0.9)" : theme.colors.background,
       borderBottomWidth: 0,
       zIndex: 1000,
       ...(typeof window !== "undefined" ? ({ overflow: "visible" } as any) : null),
@@ -185,15 +185,23 @@ const createStyles = (theme: any) =>
       justifyContent: "space-between",
       gap: 12,
       flexWrap: "wrap",
+      backgroundColor: "transparent",
+      paddingHorizontal: 0,
+      paddingVertical: 0,
     },
     leftTop: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
     backBtn: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 12,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: theme.colors.primarySoft,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + "33",
+      ...(typeof window !== "undefined"
+        ? ({ boxShadow: "0 8px 18px rgba(37,99,235,0.12)" } as any)
+        : null),
     },
     title: { fontSize: 18, fontWeight: "900", letterSpacing: 0.5 },
     pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },

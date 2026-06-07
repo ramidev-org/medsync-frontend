@@ -15,12 +15,12 @@ import { printOrdonnanceA4 } from "@/services/print.services";
 
 // Tab pages (separate files)
 import ConsultationHeader from "./_tabs/_consultation_header";
-import DocumentsTab from "./_tabs/_documents";
 import LettresTab from "./_tabs/_lettres";
 import MaladiesTab from "./_tabs/_maladies";
 import ObservationMedicalTab from "./_tabs/_observation";
 import OrdonnancesTab from "./_tabs/_ordonnance";
 import SymptomesTab from "./_tabs/_symptomes";
+import TreatmentTab from "./_tabs/_treatment";
 import { normalizeSpeciality } from "@/config/speciality";
 
 
@@ -95,7 +95,10 @@ interface ConsultationParameters {
   hba1c?: string;
   examen_clinique?: string;
   conclusion?: string;
+  [key: string]: string | undefined;
 }
+
+type ObservationPayload = Record<string, unknown>;
 
 interface Consultation {
   id: string;
@@ -107,6 +110,7 @@ interface Consultation {
   status: "open" | "closed";
   vitals?: ConsultationVitals;
   parameters?: ConsultationParameters;
+  speciality_payload?: ObservationPayload;
 }
 
 interface PrescriptionDrug {
@@ -142,21 +146,21 @@ type SelectedOrdonnance = {
 // Main tab keys are English in code. Visible labels are French (matching the video UI).
 type MainTabKey =
   | "observation"
+  | "treatment"
   | "prescriptions"
   | "letters"
   | "diagnoses"
-  | "symptoms"
-  | "documents";
+  | "symptoms";
 
 /* ================= UI CONST ================= */
 
 const MAIN_TABS: { key: MainTabKey; label: string }[] = [
   { key: "observation", label: "Observation médicale" },
+  { key: "treatment", label: "Traitements" },
   { key: "prescriptions", label: "Ordonnances" },
   { key: "letters", label: "Lettres" },
   { key: "diagnoses", label: "Maladies" },
   { key: "symptoms", label: "Symptômes" },
-  { key: "documents", label: "Documents" },
 ];
 
 const WORKSPACE_OPTIONS = [
@@ -189,6 +193,104 @@ const initialParams = {
   examen_clinique: "",
   conclusion: "",
 };
+
+const OBSERVATION_VITAL_KEYS = new Set([
+  "weight_kg",
+  "poids_kg",
+  "weight",
+  "height_cm",
+  "taille_cm",
+  "height",
+  "blood_pressure",
+  "bloodPressure",
+  "tension",
+  "temperature_c",
+  "temperature",
+  "systolic_bp",
+  "diastolic_bp",
+  "spo2_percent",
+  "oxygen_saturation",
+  "bmi",
+]);
+
+function toTextValue(value: unknown): string {
+  if (value == null) return "";
+  return typeof value === "string" ? value : String(value);
+}
+
+function asObservationPayload(value: unknown): ObservationPayload {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as ObservationPayload) : {};
+}
+
+function parseOptionalNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+
+  const next = Number(normalized);
+  return Number.isFinite(next) ? next : null;
+}
+
+function extractObservationPayloadState(payload: ObservationPayload) {
+  const systolic = toTextValue(payload.systolic_bp);
+  const diastolic = toTextValue(payload.diastolic_bp);
+  const bloodPressure = toTextValue(
+    payload.blood_pressure ??
+      payload.tension ??
+      (systolic && diastolic ? `${systolic}/${diastolic}` : ""),
+  );
+
+  const nextVitals: ConsultationVitals = {
+    taille_cm: toTextValue(payload.height_cm ?? payload.taille_cm),
+    poids_kg: toTextValue(payload.weight_kg ?? payload.poids_kg),
+    tension: bloodPressure,
+    temperature_c: toTextValue(payload.temperature_c ?? payload.temperature),
+  };
+
+  const nextParameters: ConsultationParameters = { ...initialParams };
+  for (const [key, rawValue] of Object.entries(payload)) {
+    if (OBSERVATION_VITAL_KEYS.has(key)) continue;
+    if (Array.isArray(rawValue)) continue;
+    if (rawValue && typeof rawValue === "object") continue;
+    nextParameters[key] = toTextValue(rawValue);
+  }
+
+  return { vitals: nextVitals, parameters: nextParameters };
+}
+
+function buildObservationPayload(vitals: ConsultationVitals, parameters: ConsultationParameters): ObservationPayload {
+  const payload: ObservationPayload = {};
+
+  for (const [key, rawValue] of Object.entries(parameters ?? {})) {
+    const value = toTextValue(rawValue).trim();
+    if (!value) continue;
+    payload[key] = value;
+  }
+
+  const weight = parseOptionalNumber(vitals.poids_kg);
+  if (weight != null) payload.weight_kg = weight;
+
+  const height = parseOptionalNumber(vitals.taille_cm);
+  if (height != null) payload.height_cm = height;
+
+  const temperature = parseOptionalNumber(vitals.temperature_c);
+  if (temperature != null) payload.temperature_c = temperature;
+
+  const [sysRaw, diaRaw] = toTextValue(vitals.tension)
+    .split("/")
+    .map((part) => part.trim());
+  const systolic = parseOptionalNumber(sysRaw);
+  const diastolic = parseOptionalNumber(diaRaw);
+
+  const bloodPressure = toTextValue(vitals.tension).trim();
+  if (bloodPressure) payload.blood_pressure = bloodPressure;
+  if (systolic != null) payload.systolic_bp = systolic;
+  if (diastolic != null) payload.diastolic_bp = diastolic;
+
+  return payload;
+}
 
 function formatVisitDateLabel(input?: string | null): string {
   if (!input) return "-";
@@ -239,8 +341,8 @@ export default function ConsultationPage() {
   const [activeMainTab, setActiveMainTab] = useState<MainTabKey>("observation");
 
   // Shared states for tabs
-  const [vitals, setVitals] = useState(initialVitals);
-  const [parameters, setParameters] = useState(initialParams);
+  const [vitals, setVitals] = useState<ConsultationVitals>(initialVitals);
+  const [parameters, setParameters] = useState<ConsultationParameters>(initialParams);
   const [observations, setObservations] = useState("");
 
   const [prescriptions] = useState<Prescription[]>([]);
@@ -300,6 +402,11 @@ export default function ConsultationPage() {
         }
 
         if (session?.consultation?.id) {
+          const sessionPayload = {
+            ...asObservationPayload(session.consultation.speciality_payload),
+            ...asObservationPayload((session as ConsultationSession & { observations?: ObservationPayload | null }).observations),
+          };
+
           setConsultation({
             id: String(session.consultation.id),
             appointment_id: String(session.consultation.appointment_id),
@@ -310,12 +417,21 @@ export default function ConsultationPage() {
             status: (session.consultation.status as any) === "closed" ? "closed" : "open",
             vitals: { ...initialVitals },
             parameters: { ...initialParams },
+            speciality_payload: sessionPayload,
           });
+
+          if (session.consultation.speciality_key) {
+            setActiveWorkspaceKey(String(session.consultation.speciality_key));
+          }
 
           // Hydrate UI fields
           setObservations(String(session.consultation.observations ?? ""));
 
-          if (session.parameters) {
+          if (Object.keys(sessionPayload).length) {
+            const nextState = extractObservationPayloadState(sessionPayload);
+            setParameters(nextState.parameters);
+            setVitals(nextState.vitals);
+          } else if (session.parameters) {
             setParameters({
               motif_consultation: String(session.parameters.motif_consultation ?? ""),
               glycemie: String(session.parameters.glycemie ?? ""),
@@ -354,6 +470,7 @@ export default function ConsultationPage() {
             status: "open",
             vitals: { ...initialVitals },
             parameters: { ...initialParams },
+            speciality_payload: {},
           });
           setObservations("");
           setVitals({ ...initialVitals });
@@ -382,6 +499,10 @@ export default function ConsultationPage() {
     if (!consultation || !appointment?.patient) return null;
     return prescriptions.find((p) => p.consultation_id === consultation.id) || null;
   }, [consultation, appointment?.patient, prescriptions]);
+  const currentObservationPayload = useMemo(
+    () => buildObservationPayload(vitals, parameters),
+    [parameters, vitals],
+  );
 
   const handlePrintOrdonnance = () => {
     if (!selectedOrdonnance) {
@@ -408,6 +529,7 @@ export default function ConsultationPage() {
   /* ================= SAVE ================= */
   const save = async () => {
     if (!consultation) return;
+    const specialityPayload = buildObservationPayload(vitals, parameters);
 
     const updated: Consultation = {
       ...consultation,
@@ -420,6 +542,7 @@ export default function ConsultationPage() {
         tension: vitals.tension,
         temperature_c: vitals.temperature_c,
       },
+      speciality_payload: specialityPayload,
       status: "closed",
     };
 
@@ -446,12 +569,15 @@ export default function ConsultationPage() {
               diastolic_bp: diastolic,
             },
             p_parameters: {
+              ...parameters,
               motif_consultation: parameters.motif_consultation || null,
               glycemie: parameters.glycemie || null,
               hba1c: parameters.hba1c || null,
               examen_clinique: parameters.examen_clinique || null,
               conclusion: parameters.conclusion || null,
             },
+            p_speciality_key: activeWorkspaceKey,
+            p_speciality_payload: specialityPayload,
           });
           await callRpc<boolean, Record<string, unknown>>("rpc_close_consultation", {
             p_requester_id: user.id,
@@ -558,7 +684,7 @@ export default function ConsultationPage() {
         }}
       >
         <View style={styles.contentCard}>
-          {activeMainTab === "observation" && (
+          <View style={{ display: activeMainTab === "observation" ? "flex" : "none" }}>
             <ObservationMedicalTab
               theme={consultationTheme}
               doctorSpeciality={doctorSpeciality}
@@ -571,8 +697,18 @@ export default function ConsultationPage() {
               setObservations={setObservations}
               onSave={save}
               workspaceMode
+              patientId={appointment?.patient?.id}
+              consultationId={consultation?.id}
+              currentPayload={currentObservationPayload}
             />
-          )}
+          </View>
+
+          <View style={{ display: activeMainTab === "treatment" ? "flex" : "none" }}>
+            <TreatmentTab
+              theme={consultationTheme}
+              workspaceKey={activeWorkspaceKey}
+            />
+          </View>
 
           {activeMainTab === "prescriptions" && (
             <OrdonnancesTab
@@ -627,7 +763,7 @@ export default function ConsultationPage() {
             doctor={doctor}
             consultationSummary={{
               observations,
-              conclusion: parameters.conclusion,
+              conclusion: parameters.conclusion || "",
             }}
           />
         )}
@@ -637,14 +773,6 @@ export default function ConsultationPage() {
         )}
 
           {activeMainTab === "symptoms" && <SymptomesTab theme={consultationTheme} />}
-
-          {activeMainTab === "documents" && (
-          <DocumentsTab
-            theme={consultationTheme}
-            consultationId={consultation!.id}
-            patientId={appointment!.patient!.id}
-          />
-        )}
 
         </View>
       </ScrollView>
@@ -680,7 +808,7 @@ const createStyles = (theme: any) =>
     tabsContainer: {
       paddingHorizontal: 0,
       paddingTop: 10,
-      paddingBottom: 10,
+      paddingBottom: 4,
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 8,
@@ -690,9 +818,7 @@ const createStyles = (theme: any) =>
             position: "sticky",
             top: 64,
             zIndex: 5,
-            backgroundColor: theme.colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.border,
+            backgroundColor: "rgba(255,255,255,0.9)",
           } as any)
         : null),
     },

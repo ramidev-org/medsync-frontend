@@ -61,7 +61,7 @@ export default function Layout() {
   const { width } = useWindowDimensions();
   const role = (((user?.user_type as any) || APP_ROLE) === "reception" ? "assistant" : ((user?.user_type as any) || APP_ROLE)) as AppRole;
   const [expanded, setExpanded] = useState(true);
-  const drawerWidth = expanded ? 252 : 88;
+  const drawerWidth = expanded ? 220 : 88;
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
