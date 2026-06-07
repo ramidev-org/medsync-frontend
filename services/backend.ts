@@ -28,6 +28,7 @@ export type RpcName =
   | "rpc_close_consultation"
   | "rpc_get_consultation"
   | "rpc_get_consultations"
+  | "rpc_create_followup_consultation"
   | "rpc_get_clinic_speciality_tools"
   | "rpc_upsert_clinic_speciality_tool"
   | "rpc_get_services"
@@ -44,7 +45,8 @@ export type RpcName =
   | "rpc_get_conversations"
   | "rpc_get_messages"
   | "rpc_send_message"
-  | "rpc_update_my_profile";
+  | "rpc_update_my_profile"
+  | "rpc_get_prescription_items";
 
 const asErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;

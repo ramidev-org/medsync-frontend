@@ -4,6 +4,13 @@
             "male",
             "female"
         ],
+        "priority_enum": [
+            "low",
+            "normal",
+            "routine",
+            "urgent",
+            "high"
+        ],
         "user_type_enum": [
             "doctor",
             "assistant"
@@ -18,13 +25,250 @@
             "O+",
             "O-"
         ],
+        "lab_priority_enum": [
+            "routine",
+            "urgent",
+            "stat"
+        ],
+        "invoice_status_enum": [
+            "draft",
+            "issued",
+            "paid",
+            "partial",
+            "void",
+            "cancelled"
+        ],
         "marital_status_enum": [
             "single",
             "married",
             "divorced"
+        ],
+        "payment_method_enum": [
+            "cash",
+            "card",
+            "transfer",
+            "cheque",
+            "other"
+        ],
+        "payment_status_enum": [
+            "pending",
+            "paid",
+            "partial",
+            "refunded",
+            "cancelled"
+        ],
+        "appointment_type_enum": [
+            "consultation",
+            "follow_up",
+            "emergency",
+            "procedure"
+        ],
+        "lab_order_status_enum": [
+            "draft",
+            "ordered",
+            "collected",
+            "partial",
+            "completed",
+            "cancelled"
+        ],
+        "lab_result_status_enum": [
+            "pending",
+            "collected",
+            "resulted",
+            "validated",
+            "cancelled"
+        ],
+        "appointment_status_enum": [
+            "pending",
+            "confirmed",
+            "completed",
+            "cancelled",
+            "no_show"
+        ],
+        "consultation_status_enum": [
+            "open",
+            "closed",
+            "cancelled"
+        ],
+        "prescription_status_enum": [
+            "draft",
+            "signed",
+            "cancelled"
+        ],
+        "treatment_case_status_enum": [
+            "open",
+            "active",
+            "closed",
+            "archived",
+            "cancelled"
         ]
     },
     "tables": [
+        {
+            "name": "clinic_inventory_items",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "sku",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "unit",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "qty_on_hand",
+                    "type": "numeric",
+                    "default": "0",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "reorder_threshold",
+                    "type": "numeric",
+                    "default": "0",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_by",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "clinic_inventory_movements",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "item_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "actor_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "delta",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "reason",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "clinic_conversations",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "kind",
+                    "type": "text",
+                    "default": "'direct'::text",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "title",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_by",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
         {
             "name": "clinics",
             "columns": [
@@ -111,6 +355,349 @@
                     "type": "timestamp with time zone",
                     "default": "now()",
                     "nullable": "YES"
+                }
+            ]
+        },
+        {
+            "name": "clinic_conversation_members",
+            "columns": [
+                {
+                    "name": "conversation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "user_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "role",
+                    "type": "text",
+                    "default": "'member'::text",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "joined_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "clinic_messages",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "conversation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "sender_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "body",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "edited_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                }
+            ]
+        },
+        {
+            "name": "consultation_documents",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "patient_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "uploader_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "kind",
+                    "type": "text",
+                    "default": "'file'::text",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "mime_type",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "url",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "size_bytes",
+                    "type": "bigint",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "sha256",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "study_instance_uid",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "series_instance_uid",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "sop_instance_uid",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "accession_number",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "metadata",
+                    "type": "jsonb",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "treatment_case_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "document_type",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "title",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                }
+            ]
+        },
+        {
+            "name": "prescriptions",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "patient_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "doctor_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "template_name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "signed_by",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "treatment_case_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "status",
+                    "type": "USER-DEFINED",
+                    "default": "'draft'::prescription_status_enum",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "notes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "signed_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                }
+            ]
+        },
+        {
+            "name": "prescription_medications",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "prescription_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "medicine_name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "dose",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "frequency",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "duration",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "instructions",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
                 }
             ]
         },
@@ -244,6 +831,236 @@
             ]
         },
         {
+            "name": "lab_test_panels",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "speciality_key",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "description",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": "true",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "lab_test_panel_items",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "panel_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "test_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "sort_order",
+                    "type": "integer",
+                    "default": "0",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "required",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "lab_test_catalog",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "code",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "code_system",
+                    "type": "text",
+                    "default": "'internal'::text",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "specimen_type_default",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "unit_default",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "reference_range_default",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": "true",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "lab_results",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "order_item_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "value_numeric",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "value_text",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "unit",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "reference_range",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "interpretation",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "critical_flag",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "reported_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "validated_by",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "doctor_acknowledged_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
             "name": "doctor_profiles",
             "columns": [
                 {
@@ -356,6 +1173,89 @@
             ]
         },
         {
+            "name": "lab_orders",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "treatment_case_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "patient_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "doctor_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "speciality_key",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "priority",
+                    "type": "USER-DEFINED",
+                    "default": "'routine'::lab_priority_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinical_context",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "status",
+                    "type": "USER-DEFINED",
+                    "default": "'draft'::lab_order_status_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "ordered_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
             "name": "users_metadata",
             "columns": [
                 {
@@ -404,6 +1304,89 @@
                     "name": "user_type",
                     "type": "USER-DEFINED",
                     "default": null,
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "speciality_field_definitions",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "speciality_key",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "section_key",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "field_key",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "label",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "type",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "required",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "options",
+                    "type": "jsonb",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "validation",
+                    "type": "jsonb",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "sort_order",
+                    "type": "integer",
+                    "default": "0",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": "true",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
                     "nullable": "NO"
                 }
             ]
@@ -700,114 +1683,49 @@
             ]
         },
         {
-            "name": "payments",
+            "name": "doctor_field_preferences",
             "columns": [
                 {
                     "name": "id",
                     "type": "uuid",
                     "default": "gen_random_uuid()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "clinic_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "visit_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "patient_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "amount",
-                    "type": "numeric",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "method",
-                    "type": "text",
-                    "default": "'cash'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "status",
-                    "type": "text",
-                    "default": "'paid'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "reference",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
-                }
-            ]
-        },
-        {
-            "name": "appointments",
-            "columns": [
-                {
-                    "name": "id",
-                    "type": "uuid",
-                    "default": "gen_random_uuid()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "clinic_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "patient_id",
-                    "type": "uuid",
-                    "default": null,
                     "nullable": "NO"
                 },
                 {
                     "name": "doctor_id",
                     "type": "uuid",
                     "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "scheduled_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
                     "nullable": "NO"
                 },
                 {
-                    "name": "status",
-                    "type": "text",
-                    "default": "'pending'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "type",
-                    "type": "text",
-                    "default": "'consultation'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "notes",
+                    "name": "speciality_key",
                     "type": "text",
                     "default": null,
-                    "nullable": "YES"
+                    "nullable": "NO"
+                },
+                {
+                    "name": "hidden_fields",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "required_fields",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "field_order",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "default_values",
+                    "type": "jsonb",
+                    "default": "'{}'::jsonb",
+                    "nullable": "NO"
                 },
                 {
                     "name": "created_at",
@@ -817,6 +1735,47 @@
                 },
                 {
                     "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "doctor_profile_specialities",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "doctor_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "speciality_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "is_primary",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": "true",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
                     "type": "timestamp with time zone",
                     "default": "now()",
                     "nullable": "NO"
@@ -930,7 +1889,120 @@
             ]
         },
         {
-            "name": "prescriptions",
+            "name": "consultation_cardiology",
+            "columns": [
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "chest_pain",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "chest_pain_onset",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "pain_character",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "pain_radiation",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "dyspnea",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "palpitations",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "syncope",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "edema",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "cardiac_risk_factors",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "ecg_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "ecg_rhythm",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "st_t_changes",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "troponin_series",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "echo_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "cardiology_disposition",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "appointments",
             "columns": [
                 {
                     "name": "id",
@@ -939,10 +2011,10 @@
                     "nullable": "NO"
                 },
                 {
-                    "name": "consultation_id",
+                    "name": "clinic_id",
                     "type": "uuid",
                     "default": null,
-                    "nullable": "NO"
+                    "nullable": "YES"
                 },
                 {
                     "name": "patient_id",
@@ -954,16 +2026,403 @@
                     "name": "doctor_id",
                     "type": "uuid",
                     "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "scheduled_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
                     "nullable": "NO"
                 },
                 {
-                    "name": "template_name",
+                    "name": "status",
+                    "type": "USER-DEFINED",
+                    "default": "'pending'::appointment_status_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "type",
+                    "type": "USER-DEFINED",
+                    "default": "'consultation'::appointment_type_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "notes",
                     "type": "text",
                     "default": null,
                     "nullable": "YES"
                 },
                 {
-                    "name": "signed_by",
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "consultation_dermatology",
+            "columns": [
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "main_skin_complaint",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_body_site",
+                    "type": "jsonb",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_morphology",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_size_mm",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_color",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_border",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_asymmetry",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "lesion_evolution",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "itch_score",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "pain_or_burning",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "distribution",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "dermoscopy_findings",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "photo_followup",
+                    "type": "jsonb",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "biopsy_decision",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "topical_treatment",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "systemic_treatment",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "consultation_orthopedics",
+            "columns": [
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "injury_mechanism",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "onset",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "affected_region",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "side",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "pain_location",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "functional_limitation",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "weight_bearing",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "inspection",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "palpation",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "range_of_motion",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "strength_grade",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "neurovascular_status",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "gait",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "special_tests",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "imaging_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "rehab_plan",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "consultation_gynecology_obstetrics",
+            "columns": [
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "lmp",
+                    "type": "date",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "cycle_regular",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "cycle_length_days",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "flow",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "dysmenorrhea",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "contraception",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "gravida",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "para",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "living_children",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "prior_c_section",
+                    "type": "boolean",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "pregnancy_status",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "gestational_age_weeks",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "dating_method",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "pregnancy_risk_factors",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "warning_symptoms",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "fetal_heart_rate",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "fundal_height_cm",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "obstetric_ultrasound_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "prenatal_lab_summary",
                     "type": "text",
                     "default": null,
                     "nullable": "YES"
@@ -1274,119 +2733,36 @@
                     "type": "timestamp with time zone",
                     "default": "now()",
                     "nullable": "NO"
-                }
-            ]
-        },
-        {
-            "name": "consultation_documents",
-            "columns": [
-                {
-                    "name": "id",
-                    "type": "uuid",
-                    "default": "gen_random_uuid()",
-                    "nullable": "NO"
                 },
                 {
-                    "name": "clinic_id",
+                    "name": "treatment_case_id",
                     "type": "uuid",
                     "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "consultation_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "NO"
+                    "nullable": "YES"
                 },
                 {
                     "name": "patient_id",
                     "type": "uuid",
                     "default": null,
-                    "nullable": "NO"
+                    "nullable": "YES"
                 },
                 {
-                    "name": "uploader_id",
+                    "name": "doctor_id",
                     "type": "uuid",
                     "default": null,
                     "nullable": "YES"
                 },
                 {
-                    "name": "kind",
-                    "type": "text",
-                    "default": "'file'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "name",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "mime_type",
+                    "name": "icd10_code",
                     "type": "text",
                     "default": null,
                     "nullable": "YES"
                 },
                 {
-                    "name": "url",
+                    "name": "status",
                     "type": "text",
-                    "default": null,
+                    "default": "'confirmed'::text",
                     "nullable": "YES"
-                },
-                {
-                    "name": "size_bytes",
-                    "type": "bigint",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "sha256",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "study_instance_uid",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "series_instance_uid",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "sop_instance_uid",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "accession_number",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "metadata",
-                    "type": "jsonb",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
                 }
             ]
         },
@@ -1431,6 +2807,71 @@
                 },
                 {
                     "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "consultation_dentistry",
+            "columns": [
+                {
+                    "name": "consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "chief_dental_complaint",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "tooth_records",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "odontogram",
+                    "type": "jsonb",
+                    "default": "'{}'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "periodontal_chart",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "radiographs",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "materials_used",
+                    "type": "jsonb",
+                    "default": "'[]'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "next_dental_step",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
                     "type": "timestamp with time zone",
                     "default": "now()",
                     "nullable": "NO"
@@ -1538,6 +2979,232 @@
             ]
         },
         {
+            "name": "clinic_services",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "code",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "category",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "color",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "duration_minutes",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "price",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "cost",
+                    "type": "numeric",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "active",
+                    "type": "boolean",
+                    "default": "true",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "treatment_cases",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "clinic_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "patient_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "doctor_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "speciality_key",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "title",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "description",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "diagnosis_summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "treatment_plan",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "status",
+                    "type": "USER-DEFINED",
+                    "default": "'open'::treatment_case_status_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "priority",
+                    "type": "USER-DEFINED",
+                    "default": "'normal'::priority_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "started_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "expected_end_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "closed_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_by",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "main_reason",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "main_diagnosis",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "first_consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "last_consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "summary",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "opened_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "archived_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                }
+            ]
+        },
+        {
             "name": "consultations",
             "columns": [
                 {
@@ -1556,7 +3223,7 @@
                     "name": "appointment_id",
                     "type": "uuid",
                     "default": null,
-                    "nullable": "NO"
+                    "nullable": "YES"
                 },
                 {
                     "name": "patient_id",
@@ -1572,8 +3239,8 @@
                 },
                 {
                     "name": "status",
-                    "type": "text",
-                    "default": "'open'::text",
+                    "type": "USER-DEFINED",
+                    "default": "'open'::consultation_status_enum",
                     "nullable": "NO"
                 },
                 {
@@ -1665,11 +3332,130 @@
                     "type": "timestamp with time zone",
                     "default": null,
                     "nullable": "YES"
+                },
+                {
+                    "name": "shared_payload",
+                    "type": "jsonb",
+                    "default": "'{}'::jsonb",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "previous_consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "session_type",
+                    "type": "text",
+                    "default": "'initial'::text",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "is_parent",
+                    "type": "boolean",
+                    "default": "false",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "priority",
+                    "type": "USER-DEFINED",
+                    "default": "'routine'::priority_enum",
+                    "nullable": "YES"
+                },
+                {
+                    "name": "reason_for_visit",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "signed_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "locked_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "root_consultation_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "sequence_position",
+                    "type": "integer",
+                    "default": null,
+                    "nullable": "NO"
                 }
             ]
         },
         {
-            "name": "clinic_services",
+            "name": "lab_order_items",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "uuid",
+                    "default": "gen_random_uuid()",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "order_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "test_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "test_code",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "test_name",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "NO"
+                },
+                {
+                    "name": "specimen_type",
+                    "type": "text",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "collected_at",
+                    "type": "timestamp with time zone",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "result_status",
+                    "type": "USER-DEFINED",
+                    "default": "'pending'::lab_result_status_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "created_at",
+                    "type": "timestamp with time zone",
+                    "default": "now()",
+                    "nullable": "NO"
+                }
+            ]
+        },
+        {
+            "name": "payments",
             "columns": [
                 {
                     "name": "id",
@@ -1681,64 +3467,46 @@
                     "name": "clinic_id",
                     "type": "uuid",
                     "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "visit_id",
+                    "type": "uuid",
+                    "default": null,
+                    "nullable": "YES"
+                },
+                {
+                    "name": "patient_id",
+                    "type": "uuid",
+                    "default": null,
                     "nullable": "NO"
                 },
                 {
-                    "name": "code",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "name",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "category",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "color",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "duration_minutes",
-                    "type": "integer",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "price",
+                    "name": "amount",
                     "type": "numeric",
                     "default": null,
-                    "nullable": "YES"
+                    "nullable": "NO"
                 },
                 {
-                    "name": "cost",
-                    "type": "numeric",
+                    "name": "method",
+                    "type": "USER-DEFINED",
+                    "default": "'cash'::payment_method_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "status",
+                    "type": "USER-DEFINED",
+                    "default": "'paid'::payment_status_enum",
+                    "nullable": "NO"
+                },
+                {
+                    "name": "reference",
+                    "type": "text",
                     "default": null,
                     "nullable": "YES"
-                },
-                {
-                    "name": "active",
-                    "type": "boolean",
-                    "default": "true",
-                    "nullable": "NO"
                 },
                 {
                     "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "updated_at",
                     "type": "timestamp with time zone",
                     "default": "now()",
                     "nullable": "NO"
@@ -1774,8 +3542,8 @@
                 },
                 {
                     "name": "status",
-                    "type": "text",
-                    "default": "'draft'::text",
+                    "type": "USER-DEFINED",
+                    "default": "'draft'::invoice_status_enum",
                     "nullable": "NO"
                 },
                 {
@@ -1821,116 +3589,49 @@
                     "nullable": "NO"
                 }
             ]
-        },
-        {
-            "name": "treatment_cases",
-            "columns": [
-                {
-                    "name": "id",
-                    "type": "uuid",
-                    "default": "gen_random_uuid()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "clinic_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "patient_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "doctor_id",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "speciality_key",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "title",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "NO"
-                },
-                {
-                    "name": "description",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "diagnosis_summary",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "treatment_plan",
-                    "type": "text",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "status",
-                    "type": "text",
-                    "default": "'open'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "priority",
-                    "type": "text",
-                    "default": "'normal'::text",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "started_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "expected_end_at",
-                    "type": "timestamp with time zone",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "closed_at",
-                    "type": "timestamp with time zone",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "created_by",
-                    "type": "uuid",
-                    "default": null,
-                    "nullable": "YES"
-                },
-                {
-                    "name": "created_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
-                },
-                {
-                    "name": "updated_at",
-                    "type": "timestamp with time zone",
-                    "default": "now()",
-                    "nullable": "NO"
-                }
-            ]
         }
     ],
     "indexes": [
+        {
+            "name": "idx_inventory_items_clinic_name",
+            "table": "clinic_inventory_items",
+            "definition": "CREATE INDEX idx_inventory_items_clinic_name ON public.clinic_inventory_items USING btree (clinic_id, name)"
+        },
+        {
+            "name": "clinic_inventory_items_pkey",
+            "table": "clinic_inventory_items",
+            "definition": "CREATE UNIQUE INDEX clinic_inventory_items_pkey ON public.clinic_inventory_items USING btree (id)"
+        },
+        {
+            "name": "idx_inventory_items_unique_sku",
+            "table": "clinic_inventory_items",
+            "definition": "CREATE UNIQUE INDEX idx_inventory_items_unique_sku ON public.clinic_inventory_items USING btree (clinic_id, sku) WHERE ((sku IS NOT NULL) AND (btrim(sku) <> ''::text))"
+        },
+        {
+            "name": "idx_inventory_items_unique_name",
+            "table": "clinic_inventory_items",
+            "definition": "CREATE UNIQUE INDEX idx_inventory_items_unique_name ON public.clinic_inventory_items USING btree (clinic_id, lower(name))"
+        },
+        {
+            "name": "idx_inventory_items_clinic",
+            "table": "clinic_inventory_items",
+            "definition": "CREATE INDEX idx_inventory_items_clinic ON public.clinic_inventory_items USING btree (clinic_id)"
+        },
+        {
+            "name": "clinic_inventory_movements_pkey",
+            "table": "clinic_inventory_movements",
+            "definition": "CREATE UNIQUE INDEX clinic_inventory_movements_pkey ON public.clinic_inventory_movements USING btree (id)"
+        },
+        {
+            "name": "idx_inventory_movements_item_created",
+            "table": "clinic_inventory_movements",
+            "definition": "CREATE INDEX idx_inventory_movements_item_created ON public.clinic_inventory_movements USING btree (item_id, created_at DESC)"
+        },
+        {
+            "name": "idx_inventory_movements_clinic_created",
+            "table": "clinic_inventory_movements",
+            "definition": "CREATE INDEX idx_inventory_movements_clinic_created ON public.clinic_inventory_movements USING btree (clinic_id, created_at DESC)"
+        },
         {
             "name": "clinics_pkey",
             "table": "clinics",
@@ -1955,6 +3656,101 @@
             "name": "idx_clinics_admin_id",
             "table": "clinics",
             "definition": "CREATE INDEX idx_clinics_admin_id ON public.clinics USING btree (admin_id)"
+        },
+        {
+            "name": "clinic_conversations_pkey",
+            "table": "clinic_conversations",
+            "definition": "CREATE UNIQUE INDEX clinic_conversations_pkey ON public.clinic_conversations USING btree (id)"
+        },
+        {
+            "name": "idx_clinic_conversations_clinic_updated",
+            "table": "clinic_conversations",
+            "definition": "CREATE INDEX idx_clinic_conversations_clinic_updated ON public.clinic_conversations USING btree (clinic_id, updated_at DESC)"
+        },
+        {
+            "name": "clinic_conversation_members_pkey",
+            "table": "clinic_conversation_members",
+            "definition": "CREATE UNIQUE INDEX clinic_conversation_members_pkey ON public.clinic_conversation_members USING btree (conversation_id, user_id)"
+        },
+        {
+            "name": "idx_conversation_members_user",
+            "table": "clinic_conversation_members",
+            "definition": "CREATE INDEX idx_conversation_members_user ON public.clinic_conversation_members USING btree (user_id)"
+        },
+        {
+            "name": "clinic_messages_pkey",
+            "table": "clinic_messages",
+            "definition": "CREATE UNIQUE INDEX clinic_messages_pkey ON public.clinic_messages USING btree (id)"
+        },
+        {
+            "name": "idx_clinic_messages_conversation_created",
+            "table": "clinic_messages",
+            "definition": "CREATE INDEX idx_clinic_messages_conversation_created ON public.clinic_messages USING btree (conversation_id, created_at)"
+        },
+        {
+            "name": "idx_clinic_messages_clinic_created",
+            "table": "clinic_messages",
+            "definition": "CREATE INDEX idx_clinic_messages_clinic_created ON public.clinic_messages USING btree (clinic_id, created_at DESC)"
+        },
+        {
+            "name": "consultation_documents_pkey",
+            "table": "consultation_documents",
+            "definition": "CREATE UNIQUE INDEX consultation_documents_pkey ON public.consultation_documents USING btree (id)"
+        },
+        {
+            "name": "idx_consultation_documents_consultation_created",
+            "table": "consultation_documents",
+            "definition": "CREATE INDEX idx_consultation_documents_consultation_created ON public.consultation_documents USING btree (consultation_id, created_at DESC)"
+        },
+        {
+            "name": "idx_consultation_documents_patient_created",
+            "table": "consultation_documents",
+            "definition": "CREATE INDEX idx_consultation_documents_patient_created ON public.consultation_documents USING btree (patient_id, created_at DESC)"
+        },
+        {
+            "name": "idx_consultation_documents_clinic_created",
+            "table": "consultation_documents",
+            "definition": "CREATE INDEX idx_consultation_documents_clinic_created ON public.consultation_documents USING btree (clinic_id, created_at DESC)"
+        },
+        {
+            "name": "idx_consultation_documents_case_created",
+            "table": "consultation_documents",
+            "definition": "CREATE INDEX idx_consultation_documents_case_created ON public.consultation_documents USING btree (treatment_case_id, created_at DESC)"
+        },
+        {
+            "name": "idx_prescriptions_patient_created",
+            "table": "prescriptions",
+            "definition": "CREATE INDEX idx_prescriptions_patient_created ON public.prescriptions USING btree (patient_id, created_at DESC)"
+        },
+        {
+            "name": "idx_prescriptions_consultation_created",
+            "table": "prescriptions",
+            "definition": "CREATE INDEX idx_prescriptions_consultation_created ON public.prescriptions USING btree (consultation_id, created_at DESC)"
+        },
+        {
+            "name": "prescriptions_pkey",
+            "table": "prescriptions",
+            "definition": "CREATE UNIQUE INDEX prescriptions_pkey ON public.prescriptions USING btree (id)"
+        },
+        {
+            "name": "idx_prescriptions_case",
+            "table": "prescriptions",
+            "definition": "CREATE INDEX idx_prescriptions_case ON public.prescriptions USING btree (treatment_case_id)"
+        },
+        {
+            "name": "idx_prescriptions_case_created",
+            "table": "prescriptions",
+            "definition": "CREATE INDEX idx_prescriptions_case_created ON public.prescriptions USING btree (treatment_case_id, created_at DESC)"
+        },
+        {
+            "name": "prescription_medications_pkey",
+            "table": "prescription_medications",
+            "definition": "CREATE UNIQUE INDEX prescription_medications_pkey ON public.prescription_medications USING btree (id)"
+        },
+        {
+            "name": "idx_prescription_medications_prescription",
+            "table": "prescription_medications",
+            "definition": "CREATE INDEX idx_prescription_medications_prescription ON public.prescription_medications USING btree (prescription_id)"
         },
         {
             "name": "assistant_profiles_pkey",
@@ -1987,6 +3783,36 @@
             "definition": "CREATE INDEX idx_virtual_clinics_created_by_admin ON public.virtual_clinics USING btree (created_by_admin)"
         },
         {
+            "name": "lab_test_catalog_pkey",
+            "table": "lab_test_catalog",
+            "definition": "CREATE UNIQUE INDEX lab_test_catalog_pkey ON public.lab_test_catalog USING btree (id)"
+        },
+        {
+            "name": "lab_test_catalog_code_system_code_key",
+            "table": "lab_test_catalog",
+            "definition": "CREATE UNIQUE INDEX lab_test_catalog_code_system_code_key ON public.lab_test_catalog USING btree (code_system, code)"
+        },
+        {
+            "name": "lab_test_panels_pkey",
+            "table": "lab_test_panels",
+            "definition": "CREATE UNIQUE INDEX lab_test_panels_pkey ON public.lab_test_panels USING btree (id)"
+        },
+        {
+            "name": "lab_test_panels_speciality_key_name_key",
+            "table": "lab_test_panels",
+            "definition": "CREATE UNIQUE INDEX lab_test_panels_speciality_key_name_key ON public.lab_test_panels USING btree (speciality_key, name)"
+        },
+        {
+            "name": "lab_test_panel_items_pkey",
+            "table": "lab_test_panel_items",
+            "definition": "CREATE UNIQUE INDEX lab_test_panel_items_pkey ON public.lab_test_panel_items USING btree (id)"
+        },
+        {
+            "name": "lab_test_panel_items_panel_id_test_id_key",
+            "table": "lab_test_panel_items",
+            "definition": "CREATE UNIQUE INDEX lab_test_panel_items_panel_id_test_id_key ON public.lab_test_panel_items USING btree (panel_id, test_id)"
+        },
+        {
             "name": "doctor_profiles_pkey",
             "table": "doctor_profiles",
             "definition": "CREATE UNIQUE INDEX doctor_profiles_pkey ON public.doctor_profiles USING btree (id)"
@@ -2017,6 +3843,16 @@
             "definition": "CREATE INDEX idx_users_metadata_clinic_id ON public.users_metadata USING btree (clinic_id)"
         },
         {
+            "name": "lab_results_pkey",
+            "table": "lab_results",
+            "definition": "CREATE UNIQUE INDEX lab_results_pkey ON public.lab_results USING btree (id)"
+        },
+        {
+            "name": "idx_lab_results_order_item",
+            "table": "lab_results",
+            "definition": "CREATE INDEX idx_lab_results_order_item ON public.lab_results USING btree (order_item_id)"
+        },
+        {
             "name": "licenses_pkey",
             "table": "licenses",
             "definition": "CREATE UNIQUE INDEX licenses_pkey ON public.licenses USING btree (id)"
@@ -2025,6 +3861,41 @@
             "name": "licenses_license_key_key",
             "table": "licenses",
             "definition": "CREATE UNIQUE INDEX licenses_license_key_key ON public.licenses USING btree (license_key)"
+        },
+        {
+            "name": "idx_lab_orders_clinic_status_ordered",
+            "table": "lab_orders",
+            "definition": "CREATE INDEX idx_lab_orders_clinic_status_ordered ON public.lab_orders USING btree (clinic_id, status, ordered_at DESC)"
+        },
+        {
+            "name": "idx_lab_orders_patient_ordered",
+            "table": "lab_orders",
+            "definition": "CREATE INDEX idx_lab_orders_patient_ordered ON public.lab_orders USING btree (patient_id, ordered_at DESC)"
+        },
+        {
+            "name": "lab_orders_pkey",
+            "table": "lab_orders",
+            "definition": "CREATE UNIQUE INDEX lab_orders_pkey ON public.lab_orders USING btree (id)"
+        },
+        {
+            "name": "idx_lab_orders_patient_created",
+            "table": "lab_orders",
+            "definition": "CREATE INDEX idx_lab_orders_patient_created ON public.lab_orders USING btree (patient_id, ordered_at DESC)"
+        },
+        {
+            "name": "idx_lab_orders_consultation",
+            "table": "lab_orders",
+            "definition": "CREATE INDEX idx_lab_orders_consultation ON public.lab_orders USING btree (consultation_id)"
+        },
+        {
+            "name": "idx_lab_orders_case",
+            "table": "lab_orders",
+            "definition": "CREATE INDEX idx_lab_orders_case ON public.lab_orders USING btree (treatment_case_id)"
+        },
+        {
+            "name": "idx_lab_orders_case_ordered",
+            "table": "lab_orders",
+            "definition": "CREATE INDEX idx_lab_orders_case_ordered ON public.lab_orders USING btree (treatment_case_id, ordered_at DESC)"
         },
         {
             "name": "patient_measurements_pkey",
@@ -2080,6 +3951,16 @@
             "name": "patient_medical_info_patient_id_key",
             "table": "patient_medical_info",
             "definition": "CREATE UNIQUE INDEX patient_medical_info_patient_id_key ON public.patient_medical_info USING btree (patient_id)"
+        },
+        {
+            "name": "speciality_field_definitions_pkey",
+            "table": "speciality_field_definitions",
+            "definition": "CREATE UNIQUE INDEX speciality_field_definitions_pkey ON public.speciality_field_definitions USING btree (id)"
+        },
+        {
+            "name": "speciality_field_definitions_speciality_key_section_key_fie_key",
+            "table": "speciality_field_definitions",
+            "definition": "CREATE UNIQUE INDEX speciality_field_definitions_speciality_key_section_key_fie_key ON public.speciality_field_definitions USING btree (speciality_key, section_key, field_key)"
         },
         {
             "name": "clinic_activation_links_pkey",
@@ -2142,6 +4023,51 @@
             "definition": "CREATE UNIQUE INDEX idx_staff_invites_unique_pending ON public.staff_invites USING btree (clinic_id, email, user_type) WHERE (accepted_at IS NULL)"
         },
         {
+            "name": "doctor_field_preferences_pkey",
+            "table": "doctor_field_preferences",
+            "definition": "CREATE UNIQUE INDEX doctor_field_preferences_pkey ON public.doctor_field_preferences USING btree (id)"
+        },
+        {
+            "name": "doctor_field_preferences_doctor_id_speciality_key_key",
+            "table": "doctor_field_preferences",
+            "definition": "CREATE UNIQUE INDEX doctor_field_preferences_doctor_id_speciality_key_key ON public.doctor_field_preferences USING btree (doctor_id, speciality_key)"
+        },
+        {
+            "name": "doctor_profile_specialities_pkey",
+            "table": "doctor_profile_specialities",
+            "definition": "CREATE UNIQUE INDEX doctor_profile_specialities_pkey ON public.doctor_profile_specialities USING btree (id)"
+        },
+        {
+            "name": "doctor_profile_specialities_doctor_id_speciality_id_key",
+            "table": "doctor_profile_specialities",
+            "definition": "CREATE UNIQUE INDEX doctor_profile_specialities_doctor_id_speciality_id_key ON public.doctor_profile_specialities USING btree (doctor_id, speciality_id)"
+        },
+        {
+            "name": "idx_doctor_profile_specialities_doctor",
+            "table": "doctor_profile_specialities",
+            "definition": "CREATE INDEX idx_doctor_profile_specialities_doctor ON public.doctor_profile_specialities USING btree (doctor_id)"
+        },
+        {
+            "name": "consultation_cardiology_pkey",
+            "table": "consultation_cardiology",
+            "definition": "CREATE UNIQUE INDEX consultation_cardiology_pkey ON public.consultation_cardiology USING btree (consultation_id)"
+        },
+        {
+            "name": "idx_appointments_clinic_status_scheduled",
+            "table": "appointments",
+            "definition": "CREATE INDEX idx_appointments_clinic_status_scheduled ON public.appointments USING btree (clinic_id, status, scheduled_at DESC)"
+        },
+        {
+            "name": "idx_appointments_patient_scheduled",
+            "table": "appointments",
+            "definition": "CREATE INDEX idx_appointments_patient_scheduled ON public.appointments USING btree (patient_id, scheduled_at DESC)"
+        },
+        {
+            "name": "idx_appointments_doctor_scheduled",
+            "table": "appointments",
+            "definition": "CREATE INDEX idx_appointments_doctor_scheduled ON public.appointments USING btree (doctor_id, scheduled_at DESC)"
+        },
+        {
             "name": "idx_appointments_clinic_doctor_date",
             "table": "appointments",
             "definition": "CREATE INDEX idx_appointments_clinic_doctor_date ON public.appointments USING btree (clinic_id, doctor_id, scheduled_at DESC)"
@@ -2172,29 +4098,19 @@
             "definition": "CREATE INDEX idx_appointments_clinic_date ON public.appointments USING btree (clinic_id, scheduled_at DESC)"
         },
         {
-            "name": "payments_pkey",
-            "table": "payments",
-            "definition": "CREATE UNIQUE INDEX payments_pkey ON public.payments USING btree (id)"
+            "name": "consultation_dermatology_pkey",
+            "table": "consultation_dermatology",
+            "definition": "CREATE UNIQUE INDEX consultation_dermatology_pkey ON public.consultation_dermatology USING btree (consultation_id)"
         },
         {
-            "name": "idx_payments_patient_id",
-            "table": "payments",
-            "definition": "CREATE INDEX idx_payments_patient_id ON public.payments USING btree (patient_id)"
+            "name": "consultation_orthopedics_pkey",
+            "table": "consultation_orthopedics",
+            "definition": "CREATE UNIQUE INDEX consultation_orthopedics_pkey ON public.consultation_orthopedics USING btree (consultation_id)"
         },
         {
-            "name": "idx_payments_visit_id",
-            "table": "payments",
-            "definition": "CREATE INDEX idx_payments_visit_id ON public.payments USING btree (visit_id)"
-        },
-        {
-            "name": "idx_payments_created_at",
-            "table": "payments",
-            "definition": "CREATE INDEX idx_payments_created_at ON public.payments USING btree (created_at DESC)"
-        },
-        {
-            "name": "idx_payments_clinic_created",
-            "table": "payments",
-            "definition": "CREATE INDEX idx_payments_clinic_created ON public.payments USING btree (clinic_id, created_at DESC)"
+            "name": "consultation_gynecology_obstetrics_pkey",
+            "table": "consultation_gynecology_obstetrics",
+            "definition": "CREATE UNIQUE INDEX consultation_gynecology_obstetrics_pkey ON public.consultation_gynecology_obstetrics USING btree (consultation_id)"
         },
         {
             "name": "consultation_vitals_pkey",
@@ -2227,29 +4143,19 @@
             "definition": "CREATE INDEX idx_consultation_diagnoses_consultation ON public.consultation_diagnoses USING btree (consultation_id)"
         },
         {
-            "name": "prescriptions_pkey",
-            "table": "prescriptions",
-            "definition": "CREATE UNIQUE INDEX prescriptions_pkey ON public.prescriptions USING btree (id)"
+            "name": "idx_consultation_diagnoses_case",
+            "table": "consultation_diagnoses",
+            "definition": "CREATE INDEX idx_consultation_diagnoses_case ON public.consultation_diagnoses USING btree (treatment_case_id)"
         },
         {
-            "name": "consultation_documents_pkey",
-            "table": "consultation_documents",
-            "definition": "CREATE UNIQUE INDEX consultation_documents_pkey ON public.consultation_documents USING btree (id)"
+            "name": "idx_consultation_diagnoses_case_created",
+            "table": "consultation_diagnoses",
+            "definition": "CREATE INDEX idx_consultation_diagnoses_case_created ON public.consultation_diagnoses USING btree (treatment_case_id, created_at DESC)"
         },
         {
-            "name": "idx_consultation_documents_consultation_created",
-            "table": "consultation_documents",
-            "definition": "CREATE INDEX idx_consultation_documents_consultation_created ON public.consultation_documents USING btree (consultation_id, created_at DESC)"
-        },
-        {
-            "name": "idx_consultation_documents_patient_created",
-            "table": "consultation_documents",
-            "definition": "CREATE INDEX idx_consultation_documents_patient_created ON public.consultation_documents USING btree (patient_id, created_at DESC)"
-        },
-        {
-            "name": "idx_consultation_documents_clinic_created",
-            "table": "consultation_documents",
-            "definition": "CREATE INDEX idx_consultation_documents_clinic_created ON public.consultation_documents USING btree (clinic_id, created_at DESC)"
+            "name": "idx_consultation_events_clinic_type_created",
+            "table": "consultation_events",
+            "definition": "CREATE INDEX idx_consultation_events_clinic_type_created ON public.consultation_events USING btree (clinic_id, event_type, created_at DESC)"
         },
         {
             "name": "consultation_events_pkey",
@@ -2297,6 +4203,11 @@
             "definition": "CREATE INDEX idx_prescription_items_brand ON public.prescription_items USING btree (brand)"
         },
         {
+            "name": "consultation_dentistry_pkey",
+            "table": "consultation_dentistry",
+            "definition": "CREATE UNIQUE INDEX consultation_dentistry_pkey ON public.consultation_dentistry USING btree (consultation_id)"
+        },
+        {
             "name": "clinic_invoice_items_pkey",
             "table": "clinic_invoice_items",
             "definition": "CREATE UNIQUE INDEX clinic_invoice_items_pkey ON public.clinic_invoice_items USING btree (id)"
@@ -2315,6 +4226,56 @@
             "name": "idx_clinic_expenses_clinic",
             "table": "clinic_expenses",
             "definition": "CREATE INDEX idx_clinic_expenses_clinic ON public.clinic_expenses USING btree (clinic_id, spent_at DESC)"
+        },
+        {
+            "name": "clinic_services_pkey",
+            "table": "clinic_services",
+            "definition": "CREATE UNIQUE INDEX clinic_services_pkey ON public.clinic_services USING btree (id)"
+        },
+        {
+            "name": "idx_clinic_services_clinic",
+            "table": "clinic_services",
+            "definition": "CREATE INDEX idx_clinic_services_clinic ON public.clinic_services USING btree (clinic_id)"
+        },
+        {
+            "name": "idx_clinic_services_active",
+            "table": "clinic_services",
+            "definition": "CREATE INDEX idx_clinic_services_active ON public.clinic_services USING btree (clinic_id, active)"
+        },
+        {
+            "name": "idx_clinic_services_name",
+            "table": "clinic_services",
+            "definition": "CREATE INDEX idx_clinic_services_name ON public.clinic_services USING btree (clinic_id, name)"
+        },
+        {
+            "name": "idx_consultations_status_opened",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_status_opened ON public.consultations USING btree (clinic_id, status, opened_at DESC)"
+        },
+        {
+            "name": "ux_consultations_root_sequence",
+            "table": "consultations",
+            "definition": "CREATE UNIQUE INDEX ux_consultations_root_sequence ON public.consultations USING btree (root_consultation_id, sequence_position)"
+        },
+        {
+            "name": "idx_consultations_root_opened",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_root_opened ON public.consultations USING btree (root_consultation_id, opened_at DESC)"
+        },
+        {
+            "name": "idx_consultations_case_opened",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_case_opened ON public.consultations USING btree (treatment_case_id, opened_at DESC)"
+        },
+        {
+            "name": "idx_consultations_clinic_patient_status_opened",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_clinic_patient_status_opened ON public.consultations USING btree (clinic_id, patient_id, status, opened_at DESC)"
+        },
+        {
+            "name": "idx_consultations_clinic_doctor_status_opened",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_clinic_doctor_status_opened ON public.consultations USING btree (clinic_id, doctor_id, status, opened_at DESC)"
         },
         {
             "name": "consultations_pkey",
@@ -2357,29 +4318,104 @@
             "definition": "CREATE INDEX idx_consultations_patient_doctor_opened ON public.consultations USING btree (patient_id, doctor_id, opened_at DESC)"
         },
         {
-            "name": "idx_consultations_status_opened",
+            "name": "idx_consultations_case_session",
             "table": "consultations",
-            "definition": "CREATE INDEX idx_consultations_status_opened ON public.consultations USING btree (clinic_id, status, opened_at DESC)"
+            "definition": "CREATE INDEX idx_consultations_case_session ON public.consultations USING btree (treatment_case_id, session_number)"
         },
         {
-            "name": "clinic_services_pkey",
-            "table": "clinic_services",
-            "definition": "CREATE UNIQUE INDEX clinic_services_pkey ON public.clinic_services USING btree (id)"
+            "name": "idx_consultations_previous",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_previous ON public.consultations USING btree (previous_consultation_id)"
         },
         {
-            "name": "idx_clinic_services_clinic",
-            "table": "clinic_services",
-            "definition": "CREATE INDEX idx_clinic_services_clinic ON public.clinic_services USING btree (clinic_id)"
+            "name": "idx_consultations_patient_date",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_patient_date ON public.consultations USING btree (patient_id, opened_at DESC)"
         },
         {
-            "name": "idx_clinic_services_active",
-            "table": "clinic_services",
-            "definition": "CREATE INDEX idx_clinic_services_active ON public.clinic_services USING btree (clinic_id, active)"
+            "name": "idx_consultations_speciality",
+            "table": "consultations",
+            "definition": "CREATE INDEX idx_consultations_speciality ON public.consultations USING btree (clinic_id, speciality_key, opened_at DESC)"
         },
         {
-            "name": "idx_clinic_services_name",
-            "table": "clinic_services",
-            "definition": "CREATE INDEX idx_clinic_services_name ON public.clinic_services USING btree (clinic_id, name)"
+            "name": "idx_treatment_cases_doctor_status",
+            "table": "treatment_cases",
+            "definition": "CREATE INDEX idx_treatment_cases_doctor_status ON public.treatment_cases USING btree (clinic_id, doctor_id, status, started_at DESC)"
+        },
+        {
+            "name": "treatment_cases_pkey",
+            "table": "treatment_cases",
+            "definition": "CREATE UNIQUE INDEX treatment_cases_pkey ON public.treatment_cases USING btree (id)"
+        },
+        {
+            "name": "idx_treatment_cases_clinic_patient_status_started",
+            "table": "treatment_cases",
+            "definition": "CREATE INDEX idx_treatment_cases_clinic_patient_status_started ON public.treatment_cases USING btree (clinic_id, patient_id, status, started_at DESC)"
+        },
+        {
+            "name": "idx_treatment_cases_clinic_patient",
+            "table": "treatment_cases",
+            "definition": "CREATE INDEX idx_treatment_cases_clinic_patient ON public.treatment_cases USING btree (clinic_id, patient_id, started_at DESC)"
+        },
+        {
+            "name": "idx_treatment_cases_clinic_doctor_status_started",
+            "table": "treatment_cases",
+            "definition": "CREATE INDEX idx_treatment_cases_clinic_doctor_status_started ON public.treatment_cases USING btree (clinic_id, doctor_id, status, started_at DESC)"
+        },
+        {
+            "name": "idx_lab_order_items_order_status",
+            "table": "lab_order_items",
+            "definition": "CREATE INDEX idx_lab_order_items_order_status ON public.lab_order_items USING btree (order_id, result_status)"
+        },
+        {
+            "name": "lab_order_items_pkey",
+            "table": "lab_order_items",
+            "definition": "CREATE UNIQUE INDEX lab_order_items_pkey ON public.lab_order_items USING btree (id)"
+        },
+        {
+            "name": "idx_lab_order_items_order",
+            "table": "lab_order_items",
+            "definition": "CREATE INDEX idx_lab_order_items_order ON public.lab_order_items USING btree (order_id)"
+        },
+        {
+            "name": "idx_payments_clinic_status_created",
+            "table": "payments",
+            "definition": "CREATE INDEX idx_payments_clinic_status_created ON public.payments USING btree (clinic_id, status, created_at DESC)"
+        },
+        {
+            "name": "idx_payments_patient_created",
+            "table": "payments",
+            "definition": "CREATE INDEX idx_payments_patient_created ON public.payments USING btree (patient_id, created_at DESC)"
+        },
+        {
+            "name": "payments_pkey",
+            "table": "payments",
+            "definition": "CREATE UNIQUE INDEX payments_pkey ON public.payments USING btree (id)"
+        },
+        {
+            "name": "idx_payments_patient_id",
+            "table": "payments",
+            "definition": "CREATE INDEX idx_payments_patient_id ON public.payments USING btree (patient_id)"
+        },
+        {
+            "name": "idx_payments_visit_id",
+            "table": "payments",
+            "definition": "CREATE INDEX idx_payments_visit_id ON public.payments USING btree (visit_id)"
+        },
+        {
+            "name": "idx_payments_created_at",
+            "table": "payments",
+            "definition": "CREATE INDEX idx_payments_created_at ON public.payments USING btree (created_at DESC)"
+        },
+        {
+            "name": "idx_payments_clinic_created",
+            "table": "payments",
+            "definition": "CREATE INDEX idx_payments_clinic_created ON public.payments USING btree (clinic_id, created_at DESC)"
+        },
+        {
+            "name": "idx_clinic_invoices_clinic_status_created",
+            "table": "clinic_invoices",
+            "definition": "CREATE INDEX idx_clinic_invoices_clinic_status_created ON public.clinic_invoices USING btree (clinic_id, status, created_at DESC)"
         },
         {
             "name": "clinic_invoices_pkey",
@@ -2395,21 +4431,6 @@
             "name": "idx_clinic_invoices_patient",
             "table": "clinic_invoices",
             "definition": "CREATE INDEX idx_clinic_invoices_patient ON public.clinic_invoices USING btree (clinic_id, patient_id, created_at DESC)"
-        },
-        {
-            "name": "treatment_cases_pkey",
-            "table": "treatment_cases",
-            "definition": "CREATE UNIQUE INDEX treatment_cases_pkey ON public.treatment_cases USING btree (id)"
-        },
-        {
-            "name": "idx_treatment_cases_clinic_patient",
-            "table": "treatment_cases",
-            "definition": "CREATE INDEX idx_treatment_cases_clinic_patient ON public.treatment_cases USING btree (clinic_id, patient_id, started_at DESC)"
-        },
-        {
-            "name": "idx_treatment_cases_doctor_status",
-            "table": "treatment_cases",
-            "definition": "CREATE INDEX idx_treatment_cases_doctor_status ON public.treatment_cases USING btree (clinic_id, doctor_id, status, started_at DESC)"
         }
     ],
     "triggers": [
@@ -2559,24 +4580,44 @@
             "table": "clinic_invoices",
             "timing": "BEFORE",
             "definition": "EXECUTE FUNCTION update_updated_at()"
+        },
+        {
+            "name": "trg_clinic_inventory_items_updated",
+            "event": "UPDATE",
+            "table": "clinic_inventory_items",
+            "timing": "BEFORE",
+            "definition": "EXECUTE FUNCTION update_updated_at()"
+        },
+        {
+            "name": "trg_clinic_conversations_updated",
+            "event": "UPDATE",
+            "table": "clinic_conversations",
+            "timing": "BEFORE",
+            "definition": "EXECUTE FUNCTION update_updated_at()"
         }
     ],
     "functions": {
         "compute_bmi": "CREATE OR REPLACE FUNCTION public.compute_bmi()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  IF NEW.weight IS NOT NULL AND NEW.height IS NOT NULL THEN\r\n    NEW.bmi := NEW.weight / POWER(NEW.height / 100, 2);\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n",
         "rpc_get_expenses": "CREATE OR REPLACE FUNCTION public.rpc_get_expenses(p_requester_id uuid, p_start_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_end_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 50)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*) into v_total\r\n  from public.clinic_expenses e\r\n  where e.clinic_id = v_clinic_id\r\n    and (p_start_date is null or e.spent_at >= p_start_date)\r\n    and (p_end_date is null or e.spent_at <= p_end_date);\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      e.id,\r\n      e.clinic_id,\r\n      e.category,\r\n      e.amount,\r\n      e.notes,\r\n      e.spent_at,\r\n      e.created_at\r\n    from public.clinic_expenses e\r\n    where e.clinic_id = v_clinic_id\r\n      and (p_start_date is null or e.spent_at >= p_start_date)\r\n      and (p_end_date is null or e.spent_at <= p_end_date)\r\n    order by e.spent_at desc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'expenses', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
+        "rpc_get_messages": "CREATE OR REPLACE FUNCTION public.rpc_get_messages(p_requester_id uuid, p_conversation_id uuid, p_limit integer DEFAULT 50, p_before timestamp with time zone DEFAULT NULL::timestamp with time zone)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_allowed boolean;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select exists (\r\n    select 1\r\n    from public.clinic_conversation_members m\r\n    join public.clinic_conversations c on c.id = m.conversation_id\r\n    where m.conversation_id = p_conversation_id\r\n      and m.user_id = p_requester_id\r\n      and c.clinic_id = v_clinic_id\r\n  ) into v_allowed;\r\n\r\n  if coalesce(v_allowed, false) = false then\r\n    raise exception 'Conversation not found or access denied';\r\n  end if;\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t) order by t.created_at asc), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      msg.id,\r\n      msg.conversation_id,\r\n      msg.sender_id,\r\n      um.full_name as sender_name,\r\n      msg.body,\r\n      msg.created_at,\r\n      msg.edited_at\r\n    from public.clinic_messages msg\r\n    join public.users_metadata um on um.id = msg.sender_id\r\n    where msg.conversation_id = p_conversation_id\r\n      and (p_before is null or msg.created_at < p_before)\r\n    order by msg.created_at desc\r\n    limit greatest(coalesce(p_limit, 50), 1)\r\n  ) t;\r\n\r\n  return v_rows;\r\nend;\r\n$function$\n",
         "rpc_get_patients": "CREATE OR REPLACE FUNCTION public.rpc_get_patients(p_requester_id uuid, p_search text DEFAULT NULL::text, p_start_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_end_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 10)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*)\r\n  into v_total\r\n  from public.patients p\r\n  where p.clinic_id = v_clinic_id\r\n    and (p_start_date is null or p.created_at >= p_start_date)\r\n    and (p_end_date is null or p.created_at <= p_end_date)\r\n    and (\r\n      p_search is null\r\n      or p.first_name ilike '%' || p_search || '%'\r\n      or p.last_name ilike '%' || p_search || '%'\r\n      or p.phone ilike '%' || p_search || '%'\r\n      or p.email ilike '%' || p_search || '%'\r\n      or p.code ilike '%' || p_search || '%'\r\n    );\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      p.id,\r\n      p.code,\r\n      p.first_name,\r\n      p.last_name,\r\n      p.date_of_birth,\r\n      p.age,\r\n      p.sex,\r\n      p.marital_status,\r\n      p.phone,\r\n      p.email,\r\n      p.address_city,\r\n      p.address_state,\r\n      p.insurance_provider,\r\n      p.created_at\r\n    from public.patients p\r\n    where p.clinic_id = v_clinic_id\r\n      and (p_start_date is null or p.created_at >= p_start_date)\r\n      and (p_end_date is null or p.created_at <= p_end_date)\r\n      and (\r\n        p_search is null\r\n        or p.first_name ilike '%' || p_search || '%'\r\n        or p.last_name ilike '%' || p_search || '%'\r\n        or p.phone ilike '%' || p_search || '%'\r\n        or p.email ilike '%' || p_search || '%'\r\n        or p.code ilike '%' || p_search || '%'\r\n      )\r\n    order by p.created_at desc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'patients', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
         "rpc_get_services": "CREATE OR REPLACE FUNCTION public.rpc_get_services(p_requester_id uuid, p_search text DEFAULT NULL::text, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 50)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*) into v_total\r\n  from public.clinic_services s\r\n  where s.clinic_id = v_clinic_id\r\n    and (\r\n      p_search is null\r\n      or s.name ilike '%' || p_search || '%'\r\n      or s.code ilike '%' || p_search || '%'\r\n      or s.category ilike '%' || p_search || '%'\r\n    );\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      s.id,\r\n      s.clinic_id,\r\n      s.code,\r\n      s.name,\r\n      s.category,\r\n      s.color,\r\n      s.duration_minutes,\r\n      s.price,\r\n      s.cost,\r\n      s.active,\r\n      s.created_at,\r\n      s.updated_at\r\n    from public.clinic_services s\r\n    where s.clinic_id = v_clinic_id\r\n      and (\r\n        p_search is null\r\n        or s.name ilike '%' || p_search || '%'\r\n        or s.code ilike '%' || p_search || '%'\r\n        or s.category ilike '%' || p_search || '%'\r\n      )\r\n    order by s.created_at desc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'services', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
+        "rpc_send_message": "CREATE OR REPLACE FUNCTION public.rpc_send_message(p_requester_id uuid, p_conversation_id uuid, p_body text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_conv_clinic uuid;\r\n  v_allowed boolean;\r\n  v_id uuid;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select c.clinic_id into v_conv_clinic\r\n  from public.clinic_conversations c\r\n  where c.id = p_conversation_id\r\n  limit 1;\r\n\r\n  if v_conv_clinic is null or v_conv_clinic <> v_clinic_id then\r\n    raise exception 'Conversation not found or access denied';\r\n  end if;\r\n\r\n  select exists (\r\n    select 1 from public.clinic_conversation_members m\r\n    where m.conversation_id = p_conversation_id and m.user_id = p_requester_id\r\n  ) into v_allowed;\r\n\r\n  if coalesce(v_allowed, false) = false then\r\n    raise exception 'Conversation not found or access denied';\r\n  end if;\r\n\r\n  insert into public.clinic_messages (clinic_id, conversation_id, sender_id, body, created_at)\r\n  values (v_clinic_id, p_conversation_id, p_requester_id, btrim(p_body), now())\r\n  returning id into v_id;\r\n\r\n  update public.clinic_conversations\r\n  set updated_at = now()\r\n  where id = p_conversation_id;\r\n\r\n  return v_id;\r\nend;\r\n$function$\n",
         "generate_licenses": "CREATE OR REPLACE FUNCTION public.generate_licenses(p_role text, p_admin_id uuid DEFAULT NULL::uuid, p_quantity integer DEFAULT 1)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  i integer;\r\nbegin\r\n  for i in 1..p_quantity loop\r\n    perform public.generate_clinic_license('basic', 1, 0, null);\r\n  end loop;\r\nend;\r\n$function$\n",
+        "rpc_get_inventory": "CREATE OR REPLACE FUNCTION public.rpc_get_inventory(p_requester_id uuid, p_search text DEFAULT NULL::text, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 50)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*) into v_total\r\n  from public.clinic_inventory_items i\r\n  where i.clinic_id = v_clinic_id\r\n    and (\r\n      p_search is null\r\n      or btrim(p_search) = ''\r\n      or i.name ilike '%' || p_search || '%'\r\n      or i.sku ilike '%' || p_search || '%'\r\n    );\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      i.id,\r\n      i.clinic_id,\r\n      i.sku,\r\n      i.name,\r\n      i.unit,\r\n      i.qty_on_hand,\r\n      i.reorder_threshold,\r\n      i.notes,\r\n      i.created_by,\r\n      i.created_at,\r\n      i.updated_at\r\n    from public.clinic_inventory_items i\r\n    where i.clinic_id = v_clinic_id\r\n      and (\r\n        p_search is null\r\n        or btrim(p_search) = ''\r\n        or i.name ilike '%' || p_search || '%'\r\n        or i.sku ilike '%' || p_search || '%'\r\n      )\r\n    order by (i.qty_on_hand < i.reorder_threshold) desc, i.name asc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'items', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
         "update_updated_at": "CREATE OR REPLACE FUNCTION public.update_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  NEW.updated_at = now();\r\n  RETURN NEW;\r\nEND;\r\n$function$\n",
         "rpc_create_expense": "CREATE OR REPLACE FUNCTION public.rpc_create_expense(p_requester_id uuid, p_amount numeric, p_category text DEFAULT NULL::text, p_notes text DEFAULT NULL::text, p_spent_at timestamp with time zone DEFAULT NULL::timestamp with time zone)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_id uuid;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  insert into public.clinic_expenses (\r\n    clinic_id, category, amount, notes, spent_at, created_at\r\n  ) values (\r\n    v_clinic_id,\r\n    nullif(trim(p_category), ''),\r\n    p_amount,\r\n    nullif(trim(p_notes), ''),\r\n    coalesce(p_spent_at, now()),\r\n    now()\r\n  )\r\n  returning id into v_id;\r\n\r\n  return v_id;\r\nend;\r\n$function$\n",
         "rpc_create_patient": "CREATE OR REPLACE FUNCTION public.rpc_create_patient(p_created_by uuid, p_first_name text, p_last_name text, p_date_of_birth date, p_place_of_birth text, p_sex sex_enum, p_marital_status marital_status_enum DEFAULT NULL::marital_status_enum, p_phone text DEFAULT NULL::text, p_email text DEFAULT NULL::text, p_address_street text DEFAULT NULL::text, p_address_city text DEFAULT NULL::text, p_address_state text DEFAULT NULL::text, p_emergency_contact_name text DEFAULT NULL::text, p_emergency_contact_relationship text DEFAULT NULL::text, p_emergency_contact_phone text DEFAULT NULL::text, p_insurance_provider text DEFAULT NULL::text, p_insurance_policy_number text DEFAULT NULL::text, p_blood_type blood_type_enum DEFAULT NULL::blood_type_enum, p_allergies text[] DEFAULT NULL::text[], p_chronic_diseases text[] DEFAULT NULL::text[], p_medications text[] DEFAULT NULL::text[], p_disabilities text[] DEFAULT NULL::text[], p_height numeric DEFAULT NULL::numeric, p_weight numeric DEFAULT NULL::numeric, p_temperature numeric DEFAULT NULL::numeric, p_systolic_bp integer DEFAULT NULL::integer, p_diastolic_bp integer DEFAULT NULL::integer, p_oxygen_saturation integer DEFAULT NULL::integer, p_notes text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_age integer;\r\n  v_patient_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_created_by\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Creator has no clinic';\r\n  end if;\r\n\r\n  v_age := extract(year from age(current_date, p_date_of_birth));\r\n\r\n  insert into public.patients (\r\n    created_by,\r\n    clinic_id,\r\n    first_name,\r\n    last_name,\r\n    date_of_birth,\r\n    place_of_birth,\r\n    age,\r\n    sex,\r\n    marital_status,\r\n    phone,\r\n    email,\r\n    address_street,\r\n    address_city,\r\n    address_state,\r\n    emergency_contact_name,\r\n    emergency_contact_relationship,\r\n    emergency_contact_phone,\r\n    insurance_provider,\r\n    insurance_policy_number,\r\n    created_at\r\n  )\r\n  values (\r\n    p_created_by,\r\n    v_clinic_id,\r\n    p_first_name,\r\n    p_last_name,\r\n    p_date_of_birth,\r\n    p_place_of_birth,\r\n    v_age,\r\n    p_sex,\r\n    p_marital_status,\r\n    p_phone,\r\n    p_email,\r\n    p_address_street,\r\n    p_address_city,\r\n    p_address_state,\r\n    p_emergency_contact_name,\r\n    p_emergency_contact_relationship,\r\n    p_emergency_contact_phone,\r\n    p_insurance_provider,\r\n    p_insurance_policy_number,\r\n    now()\r\n  )\r\n  returning id into v_patient_id;\r\n\r\n  insert into public.patient_medical_info (\r\n    patient_id,\r\n    blood_type,\r\n    allergies,\r\n    chronic_diseases,\r\n    medications,\r\n    disabilities,\r\n    created_at\r\n  )\r\n  values (\r\n    v_patient_id,\r\n    p_blood_type,\r\n    p_allergies,\r\n    p_chronic_diseases,\r\n    p_medications,\r\n    p_disabilities,\r\n    now()\r\n  );\r\n\r\n  if p_height is not null\r\n     or p_weight is not null\r\n     or p_temperature is not null\r\n     or p_systolic_bp is not null\r\n     or p_diastolic_bp is not null\r\n     or p_oxygen_saturation is not null then\r\n    insert into public.patient_measurements (\r\n      patient_id,\r\n      recorded_by,\r\n      weight,\r\n      height,\r\n      temperature,\r\n      systolic_bp,\r\n      diastolic_bp,\r\n      oxygen_saturation,\r\n      recorded_at,\r\n      notes\r\n    )\r\n    values (\r\n      v_patient_id,\r\n      p_created_by,\r\n      p_weight,\r\n      p_height,\r\n      p_temperature,\r\n      p_systolic_bp,\r\n      p_diastolic_bp,\r\n      p_oxygen_saturation,\r\n      now(),\r\n      p_notes\r\n    );\r\n  end if;\r\n\r\n  return v_patient_id;\r\nend;\r\n$function$\n",
         "rpc_upsert_service": "CREATE OR REPLACE FUNCTION public.rpc_upsert_service(p_requester_id uuid, p_name text, p_service_id uuid DEFAULT NULL::uuid, p_code text DEFAULT NULL::text, p_category text DEFAULT NULL::text, p_color text DEFAULT NULL::text, p_duration_minutes integer DEFAULT NULL::integer, p_price numeric DEFAULT NULL::numeric, p_cost numeric DEFAULT NULL::numeric, p_active boolean DEFAULT true)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_id uuid;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  if p_service_id is null then\r\n    insert into public.clinic_services (\r\n      clinic_id, code, name, category, color, duration_minutes, price, cost, active, created_at, updated_at\r\n    ) values (\r\n      v_clinic_id,\r\n      nullif(trim(p_code), ''),\r\n      trim(p_name),\r\n      nullif(trim(p_category), ''),\r\n      nullif(trim(p_color), ''),\r\n      p_duration_minutes,\r\n      p_price,\r\n      p_cost,\r\n      coalesce(p_active, true),\r\n      now(),\r\n      now()\r\n    )\r\n    returning id into v_id;\r\n    return v_id;\r\n  end if;\r\n\r\n  -- ensure service belongs to the clinic\r\n  if not exists (\r\n    select 1 from public.clinic_services s\r\n    where s.id = p_service_id and s.clinic_id = v_clinic_id\r\n  ) then\r\n    raise exception 'Service not found or access denied';\r\n  end if;\r\n\r\n  update public.clinic_services\r\n  set\r\n    code = nullif(trim(p_code), ''),\r\n    name = trim(p_name),\r\n    category = nullif(trim(p_category), ''),\r\n    color = nullif(trim(p_color), ''),\r\n    duration_minutes = p_duration_minutes,\r\n    price = p_price,\r\n    cost = p_cost,\r\n    active = coalesce(p_active, active),\r\n    updated_at = now()\r\n  where id = p_service_id\r\n    and clinic_id = v_clinic_id\r\n  returning id into v_id;\r\n\r\n  return v_id;\r\nend;\r\n$function$\n",
+        "rpc_adjust_inventory": "CREATE OR REPLACE FUNCTION public.rpc_adjust_inventory(p_requester_id uuid, p_item_id uuid, p_delta numeric, p_reason text DEFAULT NULL::text)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1 from public.clinic_inventory_items i\r\n    where i.id = p_item_id and i.clinic_id = v_clinic_id\r\n  ) then\r\n    raise exception 'Item not found or access denied';\r\n  end if;\r\n\r\n  update public.clinic_inventory_items\r\n  set\r\n    qty_on_hand = greatest(qty_on_hand + p_delta, 0),\r\n    updated_at = now()\r\n  where id = p_item_id\r\n    and clinic_id = v_clinic_id;\r\n\r\n  insert into public.clinic_inventory_movements (clinic_id, item_id, actor_id, delta, reason, created_at)\r\n  values (v_clinic_id, p_item_id, p_requester_id, p_delta, nullif(btrim(p_reason), ''), now());\r\n\r\n  return true;\r\nend;\r\n$function$\n",
         "rpc_get_appointments": "CREATE OR REPLACE FUNCTION public.rpc_get_appointments(p_requester_id uuid, p_search text DEFAULT NULL::text, p_status text DEFAULT NULL::text, p_doctor_id uuid DEFAULT NULL::uuid, p_start_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_end_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 10)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*)\r\n  into v_total\r\n  from public.appointments a\r\n  left join public.patients p on p.id = a.patient_id\r\n  left join public.users_metadata d on d.id = a.doctor_id\r\n  where a.clinic_id = v_clinic_id\r\n    and (p_status is null or a.status = p_status)\r\n    and (p_doctor_id is null or a.doctor_id = p_doctor_id)\r\n    and (p_start_date is null or a.scheduled_at >= p_start_date)\r\n    and (p_end_date is null or a.scheduled_at <= p_end_date)\r\n    and (\r\n      p_search is null\r\n      or p.first_name ilike '%' || p_search || '%'\r\n      or p.last_name ilike '%' || p_search || '%'\r\n      or p.phone ilike '%' || p_search || '%'\r\n      or p.email ilike '%' || p_search || '%'\r\n      or d.full_name ilike '%' || p_search || '%'\r\n    );\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      a.id,\r\n      a.clinic_id,\r\n      a.patient_id,\r\n      a.doctor_id,\r\n      a.scheduled_at,\r\n      a.status,\r\n      a.type,\r\n      a.notes,\r\n      a.created_at,\r\n      a.updated_at,\r\n      p.first_name as patient_first_name,\r\n      p.last_name as patient_last_name,\r\n      p.phone as patient_phone,\r\n      p.email as patient_email,\r\n      d.full_name as doctor_name\r\n    from public.appointments a\r\n    left join public.patients p on p.id = a.patient_id\r\n    left join public.users_metadata d on d.id = a.doctor_id\r\n    where a.clinic_id = v_clinic_id\r\n      and (p_status is null or a.status = p_status)\r\n      and (p_doctor_id is null or a.doctor_id = p_doctor_id)\r\n      and (p_start_date is null or a.scheduled_at >= p_start_date)\r\n      and (p_end_date is null or a.scheduled_at <= p_end_date)\r\n      and (\r\n        p_search is null\r\n        or p.first_name ilike '%' || p_search || '%'\r\n        or p.last_name ilike '%' || p_search || '%'\r\n        or p.phone ilike '%' || p_search || '%'\r\n        or p.email ilike '%' || p_search || '%'\r\n        or d.full_name ilike '%' || p_search || '%'\r\n      )\r\n    order by a.scheduled_at desc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'appointments', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
         "rpc_get_clinic_staff": "CREATE OR REPLACE FUNCTION public.rpc_get_clinic_staff(p_requester_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_staff jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_staff\r\n  from (\r\n    select\r\n      um.id,\r\n      um.username,\r\n      um.full_name,\r\n      um.email,\r\n      um.user_type,\r\n      um.active,\r\n      dp.speciality,\r\n      dp.license_number,\r\n      dp.years_of_experience,\r\n      dp.consultation_fee,\r\n      ap.department,\r\n      ap.shift_start,\r\n      ap.shift_end\r\n    from public.users_metadata um\r\n    left join public.doctor_profiles dp on dp.id = um.id\r\n    left join public.assistant_profiles ap on ap.id = um.id\r\n    where um.clinic_id = v_clinic_id\r\n    order by um.created_at desc\r\n  ) t;\r\n\r\n  return v_staff;\r\nend;\r\n$function$\n",
         "rpc_get_consultation": "CREATE OR REPLACE FUNCTION public.rpc_get_consultation(p_requester_id uuid, p_consultation_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_result jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select jsonb_build_object(\r\n    'consultation', to_jsonb(c),\r\n    'vitals', (select to_jsonb(v) from public.consultation_vitals v where v.consultation_id = c.id limit 1),\r\n    'parameters', (select to_jsonb(p) from public.consultation_parameters p where p.consultation_id = c.id limit 1),\r\n    'diagnoses', (\r\n      select coalesce(jsonb_agg(to_jsonb(d) order by d.created_at asc), '[]'::jsonb)\r\n      from public.consultation_diagnoses d\r\n      where d.consultation_id = c.id\r\n    ),\r\n    'documents', (\r\n      select coalesce(jsonb_agg(to_jsonb(doc) order by doc.created_at desc), '[]'::jsonb)\r\n      from public.consultation_documents doc\r\n      where doc.consultation_id = c.id\r\n    ),\r\n    'events', (\r\n      select coalesce(jsonb_agg(to_jsonb(e) order by e.created_at desc), '[]'::jsonb)\r\n      from public.consultation_events e\r\n      where e.consultation_id = c.id\r\n    )\r\n  )\r\n  into v_result\r\n  from public.consultations c\r\n  where c.id = p_consultation_id\r\n    and c.clinic_id = v_clinic_id\r\n  limit 1;\r\n\r\n  if v_result is null then\r\n    raise exception 'Consultation not found or access denied';\r\n  end if;\r\n\r\n  return v_result;\r\nend;\r\n$function$\n",
         "rpc_get_consultations": "CREATE OR REPLACE FUNCTION public.rpc_get_consultations(p_requester_id uuid, p_search text DEFAULT NULL::text, p_status text DEFAULT NULL::text, p_start_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_end_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 10)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*)\r\n  into v_total\r\n  from public.consultations c\r\n  join public.appointments a on a.id = c.appointment_id\r\n  join public.patients p on p.id = c.patient_id\r\n  left join public.users_metadata d on d.id = c.doctor_id\r\n  where c.clinic_id = v_clinic_id\r\n    and (p_status is null or c.status = p_status)\r\n    and (p_start_date is null or c.opened_at >= p_start_date)\r\n    and (p_end_date is null or c.opened_at <= p_end_date)\r\n    and (\r\n      p_search is null\r\n      or p.first_name ilike '%' || p_search || '%'\r\n      or p.last_name ilike '%' || p_search || '%'\r\n      or d.full_name ilike '%' || p_search || '%'\r\n      or cast(c.appointment_id as text) ilike '%' || p_search || '%'\r\n    );\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      c.id as consultation_id,\r\n      c.appointment_id,\r\n      c.patient_id,\r\n      c.doctor_id,\r\n      c.status,\r\n      c.speciality_key,\r\n      c.opened_at,\r\n      c.closed_at,\r\n      a.scheduled_at,\r\n      p.first_name as patient_first_name,\r\n      p.last_name as patient_last_name,\r\n      d.full_name as doctor_name\r\n    from public.consultations c\r\n    join public.appointments a on a.id = c.appointment_id\r\n    join public.patients p on p.id = c.patient_id\r\n    left join public.users_metadata d on d.id = c.doctor_id\r\n    where c.clinic_id = v_clinic_id\r\n      and (p_status is null or c.status = p_status)\r\n      and (p_start_date is null or c.opened_at >= p_start_date)\r\n      and (p_end_date is null or c.opened_at <= p_end_date)\r\n      and (\r\n        p_search is null\r\n        or p.first_name ilike '%' || p_search || '%'\r\n        or p.last_name ilike '%' || p_search || '%'\r\n        or d.full_name ilike '%' || p_search || '%'\r\n        or cast(c.appointment_id as text) ilike '%' || p_search || '%'\r\n      )\r\n    order by c.opened_at desc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'consultations', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
+        "rpc_get_conversations": "CREATE OR REPLACE FUNCTION public.rpc_get_conversations(p_requester_id uuid, p_page integer DEFAULT 1, p_items_per_page integer DEFAULT 30)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_offset integer;\r\n  v_total integer;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  v_offset := greatest((p_page - 1) * p_items_per_page, 0);\r\n\r\n  select count(*) into v_total\r\n  from public.clinic_conversation_members m\r\n  join public.clinic_conversations c on c.id = m.conversation_id\r\n  where m.user_id = p_requester_id\r\n    and c.clinic_id = v_clinic_id;\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      c.id,\r\n      c.clinic_id,\r\n      c.kind,\r\n      c.title,\r\n      c.created_by,\r\n      c.created_at,\r\n      c.updated_at,\r\n      -- last message preview\r\n      (\r\n        select jsonb_build_object(\r\n          'id', msg.id,\r\n          'sender_id', msg.sender_id,\r\n          'body', msg.body,\r\n          'created_at', msg.created_at\r\n        )\r\n        from public.clinic_messages msg\r\n        where msg.conversation_id = c.id\r\n        order by msg.created_at desc\r\n        limit 1\r\n      ) as last_message,\r\n      -- small member list for UI\r\n      (\r\n        select coalesce(jsonb_agg(jsonb_build_object('id', um.id, 'full_name', um.full_name, 'user_type', um.user_type) order by um.full_name), '[]'::jsonb)\r\n        from public.clinic_conversation_members mm\r\n        join public.users_metadata um on um.id = mm.user_id\r\n        where mm.conversation_id = c.id\r\n      ) as members\r\n    from public.clinic_conversations c\r\n    join public.clinic_conversation_members m on m.conversation_id = c.id\r\n    where m.user_id = p_requester_id\r\n      and c.clinic_id = v_clinic_id\r\n    order by coalesce((select max(created_at) from public.clinic_messages msg where msg.conversation_id = c.id), c.updated_at) desc\r\n    limit p_items_per_page\r\n    offset v_offset\r\n  ) t;\r\n\r\n  return jsonb_build_object(\r\n    'conversations', v_rows,\r\n    'total', v_total,\r\n    'page', p_page,\r\n    'itemsPerPage', p_items_per_page\r\n  );\r\nend;\r\n$function$\n",
         "rpc_open_consultation": "CREATE OR REPLACE FUNCTION public.rpc_open_consultation(p_requester_id uuid, p_appointment_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_appt record;\r\n  v_consult_id uuid;\r\n  v_exists boolean;\r\n  v_speciality_key text;\r\n  v_result jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select *\r\n  into v_appt\r\n  from public.appointments\r\n  where id = p_appointment_id\r\n    and clinic_id = v_clinic_id\r\n  limit 1;\r\n\r\n  if v_appt.id is null then\r\n    raise exception 'Appointment not found or access denied';\r\n  end if;\r\n\r\n  select dp.speciality\r\n  into v_speciality_key\r\n  from public.doctor_profiles dp\r\n  where dp.id = v_appt.doctor_id\r\n  limit 1;\r\n\r\n  select exists(\r\n    select 1 from public.consultations c where c.appointment_id = p_appointment_id\r\n  ) into v_exists;\r\n\r\n  if v_exists then\r\n    select c.id into v_consult_id\r\n    from public.consultations c\r\n    where c.appointment_id = p_appointment_id\r\n    limit 1;\r\n  else\r\n    insert into public.consultations (\r\n      clinic_id,\r\n      appointment_id,\r\n      patient_id,\r\n      doctor_id,\r\n      status,\r\n      speciality_key,\r\n      opened_at,\r\n      created_at,\r\n      updated_at\r\n    )\r\n    values (\r\n      v_clinic_id,\r\n      p_appointment_id,\r\n      v_appt.patient_id,\r\n      v_appt.doctor_id,\r\n      'open',\r\n      v_speciality_key,\r\n      now(),\r\n      now(),\r\n      now()\r\n    )\r\n    returning id into v_consult_id;\r\n\r\n    insert into public.consultation_events (clinic_id, consultation_id, actor_id, event_type, payload)\r\n    values (v_clinic_id, v_consult_id, p_requester_id, 'opened', jsonb_build_object('appointment_id', p_appointment_id));\r\n  end if;\r\n\r\n  -- If appointment is still pending, mark as in_consultation (best-effort)\r\n  update public.appointments\r\n  set status = case when status = 'pending' then 'in_consultation' else status end,\r\n      updated_at = now()\r\n  where id = p_appointment_id\r\n    and clinic_id = v_clinic_id;\r\n\r\n  select jsonb_build_object(\r\n    'consultation', to_jsonb(c),\r\n    'vitals', (select to_jsonb(v) from public.consultation_vitals v where v.consultation_id = c.id limit 1),\r\n    'parameters', (select to_jsonb(p) from public.consultation_parameters p where p.consultation_id = c.id limit 1),\r\n    'diagnoses', (\r\n      select coalesce(jsonb_agg(to_jsonb(d) order by d.created_at asc), '[]'::jsonb)\r\n      from public.consultation_diagnoses d\r\n      where d.consultation_id = c.id\r\n    ),\r\n    'documents', (\r\n      select coalesce(jsonb_agg(to_jsonb(doc) order by doc.created_at desc), '[]'::jsonb)\r\n      from public.consultation_documents doc\r\n      where doc.consultation_id = c.id\r\n    )\r\n  )\r\n  into v_result\r\n  from public.consultations c\r\n  where c.id = v_consult_id\r\n    and c.clinic_id = v_clinic_id\r\n  limit 1;\r\n\r\n  return v_result;\r\nend;\r\n$function$\n",
         "rpc_save_consultation": "CREATE OR REPLACE FUNCTION public.rpc_save_consultation(p_requester_id uuid, p_consultation_id uuid, p_observations text DEFAULT NULL::text, p_treatment_plan text DEFAULT NULL::text, p_follow_up text DEFAULT NULL::text, p_status text DEFAULT NULL::text, p_vitals jsonb DEFAULT NULL::jsonb, p_parameters jsonb DEFAULT NULL::jsonb, p_diagnoses jsonb DEFAULT NULL::jsonb, p_speciality_key text DEFAULT NULL::text, p_speciality_payload jsonb DEFAULT NULL::jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_row record;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select c.*\r\n  into v_row\r\n  from public.consultations c\r\n  where c.id = p_consultation_id\r\n    and c.clinic_id = v_clinic_id\r\n  limit 1;\r\n\r\n  if v_row.id is null then\r\n    raise exception 'Consultation not found or access denied';\r\n  end if;\r\n\r\n  update public.consultations\r\n  set\r\n    observations = coalesce(p_observations, observations),\r\n    treatment_plan = coalesce(p_treatment_plan, treatment_plan),\r\n    follow_up = coalesce(p_follow_up, follow_up),\r\n    status = coalesce(p_status, status),\r\n    speciality_key = coalesce(p_speciality_key, speciality_key),\r\n    speciality_payload = coalesce(p_speciality_payload, speciality_payload),\r\n    closed_at = case\r\n      when coalesce(p_status, status) = 'closed' then coalesce(closed_at, now())\r\n      else closed_at\r\n    end,\r\n    updated_at = now()\r\n  where id = p_consultation_id\r\n    and clinic_id = v_clinic_id;\r\n\r\n  if p_vitals is not null then\r\n    insert into public.consultation_vitals (\r\n      consultation_id,\r\n      weight,\r\n      height,\r\n      temperature,\r\n      systolic_bp,\r\n      diastolic_bp,\r\n      oxygen_saturation,\r\n      bmi,\r\n      recorded_at,\r\n      created_at,\r\n      updated_at\r\n    )\r\n    values (\r\n      p_consultation_id,\r\n      nullif(p_vitals->>'weight', '')::numeric,\r\n      nullif(p_vitals->>'height', '')::numeric,\r\n      nullif(p_vitals->>'temperature', '')::numeric,\r\n      nullif(p_vitals->>'systolic_bp', '')::int,\r\n      nullif(p_vitals->>'diastolic_bp', '')::int,\r\n      nullif(p_vitals->>'oxygen_saturation', '')::int,\r\n      nullif(p_vitals->>'bmi', '')::numeric,\r\n      now(),\r\n      now(),\r\n      now()\r\n    )\r\n    on conflict (consultation_id) do update set\r\n      weight = excluded.weight,\r\n      height = excluded.height,\r\n      temperature = excluded.temperature,\r\n      systolic_bp = excluded.systolic_bp,\r\n      diastolic_bp = excluded.diastolic_bp,\r\n      oxygen_saturation = excluded.oxygen_saturation,\r\n      bmi = excluded.bmi,\r\n      updated_at = now();\r\n  end if;\r\n\r\n  if p_parameters is not null then\r\n    insert into public.consultation_parameters (\r\n      consultation_id,\r\n      motif_consultation,\r\n      glycemie,\r\n      hba1c,\r\n      examen_clinique,\r\n      conclusion,\r\n      created_at,\r\n      updated_at\r\n    )\r\n    values (\r\n      p_consultation_id,\r\n      p_parameters->>'motif_consultation',\r\n      p_parameters->>'glycemie',\r\n      p_parameters->>'hba1c',\r\n      p_parameters->>'examen_clinique',\r\n      p_parameters->>'conclusion',\r\n      now(),\r\n      now()\r\n    )\r\n    on conflict (consultation_id) do update set\r\n      motif_consultation = excluded.motif_consultation,\r\n      glycemie = excluded.glycemie,\r\n      hba1c = excluded.hba1c,\r\n      examen_clinique = excluded.examen_clinique,\r\n      conclusion = excluded.conclusion,\r\n      updated_at = now();\r\n  end if;\r\n\r\n  if p_diagnoses is not null then\r\n    -- Simple replace strategy (safe for prototype): delete + re-insert\r\n    delete from public.consultation_diagnoses\r\n    where consultation_id = p_consultation_id;\r\n\r\n    insert into public.consultation_diagnoses (consultation_id, code, label, notes, created_at)\r\n    select\r\n      p_consultation_id,\r\n      nullif(x->>'code',''),\r\n      coalesce(x->>'label',''),\r\n      nullif(x->>'notes',''),\r\n      now()\r\n    from jsonb_array_elements(p_diagnoses) as x;\r\n  end if;\r\n\r\n  insert into public.consultation_events (clinic_id, consultation_id, actor_id, event_type, payload)\r\n  values (v_clinic_id, p_consultation_id, p_requester_id, 'saved', jsonb_build_object('status', coalesce(p_status, v_row.status)));\r\n\r\n  return true;\r\nend;\r\n$function$\n",
+        "rpc_update_my_profile": "CREATE OR REPLACE FUNCTION public.rpc_update_my_profile(p_requester_id uuid, p_full_name text DEFAULT NULL::text, p_username text DEFAULT NULL::text, p_doctor_speciality text DEFAULT NULL::text, p_doctor_license_number text DEFAULT NULL::text, p_doctor_years_of_experience integer DEFAULT NULL::integer, p_doctor_consultation_fee numeric DEFAULT NULL::numeric, p_doctor_bio text DEFAULT NULL::text, p_assistant_department text DEFAULT NULL::text, p_assistant_shift_start time without time zone DEFAULT NULL::time without time zone, p_assistant_shift_end time without time zone DEFAULT NULL::time without time zone)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_user_type user_type_enum;\r\nbegin\r\n  select user_type\r\n  into v_user_type\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_user_type is null then\r\n    raise exception 'Requester not found or inactive';\r\n  end if;\r\n\r\n  update public.users_metadata\r\n  set\r\n    full_name = coalesce(nullif(btrim(p_full_name), ''), full_name),\r\n    username = coalesce(nullif(btrim(p_username), ''), username)\r\n  where id = p_requester_id;\r\n\r\n  if v_user_type = 'doctor' then\r\n    update public.doctor_profiles\r\n    set\r\n      speciality = coalesce(nullif(btrim(p_doctor_speciality), ''), speciality),\r\n      license_number = coalesce(nullif(btrim(p_doctor_license_number), ''), license_number),\r\n      years_of_experience = coalesce(p_doctor_years_of_experience, years_of_experience),\r\n      consultation_fee = coalesce(p_doctor_consultation_fee, consultation_fee),\r\n      bio = coalesce(nullif(btrim(p_doctor_bio), ''), bio)\r\n    where id = p_requester_id;\r\n  else\r\n    update public.assistant_profiles\r\n    set\r\n      department = coalesce(nullif(btrim(p_assistant_department), ''), department),\r\n      shift_start = coalesce(p_assistant_shift_start, shift_start),\r\n      shift_end = coalesce(p_assistant_shift_end, shift_end)\r\n    where id = p_requester_id;\r\n  end if;\r\n\r\n  return true;\r\nend;\r\n$function$\n",
         "rpc_cancel_appointment": "CREATE OR REPLACE FUNCTION public.rpc_cancel_appointment(p_requester_id uuid, p_appointment_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  update public.appointments\r\n  set\r\n    status = 'cancelled',\r\n    updated_at = now()\r\n  where id = p_appointment_id\r\n    and clinic_id = v_clinic_id;\r\n\r\n  if not found then\r\n    raise exception 'Appointment not found or access denied';\r\n  end if;\r\n\r\n  return true;\r\nend;\r\n$function$\n",
         "rpc_close_consultation": "CREATE OR REPLACE FUNCTION public.rpc_close_consultation(p_requester_id uuid, p_consultation_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_row record;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select c.*\r\n  into v_row\r\n  from public.consultations c\r\n  where c.id = p_consultation_id\r\n    and c.clinic_id = v_clinic_id\r\n  limit 1;\r\n\r\n  if v_row.id is null then\r\n    raise exception 'Consultation not found or access denied';\r\n  end if;\r\n\r\n  update public.consultations\r\n  set status = 'closed',\r\n      closed_at = coalesce(closed_at, now()),\r\n      updated_at = now()\r\n  where id = p_consultation_id\r\n    and clinic_id = v_clinic_id;\r\n\r\n  update public.appointments\r\n  set status = 'completed',\r\n      updated_at = now()\r\n  where id = v_row.appointment_id\r\n    and clinic_id = v_clinic_id;\r\n\r\n  insert into public.consultation_events (clinic_id, consultation_id, actor_id, event_type, payload)\r\n  values (v_clinic_id, p_consultation_id, p_requester_id, 'closed', jsonb_build_object('appointment_id', v_row.appointment_id));\r\n\r\n  return true;\r\nend;\r\n$function$\n",
         "rpc_create_appointment": "CREATE OR REPLACE FUNCTION public.rpc_create_appointment(p_requester_id uuid, p_patient_id uuid, p_doctor_id uuid, p_scheduled_at timestamp with time zone, p_status text DEFAULT 'pending'::text, p_type text DEFAULT 'consultation'::text, p_notes text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_appointment_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1\r\n    from public.patients\r\n    where id = p_patient_id\r\n      and clinic_id = v_clinic_id\r\n  ) then\r\n    raise exception 'Patient not found or access denied';\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1\r\n    from public.users_metadata\r\n    where id = p_doctor_id\r\n      and clinic_id = v_clinic_id\r\n      and user_type = 'doctor'\r\n      and active = true\r\n  ) then\r\n    raise exception 'Doctor not found or access denied';\r\n  end if;\r\n\r\n  insert into public.appointments (\r\n    clinic_id,\r\n    patient_id,\r\n    doctor_id,\r\n    scheduled_at,\r\n    status,\r\n    type,\r\n    notes,\r\n    created_at,\r\n    updated_at\r\n  )\r\n  values (\r\n    v_clinic_id,\r\n    p_patient_id,\r\n    p_doctor_id,\r\n    p_scheduled_at,\r\n    coalesce(p_status, 'pending'),\r\n    coalesce(p_type, 'consultation'),\r\n    p_notes,\r\n    now(),\r\n    now()\r\n  )\r\n  returning id into v_appointment_id;\r\n\r\n  return v_appointment_id;\r\nend;\r\n$function$\n",
@@ -2589,6 +4630,7 @@
         "rpc_get_virtual_clinics": "CREATE OR REPLACE FUNCTION public.rpc_get_virtual_clinics(p_requester_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      vc.id,\r\n      vc.clinic_id,\r\n      vc.speciality_id,\r\n      vc.doctor_id,\r\n      vc.created_by_admin,\r\n      vc.active,\r\n      vc.created_at,\r\n      vc.updated_at,\r\n      ds.name as speciality_name,\r\n      um.full_name as doctor_name\r\n    from public.virtual_clinics vc\r\n    left join public.doctor_specialities ds on ds.id = vc.speciality_id\r\n    left join public.users_metadata um on um.id = vc.doctor_id\r\n    where vc.clinic_id = v_clinic_id\r\n    order by vc.created_at desc\r\n  ) t;\r\n\r\n  return v_rows;\r\nend;\r\n$function$\n",
         "enforce_single_user_type": "CREATE OR REPLACE FUNCTION public.enforce_single_user_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nbegin\r\n  if tg_table_name = 'doctor_profiles' then\r\n    if exists (\r\n      select 1\r\n      from public.assistant_profiles ap\r\n      where ap.id = new.id\r\n    ) then\r\n      raise exception 'A user cannot be both doctor and assistant';\r\n    end if;\r\n\r\n    if not exists (\r\n      select 1\r\n      from public.users_metadata um\r\n      where um.id = new.id\r\n        and um.user_type = 'doctor'\r\n    ) then\r\n      raise exception 'doctor_profiles.id must reference users_metadata with user_type = doctor';\r\n    end if;\r\n\r\n  elsif tg_table_name = 'assistant_profiles' then\r\n    if exists (\r\n      select 1\r\n      from public.doctor_profiles dp\r\n      where dp.id = new.id\r\n    ) then\r\n      raise exception 'A user cannot be both doctor and assistant';\r\n    end if;\r\n\r\n    if not exists (\r\n      select 1\r\n      from public.users_metadata um\r\n      where um.id = new.id\r\n        and um.user_type = 'assistant'\r\n    ) then\r\n      raise exception 'assistant_profiles.id must reference users_metadata with user_type = assistant';\r\n    end if;\r\n  end if;\r\n\r\n  return new;\r\nend;\r\n$function$\n",
         "rpc_create_virtual_clinic": "CREATE OR REPLACE FUNCTION public.rpc_create_virtual_clinic(p_requester_id uuid, p_speciality_id uuid, p_doctor_id uuid DEFAULT NULL::uuid, p_active boolean DEFAULT true)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_is_admin boolean;\r\n  v_virtual_clinic_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n    and user_type = 'doctor'\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic or is not a doctor';\r\n  end if;\r\n\r\n  select exists (\r\n    select 1\r\n    from public.clinics\r\n    where id = v_clinic_id\r\n      and admin_id = p_requester_id\r\n  )\r\n  into v_is_admin;\r\n\r\n  if not v_is_admin then\r\n    raise exception 'Only clinic admin can create virtual clinics';\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1\r\n    from public.doctor_specialities\r\n    where id = p_speciality_id\r\n  ) then\r\n    raise exception 'Speciality not found';\r\n  end if;\r\n\r\n  if p_doctor_id is not null then\r\n    if not exists (\r\n      select 1\r\n      from public.users_metadata\r\n      where id = p_doctor_id\r\n        and clinic_id = v_clinic_id\r\n        and user_type = 'doctor'\r\n    ) then\r\n      raise exception 'Doctor not found in clinic';\r\n    end if;\r\n  end if;\r\n\r\n  insert into public.virtual_clinics (\r\n    clinic_id,\r\n    speciality_id,\r\n    doctor_id,\r\n    created_by_admin,\r\n    active,\r\n    created_at,\r\n    updated_at\r\n  )\r\n  values (\r\n    v_clinic_id,\r\n    p_speciality_id,\r\n    p_doctor_id,\r\n    p_requester_id,\r\n    p_active,\r\n    now(),\r\n    now()\r\n  )\r\n  returning id into v_virtual_clinic_id;\r\n\r\n  return v_virtual_clinic_id;\r\nend;\r\n$function$\n",
+        "rpc_upsert_inventory_item": "CREATE OR REPLACE FUNCTION public.rpc_upsert_inventory_item(p_requester_id uuid, p_name text, p_item_id uuid DEFAULT NULL::uuid, p_sku text DEFAULT NULL::text, p_unit text DEFAULT NULL::text, p_reorder_threshold numeric DEFAULT NULL::numeric, p_notes text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_id uuid;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  if p_item_id is null then\r\n    insert into public.clinic_inventory_items (\r\n      clinic_id, sku, name, unit, reorder_threshold, notes, created_by, created_at, updated_at\r\n    ) values (\r\n      v_clinic_id,\r\n      nullif(btrim(p_sku), ''),\r\n      btrim(p_name),\r\n      nullif(btrim(p_unit), ''),\r\n      coalesce(p_reorder_threshold, 0),\r\n      nullif(btrim(p_notes), ''),\r\n      p_requester_id,\r\n      now(),\r\n      now()\r\n    )\r\n    returning id into v_id;\r\n    return v_id;\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1 from public.clinic_inventory_items i\r\n    where i.id = p_item_id and i.clinic_id = v_clinic_id\r\n  ) then\r\n    raise exception 'Item not found or access denied';\r\n  end if;\r\n\r\n  update public.clinic_inventory_items\r\n  set\r\n    sku = nullif(btrim(p_sku), ''),\r\n    name = coalesce(nullif(btrim(p_name), ''), name),\r\n    unit = nullif(btrim(p_unit), ''),\r\n    reorder_threshold = coalesce(p_reorder_threshold, reorder_threshold),\r\n    notes = nullif(btrim(p_notes), ''),\r\n    updated_at = now()\r\n  where id = p_item_id\r\n    and clinic_id = v_clinic_id\r\n  returning id into v_id;\r\n\r\n  return v_id;\r\nend;\r\n$function$\n",
         "rpc_get_prescription_items": "CREATE OR REPLACE FUNCTION public.rpc_get_prescription_items(p_requester_id uuid, p_limit integer DEFAULT 12, p_query text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_is_active boolean;\r\n  v_result jsonb;\r\nbegin\r\n  -- Validate requester\r\n  select (um.active = true)\r\n  into v_is_active\r\n  from public.users_metadata um\r\n  where um.id = p_requester_id\r\n  limit 1;\r\n\r\n  if coalesce(v_is_active, false) = false then\r\n    raise exception 'Requester is not active or not found';\r\n  end if;\r\n\r\n  -- Return medication catalog rows (bypasses RLS via SECURITY DEFINER)\r\n  select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb)\r\n  into v_result\r\n  from (\r\n    select\r\n      pi.id,\r\n      pi.drug_name,\r\n      pi.dose,\r\n      pi.brand,\r\n      pi.form,\r\n      pi.laboratory,\r\n      pi.country,\r\n      pi.created_at\r\n    from public.prescription_items pi\r\n    where\r\n      p_query is null\r\n      or btrim(p_query) = ''\r\n      or pi.drug_name ilike '%' || p_query || '%'\r\n      or pi.brand ilike '%' || p_query || '%'\r\n    order by pi.created_at desc\r\n    limit greatest(coalesce(p_limit, 12), 1)\r\n  ) t;\r\n\r\n  return v_result;\r\nend;\r\n$function$\n",
         "rpc_update_patient_medical": "CREATE OR REPLACE FUNCTION public.rpc_update_patient_medical(p_requester_id uuid, p_patient_id uuid, p_blood_type blood_type_enum DEFAULT NULL::blood_type_enum, p_allergies text[] DEFAULT NULL::text[], p_chronic_diseases text[] DEFAULT NULL::text[], p_medications text[] DEFAULT NULL::text[], p_disabilities text[] DEFAULT NULL::text[])\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1\r\n    from public.patients\r\n    where id = p_patient_id\r\n      and clinic_id = v_clinic_id\r\n  ) then\r\n    raise exception 'Patient not found or access denied';\r\n  end if;\r\n\r\n  update public.patient_medical_info\r\n  set\r\n    blood_type = p_blood_type,\r\n    allergies = p_allergies,\r\n    chronic_diseases = p_chronic_diseases,\r\n    medications = p_medications,\r\n    disabilities = p_disabilities,\r\n    updated_at = now()\r\n  where patient_id = p_patient_id;\r\n\r\n  return true;\r\nend;\r\n$function$\n",
         "rpc_add_patient_measurement": "CREATE OR REPLACE FUNCTION public.rpc_add_patient_measurement(p_requester_id uuid, p_patient_id uuid, p_weight numeric DEFAULT NULL::numeric, p_height numeric DEFAULT NULL::numeric, p_temperature numeric DEFAULT NULL::numeric, p_systolic_bp integer DEFAULT NULL::integer, p_diastolic_bp integer DEFAULT NULL::integer, p_oxygen_saturation integer DEFAULT NULL::integer, p_notes text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_measurement_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  if not exists (\r\n    select 1\r\n    from public.patients\r\n    where id = p_patient_id\r\n      and clinic_id = v_clinic_id\r\n  ) then\r\n    raise exception 'Patient not found or access denied';\r\n  end if;\r\n\r\n  insert into public.patient_measurements (\r\n    patient_id,\r\n    recorded_by,\r\n    weight,\r\n    height,\r\n    temperature,\r\n    systolic_bp,\r\n    diastolic_bp,\r\n    oxygen_saturation,\r\n    recorded_at,\r\n    notes\r\n  )\r\n  values (\r\n    p_patient_id,\r\n    p_requester_id,\r\n    p_weight,\r\n    p_height,\r\n    p_temperature,\r\n    p_systolic_bp,\r\n    p_diastolic_bp,\r\n    p_oxygen_saturation,\r\n    now(),\r\n    p_notes\r\n  )\r\n  returning id into v_measurement_id;\r\n\r\n  return v_measurement_id;\r\nend;\r\n$function$\n",
@@ -2599,7 +4641,9 @@
         "rpc_get_activation_link_status": "CREATE OR REPLACE FUNCTION public.rpc_get_activation_link_status(p_token_hash text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_row record;\r\n  v_payload_json jsonb;\r\nbegin\r\n  select\r\n    cal.*,\r\n    l.payload,\r\n    l.revoked,\r\n    l.used_by\r\n  into v_row\r\n  from public.clinic_activation_links cal\r\n  join public.licenses l on l.id = cal.license_id\r\n  where cal.token_hash = p_token_hash\r\n  limit 1;\r\n\r\n  if v_row.id is null then\r\n    return jsonb_build_object(\r\n      'valid', false,\r\n      'reason', 'not_found'\r\n    );\r\n  end if;\r\n\r\n  if v_row.used_at is not null then\r\n    return jsonb_build_object(\r\n      'valid', false,\r\n      'reason', 'already_used'\r\n    );\r\n  end if;\r\n\r\n  if v_row.expires_at <= now() then\r\n    return jsonb_build_object(\r\n      'valid', false,\r\n      'reason', 'expired'\r\n    );\r\n  end if;\r\n\r\n  if v_row.revoked = true then\r\n    return jsonb_build_object(\r\n      'valid', false,\r\n      'reason', 'license_revoked'\r\n    );\r\n  end if;\r\n\r\n  if v_row.used_by is not null then\r\n    return jsonb_build_object(\r\n      'valid', false,\r\n      'reason', 'license_already_used'\r\n    );\r\n  end if;\r\n\r\n  v_payload_json := convert_from(v_row.payload, 'utf8')::jsonb;\r\n\r\n  return jsonb_build_object(\r\n    'valid', true,\r\n    'email', v_row.email,\r\n    'tier_plan', v_payload_json->>'tier_plan',\r\n    'doctors_limit', coalesce((v_payload_json->>'doctors_limit')::int, 0),\r\n    'assistants_limit', coalesce((v_payload_json->>'assistants_limit')::int, 0)\r\n  );\r\nend;\r\n$function$\n",
         "rpc_get_clinic_dashboard_counts": "CREATE OR REPLACE FUNCTION public.rpc_get_clinic_dashboard_counts(p_requester_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  return jsonb_build_object(\r\n    'patients', (\r\n      select count(*) from public.patients where clinic_id = v_clinic_id\r\n    ),\r\n    'doctors', (\r\n      select count(*) from public.users_metadata where clinic_id = v_clinic_id and user_type = 'doctor'\r\n    ),\r\n    'assistants', (\r\n      select count(*) from public.users_metadata where clinic_id = v_clinic_id and user_type = 'assistant'\r\n    ),\r\n    'virtual_clinics', (\r\n      select count(*) from public.virtual_clinics where clinic_id = v_clinic_id\r\n    ),\r\n    'appointments_total', (\r\n      select count(*) from public.appointments where clinic_id = v_clinic_id\r\n    ),\r\n    'appointments_pending', (\r\n      select count(*) from public.appointments where clinic_id = v_clinic_id and status = 'pending'\r\n    ),\r\n    'payments_total', (\r\n      select count(*) from public.payments where clinic_id = v_clinic_id\r\n    ),\r\n    'payments_paid', (\r\n      select count(*) from public.payments where clinic_id = v_clinic_id and status = 'paid'\r\n    )\r\n  );\r\nend;\r\n$function$\n",
         "rpc_get_clinic_speciality_tools": "CREATE OR REPLACE FUNCTION public.rpc_get_clinic_speciality_tools(p_requester_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_rows jsonb;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select coalesce(jsonb_agg(to_jsonb(t) order by t.speciality_key asc), '[]'::jsonb)\r\n  into v_rows\r\n  from (\r\n    select\r\n      st.id,\r\n      st.clinic_id,\r\n      st.speciality_key,\r\n      st.tool_type,\r\n      st.label,\r\n      st.base_url,\r\n      st.config,\r\n      st.active,\r\n      st.created_at,\r\n      st.updated_at\r\n    from public.clinic_speciality_tools st\r\n    where st.clinic_id = v_clinic_id\r\n  ) t;\r\n\r\n  return v_rows;\r\nend;\r\n$function$\n",
+        "rpc_create_followup_consultation": "CREATE OR REPLACE FUNCTION public.rpc_create_followup_consultation(p_treatment_case_id uuid, p_doctor_id uuid, p_reason_for_visit text DEFAULT NULL::text, p_session_title text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_case record;\r\n  v_first_consultation_id uuid;\r\n  v_previous_consultation_id uuid;\r\n  v_next_session_number integer;\r\n  v_new_consultation_id uuid;\r\nBEGIN\r\n  SELECT *\r\n  INTO v_case\r\n  FROM public.treatment_cases\r\n  WHERE id = p_treatment_case_id\r\n  LIMIT 1;\r\n\r\n  IF v_case.id IS NULL THEN\r\n    RAISE EXCEPTION 'Treatment case not found';\r\n  END IF;\r\n\r\n  SELECT id\r\n  INTO v_first_consultation_id\r\n  FROM public.consultations\r\n  WHERE treatment_case_id = p_treatment_case_id\r\n  ORDER BY session_number ASC NULLS LAST, opened_at ASC\r\n  LIMIT 1;\r\n\r\n  SELECT id, COALESCE(session_number, 1) + 1\r\n  INTO v_previous_consultation_id, v_next_session_number\r\n  FROM public.consultations\r\n  WHERE treatment_case_id = p_treatment_case_id\r\n  ORDER BY session_number DESC NULLS LAST, opened_at DESC\r\n  LIMIT 1;\r\n\r\n  v_next_session_number := COALESCE(v_next_session_number, 1);\r\n\r\n  INSERT INTO public.consultations (\r\n    clinic_id,\r\n    appointment_id,\r\n    patient_id,\r\n    doctor_id,\r\n    status,\r\n    observations,\r\n    treatment_plan,\r\n    follow_up,\r\n    speciality_key,\r\n    speciality_payload,\r\n    shared_payload,\r\n    treatment_case_id,\r\n    parent_consultation_id,\r\n    previous_consultation_id,\r\n    session_number,\r\n    session_type,\r\n    is_parent,\r\n    session_title,\r\n    reason_for_visit,\r\n    opened_at,\r\n    created_at,\r\n    updated_at\r\n  )\r\n  VALUES (\r\n    v_case.clinic_id,\r\n    NULL,\r\n    v_case.patient_id,\r\n    COALESCE(p_doctor_id, v_case.doctor_id),\r\n    'open',\r\n    NULL,\r\n    NULL,\r\n    NULL,\r\n    v_case.speciality_key,\r\n    '{}'::jsonb,\r\n    '{}'::jsonb,\r\n    p_treatment_case_id,\r\n    v_first_consultation_id,\r\n    v_previous_consultation_id,\r\n    v_next_session_number,\r\n    CASE WHEN v_next_session_number = 1 THEN 'initial' ELSE 'follow_up' END,\r\n    CASE WHEN v_next_session_number = 1 THEN true ELSE false END,\r\n    p_session_title,\r\n    p_reason_for_visit,\r\n    now(),\r\n    now(),\r\n    now()\r\n  )\r\n  RETURNING id INTO v_new_consultation_id;\r\n\r\n  UPDATE public.treatment_cases\r\n  SET\r\n    first_consultation_id = COALESCE(first_consultation_id, v_new_consultation_id),\r\n    last_consultation_id = v_new_consultation_id,\r\n    updated_at = now()\r\n  WHERE id = p_treatment_case_id;\r\n\r\n  RETURN v_new_consultation_id;\r\nEND;\r\n$function$\n",
         "rpc_upsert_clinic_speciality_tool": "CREATE OR REPLACE FUNCTION public.rpc_upsert_clinic_speciality_tool(p_requester_id uuid, p_speciality_key text, p_tool_type text, p_label text DEFAULT NULL::text, p_base_url text DEFAULT NULL::text, p_config jsonb DEFAULT NULL::jsonb, p_active boolean DEFAULT true)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_is_admin boolean;\r\n  v_id uuid;\r\nbegin\r\n  select clinic_id\r\n  into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id\r\n    and active = true\r\n    and user_type = 'doctor'\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic or is not a doctor';\r\n  end if;\r\n\r\n  select exists (\r\n    select 1 from public.clinics c where c.id = v_clinic_id and c.admin_id = p_requester_id\r\n  ) into v_is_admin;\r\n\r\n  if not v_is_admin then\r\n    raise exception 'Only clinic admin can edit speciality tools';\r\n  end if;\r\n\r\n  insert into public.clinic_speciality_tools (\r\n    clinic_id,\r\n    speciality_key,\r\n    tool_type,\r\n    label,\r\n    base_url,\r\n    config,\r\n    active,\r\n    created_at,\r\n    updated_at\r\n  )\r\n  values (\r\n    v_clinic_id,\r\n    lower(trim(p_speciality_key)),\r\n    lower(trim(p_tool_type)),\r\n    p_label,\r\n    p_base_url,\r\n    p_config,\r\n    coalesce(p_active, true),\r\n    now(),\r\n    now()\r\n  )\r\n  on conflict (clinic_id, speciality_key, tool_type) do update set\r\n    label = excluded.label,\r\n    base_url = excluded.base_url,\r\n    config = excluded.config,\r\n    active = excluded.active,\r\n    updated_at = now()\r\n  returning id into v_id;\r\n\r\n  return v_id;\r\nend;\r\n$function$\n",
+        "rpc_get_or_create_direct_conversation": "CREATE OR REPLACE FUNCTION public.rpc_get_or_create_direct_conversation(p_requester_id uuid, p_other_user_id uuid)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_clinic_id uuid;\r\n  v_other_clinic_id uuid;\r\n  v_existing uuid;\r\n  v_new uuid;\r\nbegin\r\n  select clinic_id into v_clinic_id\r\n  from public.users_metadata\r\n  where id = p_requester_id and active = true\r\n  limit 1;\r\n\r\n  if v_clinic_id is null then\r\n    raise exception 'Requester has no clinic';\r\n  end if;\r\n\r\n  select clinic_id into v_other_clinic_id\r\n  from public.users_metadata\r\n  where id = p_other_user_id and active = true\r\n  limit 1;\r\n\r\n  if v_other_clinic_id is null or v_other_clinic_id <> v_clinic_id then\r\n    raise exception 'Other user not found in clinic';\r\n  end if;\r\n\r\n  -- Find existing direct conversation with exactly these 2 users (best-effort)\r\n  select c.id\r\n  into v_existing\r\n  from public.clinic_conversations c\r\n  where c.clinic_id = v_clinic_id\r\n    and c.kind = 'direct'\r\n    and exists (\r\n      select 1 from public.clinic_conversation_members m\r\n      where m.conversation_id = c.id and m.user_id = p_requester_id\r\n    )\r\n    and exists (\r\n      select 1 from public.clinic_conversation_members m\r\n      where m.conversation_id = c.id and m.user_id = p_other_user_id\r\n    )\r\n  order by c.updated_at desc\r\n  limit 1;\r\n\r\n  if v_existing is not null then\r\n    return v_existing;\r\n  end if;\r\n\r\n  insert into public.clinic_conversations (clinic_id, kind, title, created_by, created_at, updated_at)\r\n  values (v_clinic_id, 'direct', null, p_requester_id, now(), now())\r\n  returning id into v_new;\r\n\r\n  insert into public.clinic_conversation_members (conversation_id, user_id, role, joined_at)\r\n  values\r\n    (v_new, p_requester_id, 'member', now()),\r\n    (v_new, p_other_user_id, 'member', now())\r\n  on conflict do nothing;\r\n\r\n  return v_new;\r\nend;\r\n$function$\n",
         "enforce_users_metadata_type_profile_match": "CREATE OR REPLACE FUNCTION public.enforce_users_metadata_type_profile_match()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nbegin\r\n  if new.user_type = 'doctor' then\r\n    if exists (\r\n      select 1\r\n      from public.assistant_profiles ap\r\n      where ap.id = new.id\r\n    ) then\r\n      raise exception 'Doctor user cannot also exist in assistant_profiles';\r\n    end if;\r\n  elsif new.user_type = 'assistant' then\r\n    if exists (\r\n      select 1\r\n      from public.doctor_profiles dp\r\n      where dp.id = new.id\r\n    ) then\r\n      raise exception 'Assistant user cannot also exist in doctor_profiles';\r\n    end if;\r\n  end if;\r\n\r\n  return new;\r\nend;\r\n$function$\n"
     }
 }

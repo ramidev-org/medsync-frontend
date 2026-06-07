@@ -28,8 +28,8 @@ import { normalizeSpeciality } from "@/config/speciality";
 /* ================= TYPES ================= */
 
 type Sex = "male" | "female";
-type ApptStatus = "pending" | "in_consultation" | "completed" | "cancelled";
-type ApptType = "regular" | "emergency";
+type ApptStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show" | "in_consultation";
+type ApptType = "consultation" | "follow_up" | "emergency" | "procedure" | "regular";
 
 interface Doctor {
   id: string;

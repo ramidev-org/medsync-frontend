@@ -1,4 +1,19 @@
 export type UserType = "doctor" | "assistant";
+export type Sex = "male" | "female";
+export type MaritalStatus = "single" | "married" | "divorced";
+export type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+export type Priority = "low" | "normal" | "routine" | "urgent" | "high";
+export type AppointmentType = "consultation" | "follow_up" | "emergency" | "procedure";
+export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
+export type ConsultationStatus = "open" | "closed" | "cancelled";
+export type PrescriptionStatus = "draft" | "signed" | "cancelled";
+export type InvoiceStatus = "draft" | "issued" | "paid" | "partial" | "void" | "cancelled";
+export type PaymentMethod = "cash" | "card" | "transfer" | "cheque" | "other";
+export type PaymentStatus = "pending" | "paid" | "partial" | "refunded" | "cancelled";
+export type LabPriority = "routine" | "urgent" | "stat";
+export type LabOrderStatus = "draft" | "ordered" | "collected" | "partial" | "completed" | "cancelled";
+export type LabResultStatus = "pending" | "collected" | "resulted" | "validated" | "cancelled";
+export type TreatmentCaseStatus = "open" | "active" | "closed" | "archived" | "cancelled";
 
 export type UsersMetadataRow = {
   id: string;
@@ -97,12 +112,10 @@ export type StaffInviteStatus = {
   status?: "valid" | "invalid" | "expired" | "accepted";
 };
 
-export type ConsultationStatus = "open" | "closed";
-
 export type ConsultationRow = {
   id: string;
   clinic_id: string;
-  appointment_id: string;
+  appointment_id: string | null;
   patient_id: string;
   doctor_id: string;
   status: ConsultationStatus | string;
@@ -111,6 +124,15 @@ export type ConsultationRow = {
   follow_up: string | null;
   speciality_key: string | null;
   speciality_payload: any | null;
+  shared_payload: any | null;
+  treatment_case_id: string | null;
+  parent_consultation_id: string | null;
+  previous_consultation_id: string | null;
+  session_number: number | null;
+  session_type: string | null;
+  is_parent: boolean | null;
+  session_title: string | null;
+  reason_for_visit: string | null;
   opened_at: string;
   closed_at: string | null;
   created_at: string;
@@ -172,6 +194,10 @@ export type ConsultationDocumentRow = {
   metadata: any | null;
   created_at: string;
   updated_at: string;
+  treatment_case_id: string | null;
+  document_type: string | null;
+  title: string | null;
+  notes: string | null;
 };
 
 export type ConsultationEventRow = {
@@ -220,8 +246,6 @@ export type ClinicServiceRow = {
   created_at: string;
   updated_at: string;
 };
-
-export type InvoiceStatus = "draft" | "issued" | "paid" | "void" | string;
 
 export type ClinicInvoiceRow = {
   id: string;

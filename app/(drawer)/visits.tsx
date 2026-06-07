@@ -24,14 +24,28 @@ import {
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
-  in_consultation: "En consultation",
+  confirmed: "Confirme",
   completed: "Termine",
   cancelled: "Annule",
+  no_show: "Absent",
+  in_consultation: "En consultation",
 };
 
-type AppointmentStatus = "pending" | "in_consultation" | "completed" | "cancelled";
+type AppointmentStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "no_show"
+  | "in_consultation";
 
-type AppointmentType = "consultation" | "regular" | "emergency" | string;
+type AppointmentType =
+  | "consultation"
+  | "follow_up"
+  | "emergency"
+  | "procedure"
+  | "regular"
+  | string;
 
 type Patient = {
   id: string;
@@ -253,7 +267,7 @@ export default function VisitsPage() {
   }, [appointments, filter, search]);
 
   const waitingRoomAppointments = useMemo(
-    () => appointments.filter((a) => a.status === "pending" || a.status === "in_consultation"),
+    () => appointments.filter((a) => a.status === "pending" || a.status === "confirmed" || a.status === "in_consultation"),
     [appointments],
   );
 
@@ -322,7 +336,7 @@ export default function VisitsPage() {
   };
 
   const startConsultation = async (a: Appointment) => {
-    await updateStatus(a.id, "in_consultation");
+    await updateStatus(a.id, "confirmed");
     router.push(`/consultation?id=${a.id}`);
   };
 
@@ -429,9 +443,10 @@ export default function VisitsPage() {
               {[
                 { key: "all", label: "Tous" },
                 { key: "pending", label: "En attente" },
-                { key: "in_consultation", label: "En consultation" },
+                { key: "confirmed", label: "Confirmes" },
                 { key: "completed", label: "Termine" },
                 { key: "cancelled", label: "Annule" },
+                { key: "no_show", label: "Absents" },
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
@@ -587,7 +602,7 @@ export default function VisitsPage() {
                   <Dropdown
                     label="Type"
                     value={appointmentType}
-                    options={["consultation", "regular", "emergency"]}
+                    options={["consultation", "follow_up", "emergency", "procedure"]}
                     onChange={(v) => setAppointmentType(v as AppointmentType)}
                   />
                 </View>
@@ -595,7 +610,7 @@ export default function VisitsPage() {
                   <Dropdown
                     label="Statut"
                     value={appointmentStatus}
-                    options={["pending", "in_consultation", "completed", "cancelled"]}
+                    options={["pending", "confirmed", "completed", "cancelled", "no_show"]}
                     onChange={(v) => setAppointmentStatus(v as AppointmentStatus)}
                   />
                 </View>
@@ -700,8 +715,12 @@ function statusColor(status: string): ViewStyle {
       return { backgroundColor: "#22c55e" };
     case "pending":
       return { backgroundColor: "#60a5fa" };
+    case "confirmed":
+      return { backgroundColor: "#38bdf8" };
     case "cancelled":
       return { backgroundColor: "#9ca3af" };
+    case "no_show":
+      return { backgroundColor: "#f59e0b" };
     case "in_consultation":
       return { backgroundColor: "#38bdf8" };
     default:

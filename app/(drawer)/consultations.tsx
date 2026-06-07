@@ -48,7 +48,7 @@ export default function ConsultationsPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed" | "cancelled">("all");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rows, setRows] = useState<ConsultationListRow[]>([]);
@@ -116,6 +116,7 @@ export default function ConsultationsPage() {
   const statusLabel = (s: string) => {
     if (s === "open") return "Ouverte";
     if (s === "closed") return "Clôturée";
+    if (s === "cancelled") return "Annulee";
     return s;
   };
 
@@ -154,9 +155,16 @@ export default function ConsultationsPage() {
     >
 
         <View style={styles.statusRow}>
-          {(["all", "open", "closed"] as const).map((k) => {
+          {(["all", "open", "closed", "cancelled"] as const).map((k) => {
             const active = statusFilter === k;
-            const label = k === "all" ? "Toutes" : k === "open" ? "Ouvertes" : "Clôturées";
+            const label =
+              k === "all"
+                ? "Toutes"
+                : k === "open"
+                  ? "Ouvertes"
+                  : k === "closed"
+                    ? "Clôturées"
+                    : "Annulees";
             return (
               <TouchableOpacity
                 key={k}
@@ -323,3 +331,4 @@ const createStyles = (theme: any) =>
       borderColor: "#E2E8F0",
     },
   });
+

@@ -36,6 +36,8 @@ export const getPayments = async (): Promise<Payment[]> => {
     const v = String(raw ?? "").toLowerCase();
     if (v === "paid") return "Payé";
     if (v === "pending") return "En attente";
+    if (v === "partial") return "Partiel";
+    if (v === "cancelled") return "Annulé";
     if (v === "failed") return "Échoué";
     if (v === "refunded") return "Remboursé";
     return String(raw ?? "");
@@ -54,3 +56,4 @@ export const getPayments = async (): Promise<Payment[]> => {
     code: payment.patients.code,
   }));
 };
+

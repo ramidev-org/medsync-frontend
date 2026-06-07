@@ -13,7 +13,7 @@
     },
     "rule": "The first consultation opens a consultation_series. Every next consultation is a child session linked to the same series_id and parent_consultation_id."
   },
-  "note": "Canonical workspace/backend schema snapshot created from the user-provided JSON payload on 2026-05-27. Keep this file in sync with API and DB migration changes.",
+  "note": "Canonical workspace/backend schema snapshot created from the user-provided JSON payload on 2026-06-07. Keep this file in sync with API and DB migration changes.",
   "references": {
     "database_schema_file": "database/shema.json",
     "app_workspace_files": [
