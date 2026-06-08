@@ -139,11 +139,57 @@ function dedupeChartFields(fields: ChartField[]) {
   });
 }
 
+function inferChartKind(field: ParameterField): ChartField["kind"] {
+  if (field.multiline) return "text";
+
+  const normalized = normalizeFieldLabel(`${field.key} ${field.label}`);
+  if (
+    normalized.includes("tension") ||
+    normalized.includes("blood pressure") ||
+    normalized.includes("ta")
+  ) {
+    return "blood_pressure";
+  }
+
+  return "number";
+}
+
+function isChartCandidateField(field: ParameterField) {
+  if (field.multiline) return false;
+
+  const normalized = normalizeFieldLabel(`${field.key} ${field.label}`);
+  return [
+    "glycemie",
+    "glucose",
+    "hba1c",
+    "hemoglobine glyquee",
+    "heart rate",
+    "frequence cardiaque",
+    "pain scale",
+    "eva douleur",
+    "rom",
+    "amplitude articulaire",
+    "age gestationnel",
+    "gestational age",
+    "acuite",
+    "visual acuity",
+    "spo2",
+    "oxygen saturation",
+    "saturation",
+    "bmi",
+    "imc",
+    "blood pressure",
+    "tension",
+  ].some((token) => normalized.includes(token));
+}
+
 function buildChartFields(workspaceKey: SpecialtyKey) {
-  const specialtyFields = getConsultationFields(workspaceKey).map<ChartField>((field) => ({
-    ...field,
-    kind: field.multiline ? "text" : undefined,
-  }));
+  const specialtyFields = getConsultationFields(workspaceKey)
+    .filter(isChartCandidateField)
+    .map<ChartField>((field) => ({
+      ...field,
+      kind: inferChartKind(field),
+    }));
   return dedupeChartFields([...VITAL_CHART_FIELDS, ...specialtyFields]);
 }
 

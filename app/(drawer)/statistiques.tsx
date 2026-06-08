@@ -28,10 +28,12 @@ export default function StatistiquesPage() {
   const [activeTab, setActiveTab] = React.useState<StatTab>("patient_flow");
   const [chartWidth, setChartWidth] = React.useState(600);
   const [pointHint, setPointHint] = React.useState<string>("");
+  const [selectedPointIndex, setSelectedPointIndex] = React.useState(0);
   const enterAnim = React.useMemo(() => new Animated.Value(0), []);
 
   React.useEffect(() => {
     setPointHint("");
+    setSelectedPointIndex(0);
     Animated.timing(enterAnim, {
       toValue: 1,
       duration: 650,
@@ -104,6 +106,19 @@ export default function StatistiquesPage() {
     }
     return null;
   }, [activeTab]);
+
+  const activePoint = React.useMemo(() => {
+    if (!hoverSeries?.labels?.length) return null;
+    const safeIndex = Math.max(0, Math.min(hoverSeries.labels.length - 1, selectedPointIndex));
+    return {
+      index: safeIndex,
+      label: hoverSeries.labels[safeIndex],
+      values: hoverSeries.series.map((series) => ({
+        name: series.name,
+        value: series.data[safeIndex],
+      })),
+    };
+  }, [hoverSeries, selectedPointIndex]);
 
   const renderTabChart = () => {
     if (activeTab === "patient_flow") {
@@ -275,23 +290,65 @@ export default function StatistiquesPage() {
             }}
           >
             {renderTabChart()}
-            <View
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-              onPointerMove={(e: any) => {
-                if (!hoverSeries) return;
-                const x = Number(e?.nativeEvent?.locationX ?? 0);
-                const idx = Math.max(0, Math.min(hoverSeries.labels.length - 1, Math.round((x / Math.max(1, chartWidth)) * (hoverSeries.labels.length - 1))));
-                const values = hoverSeries.series.map((s) => `${s.name} ${s.data[idx]}`).join(" | ");
-                setPointHint(`${hoverSeries.labels[idx]}: ${values}`);
-              }}
-              onPointerLeave={() => setPointHint("")}
-            />
             {pointHint ? (
               <View style={{ marginTop: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
                 <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>{pointHint}</Text>
               </View>
             ) : null}
           </Animated.View>
+
+          {activePoint ? (
+            <>
+              <View
+                style={{
+                  marginTop: 14,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  borderRadius: 16,
+                  backgroundColor: theme.colors.background,
+                  padding: 14,
+                  gap: 8,
+                }}
+              >
+                <Text style={{ fontWeight: "900", fontSize: 16, color: theme.colors.text }}>
+                  Détail: {activePoint.label}
+                </Text>
+                {activePoint.values.map((item) => (
+                  <Text key={item.name} style={{ color: theme.colors.textSecondary, fontWeight: "700" }}>
+                    {item.name}: {item.value}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                {hoverSeries?.labels.map((label, index) => {
+                  const active = index === activePoint.index;
+                  return (
+                    <TouchableOpacity
+                      key={`${activeTab}-${label}-${index}`}
+                      onPress={() => {
+                        setSelectedPointIndex(index);
+                        const values = hoverSeries.series.map((series) => `${series.name} ${series.data[index]}`).join(" | ");
+                        setPointHint(`${label}: ${values}`);
+                      }}
+                      style={{
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        borderRadius: 999,
+                        borderWidth: 1,
+                        borderColor: active ? theme.colors.primary : theme.colors.border,
+                        backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
+                      }}
+                    >
+                      <Text style={{ fontWeight: "800", fontSize: 12, color: active ? theme.colors.primary : theme.colors.text }}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
         </View>
       </ScrollView>
     </PageShell>

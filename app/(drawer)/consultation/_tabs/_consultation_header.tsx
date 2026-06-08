@@ -174,7 +174,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 0,
       paddingTop: 10,
       paddingBottom: 10,
-      backgroundColor: Platform.OS === "web" ? "rgba(255,255,255,0.9)" : theme.colors.background,
+      backgroundColor: theme.colors.backgroundAlt,
       borderBottomWidth: 0,
       zIndex: 1000,
       ...(typeof window !== "undefined" ? ({ overflow: "visible" } as any) : null),

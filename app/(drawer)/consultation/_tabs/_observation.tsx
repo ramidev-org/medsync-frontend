@@ -287,10 +287,9 @@ export default function ObservationMedicalTab({
   >([]);
   const [treatmentCreateOpen, setTreatmentCreateOpen] = React.useState(false);
   const [treatmentViewId, setTreatmentViewId] = React.useState<string | null>(null);
-  const [consultationCreateOpen, setConsultationCreateOpen] = React.useState(false);
+  const [isEditingWorkspaceConsultation, setIsEditingWorkspaceConsultation] = React.useState(false);
   const [consultationDraft, setConsultationDraft] = React.useState<Record<string, string>>({});
   const [treatmentModalTab, setTreatmentModalTab] = React.useState<"core" | "specialty">("core");
-  const [consultationModalTab, setConsultationModalTab] = React.useState<"fields" | "specialty">("fields");
   const [treatmentViewTab, setTreatmentViewTab] = React.useState<"core" | "specialty">("core");
 
   const workspaceMeta: Record<string, { title: string; subtitle: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = {
@@ -373,7 +372,8 @@ export default function ObservationMedicalTab({
       { key: "consultation_history", label: "Historique", icon: "history" },
       { key: "charts", label: "Graphiques", icon: "chart-line" },
     ];
-    const visibleSummaryFields = activeFields.filter((field) => String(parameters?.[field.key] ?? "").trim());
+    const summaryValues = isEditingWorkspaceConsultation ? consultationDraft : parameters;
+    const visibleSummaryFields = activeFields.filter((field) => String(summaryValues?.[field.key] ?? "").trim());
 
     return (
       <View style={styles.singlePaneWrap}>
@@ -395,24 +395,6 @@ export default function ObservationMedicalTab({
                 Données cliniques, historique et graphiques.
               </Text>
             </View>
-            {workspaceTab === "consultation_history" ? (
-              <TouchableOpacity
-                onPress={() => {
-                  const seeded: Record<string, string> = {};
-                  for (const field of activeFields) {
-                    seeded[field.key] = String(parameters?.[field.key] ?? "");
-                  }
-                  setConsultationDraft(seeded);
-                  setConsultationModalTab("fields");
-                  setConsultationCreateOpen(true);
-                }}
-                style={{ backgroundColor: theme.colors.info, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 11 }}
-              >
-                <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 14 }}>
-                  + Nouvelle consultation
-                </Text>
-              </TouchableOpacity>
-            ) : null}
           </View>
 
           <View style={{ flexDirection: "row", gap: 18, alignItems: "stretch" }}>
@@ -466,6 +448,53 @@ export default function ObservationMedicalTab({
             <View style={{ flex: 1 }}>
               {workspaceTab === "summary" && (
                 <View style={{ gap: 12 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <View />
+                    {!isEditingWorkspaceConsultation ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const seeded: Record<string, string> = {};
+                          for (const field of activeFields) {
+                            seeded[field.key] = String(parameters?.[field.key] ?? "");
+                          }
+                          setConsultationDraft(seeded);
+                          setIsEditingWorkspaceConsultation(true);
+                        }}
+                        style={{ backgroundColor: theme.colors.info, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
+                      >
+                        <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 13 }}>
+                          Modifier la consultation
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setConsultationDraft({});
+                            setIsEditingWorkspaceConsultation(false);
+                          }}
+                          style={{ backgroundColor: theme.colors.surfaceVariant, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
+                        >
+                          <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 13 }}>
+                            Annuler
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setParameters((prev: any) => ({ ...prev, ...consultationDraft }));
+                            setConsultationDraft({});
+                            setIsEditingWorkspaceConsultation(false);
+                            onSave?.();
+                          }}
+                          style={{ backgroundColor: theme.colors.success, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
+                        >
+                          <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 13 }}>
+                            Enregistrer
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                   <Text style={{ fontSize: 18, fontWeight: "900", color: theme.colors.text }}>Résumé clinique</Text>
 
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -493,6 +522,47 @@ export default function ObservationMedicalTab({
                     ))}
                   </View>
 
+                  {isEditingWorkspaceConsultation ? (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                      <View style={{ flex: 1, minWidth: 220 }}>
+                        <WorkspaceInputField
+                          theme={theme}
+                          label="Taille (Cm)"
+                          value={String(vitals.taille_cm ?? "")}
+                          onChange={(value) => setVitals((prev: any) => ({ ...(prev ?? {}), taille_cm: value }))}
+                          icon="resize"
+                        />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 220 }}>
+                        <WorkspaceInputField
+                          theme={theme}
+                          label="Poids (Kg)"
+                          value={String(vitals.poids_kg ?? "")}
+                          onChange={(value) => setVitals((prev: any) => ({ ...(prev ?? {}), poids_kg: value }))}
+                          icon="scale"
+                        />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 220 }}>
+                        <WorkspaceInputField
+                          theme={theme}
+                          label="Tension"
+                          value={String(vitals.tension ?? "")}
+                          onChange={(value) => setVitals((prev: any) => ({ ...(prev ?? {}), tension: value }))}
+                          icon="heart-pulse"
+                        />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 220 }}>
+                        <WorkspaceInputField
+                          theme={theme}
+                          label="TempÃ©rature (Â°C)"
+                          value={String(vitals.temperature_c ?? "")}
+                          onChange={(value) => setVitals((prev: any) => ({ ...(prev ?? {}), temperature_c: value }))}
+                          icon="thermometer"
+                        />
+                      </View>
+                    </View>
+                  ) : null}
+
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
                     <MetricCard theme={theme} icon="resize-outline" label="Taille (Cm)" value={vitals.taille_cm || "-"} />
                     <MetricCard theme={theme} icon="scale-outline" label="Poids (Kg)" value={vitals.poids_kg || "-"} />
@@ -515,13 +585,24 @@ export default function ObservationMedicalTab({
                     <View style={{ marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
                       {(visibleSummaryFields.length ? visibleSummaryFields : activeFields).map((field) => (
                         <View key={field.key} style={{ flex: 1, minWidth: 220 }}>
-                          <WorkspaceReadOnlyField
-                            theme={theme}
-                            label={field.label}
-                            value={String(parameters?.[field.key] ?? "-")}
-                            multiline={!!field.multiline}
-                            icon={FIELD_ICON_MAP[field.key] ?? "file-document-outline"}
-                          />
+                          {isEditingWorkspaceConsultation ? (
+                            <WorkspaceInputField
+                              theme={theme}
+                              label={field.label}
+                              value={consultationDraft?.[field.key] ?? ""}
+                              onChange={(value) => setConsultationDraft((prev) => ({ ...(prev ?? {}), [field.key]: value }))}
+                              multiline={!!field.multiline}
+                              icon={FIELD_ICON_MAP[field.key] ?? "file-document-edit-outline"}
+                            />
+                          ) : (
+                            <WorkspaceReadOnlyField
+                              theme={theme}
+                              label={field.label}
+                              value={String(parameters?.[field.key] ?? "-")}
+                              multiline={!!field.multiline}
+                              icon={FIELD_ICON_MAP[field.key] ?? "file-document-outline"}
+                            />
+                          )}
                         </View>
                       ))}
                     </View>
@@ -603,75 +684,6 @@ export default function ObservationMedicalTab({
             fields={activeFields}
           />
 
-          <Modal visible={consultationCreateOpen} transparent animationType="fade" onRequestClose={() => setConsultationCreateOpen(false)}>
-            <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
-              <View style={[styles.workspaceDialogCard, { maxWidth: 1100 }]}>
-                <View style={[styles.workspaceDialogHeader, { backgroundColor: theme.colors.info }]}>
-                  <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "900" }}>Add New Consultation</Text>
-                </View>
-                {(
-                  [
-                    { key: "fields", label: "Consultation fields", icon: "clipboard-text-outline" },
-                    ...(hasSpecialtyWidgetTab
-                      ? ([{ key: "specialty", label: "Specialty widgets", icon: "stethoscope" }] as const)
-                      : []),
-                  ] as const
-                ).length > 1 ? (
-                  <View style={styles.workspaceDialogTabsWrap}>
-                    <WorkspaceFlatTabs
-                      theme={theme}
-                      tabs={[
-                        { key: "fields", label: "Consultation fields", icon: "clipboard-text-outline" },
-                        ...(hasSpecialtyWidgetTab
-                          ? ([{ key: "specialty", label: "Specialty widgets", icon: "stethoscope" }] as const)
-                          : []),
-                      ]}
-                      activeKey={consultationModalTab}
-                      onChange={(k: any) => setConsultationModalTab(k)}
-                    />
-                  </View>
-                ) : null}
-                <ScrollView contentContainerStyle={styles.workspaceDialogBody}>
-                  {consultationModalTab === "fields" && (
-                    <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-                      {activeFields.map((f) => (
-                        <View key={`new-consultation-${f.key}`} style={{ flex: 1, minWidth: 220 }}>
-                          <WorkspaceInputField
-                            theme={theme}
-                            label={f.label}
-                            value={consultationDraft?.[f.key] ?? ""}
-                            onChange={(v) => setConsultationDraft((s) => ({ ...(s ?? {}), [f.key]: v }))}
-                            multiline={f.multiline}
-                            icon={FIELD_ICON_MAP[f.key] ?? "file-document-edit-outline"}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                  {hasSpecialtyWidgetTab && consultationModalTab === "specialty" && (
-                    <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.background, padding: 8 }}>
-                      {renderSpecialtyDialogPanel()}
-                    </View>
-                  )}
-                </ScrollView>
-                <View style={styles.workspaceDialogFooter}>
-                  <TouchableOpacity onPress={() => setConsultationCreateOpen(false)} style={{ backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}>
-                    <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setParameters((prev: any) => ({ ...prev, ...consultationDraft }));
-                      setConsultationCreateOpen(false);
-                      onSave?.();
-                    }}
-                    style={{ backgroundColor: theme.colors.info, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}
-                  >
-                    <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
       </View>
     );
   }

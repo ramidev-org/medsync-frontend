@@ -618,7 +618,7 @@ export default function ConsultationPage() {
   /* ================= UI ================= */
 
   return (
-    <View style={[styles.page, { backgroundColor: consultationTheme.colors.background }]}>
+    <View style={[styles.page, { backgroundColor: consultationTheme.colors.backgroundAlt }]}>
       <TopBar theme={consultationTheme} />
 
       <View
@@ -818,7 +818,7 @@ const createStyles = (theme: any) =>
             position: "sticky",
             top: 64,
             zIndex: 5,
-            backgroundColor: "rgba(255,255,255,0.9)",
+            backgroundColor: theme.colors.backgroundAlt,
           } as any)
         : null),
     },
