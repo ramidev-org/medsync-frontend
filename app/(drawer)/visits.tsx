@@ -287,6 +287,15 @@ export default function VisitsPage() {
 
   const progress = appointments.length > 0 ? Math.round((completedCount / appointments.length) * 100) : 0;
 
+  const resetDateRange = useCallback(() => {
+    const nextStart = new Date();
+    nextStart.setHours(0, 0, 0, 0);
+    const nextEnd = new Date();
+    nextEnd.setHours(23, 59, 0, 0);
+    setFromDate(nextStart);
+    setToDate(nextEnd);
+  }, []);
+
   const resetForm = () => {
     setEditingId(null);
     setPatientLabel("");
@@ -425,14 +434,26 @@ export default function VisitsPage() {
           <View style={styles.left}>
           <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
             <View style={styles.filterSection}>
-              <View style={styles.searchBox}>
-                <Ionicons name="search" size={20} color="#9ca3af" />
-                <TextInput
-                  placeholder="Rechercher patient, medecin, type..."
-                  value={search}
-                  onChangeText={setSearch}
-                  style={styles.searchInput}
-                />
+              <View style={styles.searchFieldWrap}>
+                <View style={styles.fieldLabelSpacer} />
+                <View style={styles.searchBox}>
+                  <Ionicons name="search" size={20} color="#9ca3af" />
+                  <TextInput
+                    placeholder="Rechercher patient, medecin, type..."
+                    value={search}
+                    onChangeText={setSearch}
+                    style={styles.searchInput}
+                  />
+                  {search ? (
+                    <TouchableOpacity
+                      onPress={() => setSearch("")}
+                      style={styles.searchClearButton}
+                      hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               </View>
 
               <DateRangePickerField
@@ -441,21 +462,8 @@ export default function VisitsPage() {
                 endDate={toDate}
                 setStartDate={setFromDate}
                 setEndDate={setToDate}
+                onClear={resetDateRange}
               />
-
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => {
-                  const nextStart = new Date();
-                  nextStart.setHours(0, 0, 0, 0);
-                  const nextEnd = new Date();
-                  nextEnd.setHours(23, 59, 0, 0);
-                  setFromDate(nextStart);
-                  setToDate(nextEnd);
-                }}
-              >
-                <Ionicons name="refresh" size={18} color={theme.colors.text} />
-              </TouchableOpacity>
 
               <TouchableOpacity style={styles.primaryButton} onPress={openCreateForm}>
                 <Ionicons name="add" size={16} color="#fff" />
@@ -765,31 +773,47 @@ const createStyles = (theme: any) =>
     left: { flex: 2.25, padding: 0 },
     right: { flex: 1, padding: 0 },
 
-    filterSection: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+    filterSection: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 12,
+      marginBottom: 16,
+    },
+    searchFieldWrap: {
+      flex: 1.45,
+      minWidth: 340,
+    },
+    fieldLabelSpacer: {
+      height: 22,
+    },
     searchBox: {
-      flex: 1,
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: "#fff",
       borderRadius: 10,
       paddingHorizontal: 12,
-    },
-    searchInput: { flex: 1, padding: 12, fontSize: 14 },
-    resetButton: {
-      padding: 12,
-      backgroundColor: theme.colors.card,
-      borderRadius: 10,
+      minHeight: 42,
       borderWidth: 1,
       borderColor: theme.colors.border,
+    },
+    searchInput: { flex: 1, paddingVertical: 12, paddingHorizontal: 10, fontSize: 14 },
+    searchClearButton: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
     },
     primaryButton: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       gap: 8,
       backgroundColor: theme.colors.primary,
       borderRadius: 10,
-      paddingHorizontal: 12,
+      paddingHorizontal: 14,
       paddingVertical: 10,
+      minHeight: 42,
     },
     primaryButtonText: { color: "#fff", fontWeight: "700" },
 

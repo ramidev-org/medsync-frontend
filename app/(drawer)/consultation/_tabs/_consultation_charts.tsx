@@ -1,10 +1,10 @@
 import { db } from "@/database/database_conn";
-import { LineChart } from "react-native-chart-kit";
+import { EChart } from "@/components/charts/echart";
+import { getConsultationFields, type ParameterField, type SpecialtyKey } from "@/components/consultation/observation_fields";
 import React from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { SubTabBar } from "./_ui";
-import { getConsultationFields, type ParameterField, type SpecialtyKey } from "./_observation_fields";
 
 type ObservationHistoryRow = {
   consultation_id: string;
@@ -343,6 +343,109 @@ export default function ConsultationChartsTab({
   }, [activeField, numericEntries.length]);
 
   const latestEntry = fieldEntries[fieldEntries.length - 1] ?? null;
+  const bloodPressureChartOption = React.useMemo(() => {
+    if (!bloodPressureEntries.length) return null;
+
+    return {
+      animationDuration: 500,
+      color: ["#2563eb", "#ef4444"],
+      tooltip: { trigger: "axis" },
+      legend: {
+        top: 0,
+        left: "center",
+        textStyle: { color: theme.colors.text, fontSize: 12, fontWeight: 700 as any },
+      },
+      grid: {
+        left: 14,
+        right: 14,
+        top: 42,
+        bottom: 18,
+        containLabel: true,
+      },
+      xAxis: {
+        type: "category",
+        boundaryGap: false,
+        data: bloodPressureEntries.map((entry) => entry.dateLabel),
+        axisLabel: { color: theme.colors.textSecondary, fontSize: 11 },
+        axisLine: { lineStyle: { color: theme.colors.border } },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: "value",
+        axisLabel: { color: theme.colors.textSecondary, fontSize: 11 },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: theme.colors.border } },
+      },
+      series: [
+        {
+          name: "Systolique",
+          type: "line",
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 8,
+          data: bloodPressureEntries.map((entry) => Number(entry.bloodPressure.systolic)),
+          lineStyle: { width: 3, color: "#2563eb" },
+          itemStyle: { color: "#2563eb" },
+        },
+        {
+          name: "Diastolique",
+          type: "line",
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 8,
+          data: bloodPressureEntries.map((entry) => Number(entry.bloodPressure.diastolic)),
+          lineStyle: { width: 3, color: "#ef4444" },
+          itemStyle: { color: "#ef4444" },
+        },
+      ],
+    };
+  }, [bloodPressureEntries, theme.colors.border, theme.colors.text, theme.colors.textSecondary]);
+
+  const numericChartOption = React.useMemo(() => {
+    if (!numericEntries.length) return null;
+
+    return {
+      animationDuration: 500,
+      color: ["#2563eb"],
+      tooltip: { trigger: "axis" },
+      grid: {
+        left: 14,
+        right: 14,
+        top: 24,
+        bottom: 18,
+        containLabel: true,
+      },
+      xAxis: {
+        type: "category",
+        boundaryGap: false,
+        data: numericEntries.map((entry) => entry.dateLabel),
+        axisLabel: { color: theme.colors.textSecondary, fontSize: 11 },
+        axisLine: { lineStyle: { color: theme.colors.border } },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: "value",
+        axisLabel: { color: theme.colors.textSecondary, fontSize: 11 },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: theme.colors.border } },
+      },
+      series: [
+        {
+          name: activeField?.label.replace(/\s*:\s*$/, "") ?? "Valeur",
+          type: "line",
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 8,
+          data: numericEntries.map((entry) => Number(entry.numericValue)),
+          lineStyle: { width: 3, color: "#2563eb" },
+          itemStyle: { color: "#2563eb" },
+          areaStyle: { opacity: 0.08 },
+        },
+      ],
+    };
+  }, [activeField?.label, numericEntries, theme.colors.border, theme.colors.textSecondary]);
 
   return (
     <View style={styles.card}>
@@ -414,68 +517,14 @@ export default function ConsultationChartsTab({
               onLayout={(event) => setChartWidth(Math.max(320, event.nativeEvent.layout.width - 12))}
               style={styles.chartWrap}
             >
-              <LineChart
-                data={{
-                  labels: bloodPressureEntries.map((entry) => entry.dateLabel),
-                  datasets: [
-                    {
-                      data: bloodPressureEntries.map((entry) => Number(entry.bloodPressure.systolic)),
-                      strokeWidth: 3,
-                      color: (opacity = 1) => `rgba(37,99,235,${opacity})`,
-                    },
-                    {
-                      data: bloodPressureEntries.map((entry) => Number(entry.bloodPressure.diastolic)),
-                      strokeWidth: 3,
-                      color: (opacity = 1) => `rgba(239,68,68,${opacity})`,
-                    },
-                  ],
-                  legend: ["Systolique", "Diastolique"],
-                }}
-                width={chartWidth}
-                height={260}
-                chartConfig={{
-                  backgroundColor: theme.colors.surface,
-                  backgroundGradientFrom: theme.colors.surface,
-                  backgroundGradientTo: theme.colors.surface,
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(37,99,235,${opacity})`,
-                  labelColor: () => theme.colors.textSecondary,
-                  propsForBackgroundLines: { stroke: theme.colors.border, strokeWidth: 1 },
-                }}
-                bezier
-                style={styles.chart}
-              />
+              {bloodPressureChartOption ? <EChart option={bloodPressureChartOption as any} width={chartWidth} height={260} style={styles.chart} /> : null}
             </View>
           ) : activeFieldIsNumeric && numericEntries.length ? (
             <View
               onLayout={(event) => setChartWidth(Math.max(320, event.nativeEvent.layout.width - 12))}
               style={styles.chartWrap}
             >
-              <LineChart
-                data={{
-                  labels: numericEntries.map((entry) => entry.dateLabel),
-                  datasets: [
-                    {
-                      data: numericEntries.map((entry) => Number(entry.numericValue)),
-                      strokeWidth: 3,
-                      color: (opacity = 1) => `rgba(37,99,235,${opacity})`,
-                    },
-                  ],
-                }}
-                width={chartWidth}
-                height={260}
-                chartConfig={{
-                  backgroundColor: theme.colors.surface,
-                  backgroundGradientFrom: theme.colors.surface,
-                  backgroundGradientTo: theme.colors.surface,
-                  decimalPlaces: 1,
-                  color: (opacity = 1) => `rgba(37,99,235,${opacity})`,
-                  labelColor: () => theme.colors.textSecondary,
-                  propsForBackgroundLines: { stroke: theme.colors.border, strokeWidth: 1 },
-                }}
-                bezier
-                style={styles.chart}
-              />
+              {numericChartOption ? <EChart option={numericChartOption as any} width={chartWidth} height={260} style={styles.chart} /> : null}
             </View>
           ) : null}
 

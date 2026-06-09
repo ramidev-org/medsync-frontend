@@ -5,7 +5,7 @@ import { getPayments } from "@/services/payments.services";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function PaymentsPage() {
@@ -19,6 +19,11 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 10;
+
+  const resetDateRange = useCallback(() => {
+    setFromDate(new Date(new Date().getFullYear(), 0, 1, 0, 0, 0, 0));
+    setToDate(new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999));
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -54,15 +59,23 @@ export default function PaymentsPage() {
       subtitle={`${filteredPayments.length} paiement${filteredPayments.length > 1 ? "s" : ""}`}
       actions={
         <View style={styles.filterSection}>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
-            <TextInput
-              placeholder="Nom, code, méthode..."
-              placeholderTextColor={theme.colors.textSecondary}
-              value={globalSearch}
-              onChangeText={setGlobalSearch}
-              style={styles.searchInput}
-            />
+          <View style={styles.searchFieldWrap}>
+            <View style={styles.fieldLabelSpacer} />
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
+              <TextInput
+                placeholder="Nom, code, méthode..."
+                placeholderTextColor={theme.colors.textSecondary}
+                value={globalSearch}
+                onChangeText={setGlobalSearch}
+                style={styles.searchInput}
+              />
+              {globalSearch ? (
+                <TouchableOpacity style={styles.clearBtn} onPress={() => setGlobalSearch("")} hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}>
+                  <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
           <DateRangePickerField
             label="Plage de date"
@@ -70,6 +83,7 @@ export default function PaymentsPage() {
             endDate={toDate}
             setStartDate={setFromDate}
             setEndDate={setToDate}
+            onClear={resetDateRange}
           />
         </View>
       }
@@ -128,8 +142,11 @@ export default function PaymentsPage() {
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    filterSection: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "center" },
-    searchContainer: { width: 260, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: theme.colors.surface },
+    filterSection: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "flex-end" },
+    searchFieldWrap: { width: 340 },
+    fieldLabelSpacer: { height: 22 },
+    searchContainer: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: theme.colors.surface, minHeight: 42 },
     searchInput: { flex: 1, color: theme.colors.text, fontWeight: "700" },
+    clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     container: { ...(Platform.OS === "web" ? ({ width: "100%" } as any) : null) },
   });

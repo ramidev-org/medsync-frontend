@@ -2,8 +2,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { FIELD_ICON_MAP, getTreatmentExtraFields } from "@/components/consultation/observation_fields";
 import { WorkspaceInputField, WorkspaceReadOnlyField } from "@/components/workspaces/theme/WorkspaceTheme";
-import { FIELD_ICON_MAP, getTreatmentExtraFields } from "./_observation_fields";
 import { CardiologyTab, type CardiologyState } from "./observation_specialities/_cardiologie";
 import { DentistryTab, type DentistryState } from "./observation_specialities/_dentistry";
 import { DermatologyTab, type DermatologyState } from "./observation_specialities/_dermatologie";

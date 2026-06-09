@@ -42,6 +42,11 @@ export default function PatientsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
 
+  const resetDateRange = useCallback(() => {
+    setFromDate(new Date(new Date().getFullYear(), 0, 1, 0, 0));
+    setToDate(new Date(new Date().getFullYear(), 11, 31, 23, 59));
+  }, []);
+
   const fetchRows = useCallback(async () => {
     if (!user?.id) return;
     setRefreshing(true);
@@ -72,9 +77,17 @@ export default function PatientsPage() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchRows} />}
       actions={
         <View style={styles.actions}>
-          <View style={styles.searchWrap}>
-            <Ionicons name="search-outline" size={18} color={theme.colors.textSecondary} />
-            <TextInput value={searchInput} onChangeText={setSearchInput} placeholder="Search patient..." placeholderTextColor={theme.colors.textSecondary} style={styles.searchInput} />
+          <View style={styles.searchFieldWrap}>
+            <View style={styles.fieldLabelSpacer} />
+            <View style={styles.searchWrap}>
+              <Ionicons name="search-outline" size={18} color={theme.colors.textSecondary} />
+              <TextInput value={searchInput} onChangeText={setSearchInput} placeholder="Search patient..." placeholderTextColor={theme.colors.textSecondary} style={styles.searchInput} />
+              {searchInput ? (
+                <TouchableOpacity style={styles.clearBtn} onPress={() => setSearchInput("")} hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}>
+                  <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setGlobalSearch(searchInput)}>
             <Ionicons name="funnel-outline" size={18} color={theme.colors.text} />
@@ -85,6 +98,7 @@ export default function PatientsPage() {
             endDate={toDate}
             setStartDate={setFromDate}
             setEndDate={setToDate}
+            onClear={resetDateRange}
           />
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowAddForm(true)}>
             <Ionicons name="add" size={16} color="#fff" />
@@ -125,10 +139,13 @@ export default function PatientsPage() {
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
-    searchWrap: { width: 220, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: theme.colors.surface },
+    actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-end", gap: 10 },
+    searchFieldWrap: { width: 320 },
+    fieldLabelSpacer: { height: 22 },
+    searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: theme.colors.surface, minHeight: 42 },
     searchInput: { flex: 1, color: theme.colors.text, fontWeight: "700" },
-    iconBtn: { width: 38, height: 38, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surface },
-    addBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 10 },
+    clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    iconBtn: { width: 42, height: 42, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surface },
+    addBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 10, minHeight: 42 },
     addTxt: { color: "#fff", fontWeight: "800" },
   });

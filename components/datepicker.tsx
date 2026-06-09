@@ -15,6 +15,7 @@ type DateRangePickerFieldProps = {
   endDate: Date;
   setStartDate: (date: Date) => void;
   setEndDate: (date: Date) => void;
+  onClear?: () => void;
 };
 
 const WEEK_DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
@@ -109,7 +110,7 @@ export default function DatePickerField({ label, date, setDate }: DatePickerFiel
         onPress={() => inputRef.current?.showPicker()}
       >
         <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
-        <Text style={{ color: theme.colors.text, fontWeight: "700" }}>{formatDate(date)}</Text>
+        <Text style={[styles.dateText, { color: theme.colors.text }]}>{formatDate(date)}</Text>
       </TouchableOpacity>
 
       <input
@@ -130,6 +131,7 @@ export function DateRangePickerField({
   endDate,
   setStartDate,
   setEndDate,
+  onClear,
 }: DateRangePickerFieldProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
@@ -301,6 +303,21 @@ export function DateRangePickerField({
             </View>
 
             <View style={[styles.rangeFooter, { backgroundColor: theme.colors.surfaceVariant }]}>
+              {onClear ? (
+                <TouchableOpacity
+                  style={[styles.footerGhostBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
+                  onPress={() => {
+                    onClear();
+                    setDraftStart(startOfDay(new Date()));
+                    setDraftEnd(endOfDay(new Date()));
+                    setDisplayMonth(new Date());
+                    setSelectionStep("start");
+                    setOpen(false);
+                  }}
+                >
+                  <Text style={[styles.footerGhostBtnText, { color: theme.colors.textSecondary }]}>Clear</Text>
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 style={[styles.footerGhostBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
                 onPress={() => setOpen(false)}
@@ -333,6 +350,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     minHeight: 42,
+  },
+  dateText: {
+    flex: 1,
+    fontWeight: "700",
   },
   rangeFieldWrap: {
     minWidth: 260,

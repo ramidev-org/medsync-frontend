@@ -29,7 +29,7 @@ import {
   isSpecialtyKey,
   type ParameterField,
   type SpecialtyKey,
-} from "./_observation_fields";
+} from "@/components/consultation/observation_fields";
 
 
 

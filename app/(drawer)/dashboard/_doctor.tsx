@@ -1,4 +1,5 @@
 import { TopBar } from "@/components/top_bar";
+import { EChart } from "@/components/charts/echart";
 import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAuth } from "@/contexts/auth_context";
@@ -9,7 +10,6 @@ import { FontAwesome5, FontAwesome6, Ionicons, MaterialCommunityIcons, MaterialI
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { LineChart } from "react-native-chart-kit";
 import { getDashboardStyles } from "./_styles";
 
 const ICON_FAMILIES = {
@@ -30,11 +30,67 @@ export default function DoctorDashboardPage() {
   const { recentTasks } = useTasks();
   const [counts, setCounts] = useState<any | null>(null);
   const [chartWidth, setChartWidth] = useState(420);
-  const [chartPoint, setChartPoint] = useState<{ label: string; value: number } | null>(null);
   const chartAnim = useMemo(() => new Animated.Value(0), []);
   const flowLabels = useMemo(() => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], []);
   const visitsData = useMemo(() => [12, 18, 15, 22, 20, 11, 9], []);
   const consultationsData = useMemo(() => [9, 14, 12, 17, 16, 8, 7], []);
+  const chartOption = useMemo(
+    () => ({
+      animationDuration: 500,
+      color: ["#2563eb", "#06b6d4"],
+      tooltip: { trigger: "axis" },
+      legend: {
+        top: 0,
+        left: "center",
+        textStyle: { color: theme.colors.text, fontSize: 12, fontWeight: 700 as any },
+      },
+      grid: {
+        left: 14,
+        right: 14,
+        top: 42,
+        bottom: 18,
+        containLabel: true,
+      },
+      xAxis: {
+        type: "category",
+        boundaryGap: false,
+        data: flowLabels,
+        axisLabel: { color: theme.colors.textSecondary, fontSize: 11 },
+        axisLine: { lineStyle: { color: theme.colors.border } },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: "value",
+        axisLabel: { color: theme.colors.textSecondary, fontSize: 11 },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: theme.colors.border } },
+      },
+      series: [
+        {
+          name: "Visits",
+          type: "line",
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 8,
+          data: visitsData,
+          lineStyle: { width: 3, color: "#2563eb" },
+          itemStyle: { color: "#2563eb" },
+        },
+        {
+          name: "Consultations",
+          type: "line",
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 8,
+          data: consultationsData,
+          lineStyle: { width: 3, color: "#06b6d4" },
+          itemStyle: { color: "#06b6d4" },
+        },
+      ],
+    }),
+    [consultationsData, flowLabels, theme.colors.border, theme.colors.text, theme.colors.textSecondary, visitsData],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -104,45 +160,7 @@ export default function DoctorDashboardPage() {
                 onLayout={(e) => setChartWidth(Math.max(320, e.nativeEvent.layout.width - 24))}
                 style={{ alignItems: "center", justifyContent: "center", position: "relative" }}
               >
-                <LineChart
-                  data={{
-                    labels: flowLabels,
-                    datasets: [
-                      { data: visitsData, strokeWidth: 3, color: (o = 1) => `rgba(37,99,235,${o})` },
-                      { data: consultationsData, strokeWidth: 3, color: (o = 1) => `rgba(6,182,212,${o})` },
-                    ],
-                    legend: ["Visits", "Consultations"],
-                  }}
-                  width={chartWidth}
-                  height={250}
-                  chartConfig={{
-                    backgroundColor: theme.colors.surface,
-                    backgroundGradientFrom: theme.colors.surface,
-                    backgroundGradientTo: theme.colors.surface,
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(37,99,235,${opacity})`,
-                    labelColor: () => theme.colors.textSecondary,
-                    propsForBackgroundLines: { stroke: theme.colors.border, strokeWidth: 1 },
-                  }}
-                  bezier
-                />
-                <View
-                  style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-                  onPointerMove={(e: any) => {
-                    const x = Number(e?.nativeEvent?.locationX ?? 0);
-                    const idx = Math.max(0, Math.min(flowLabels.length - 1, Math.round((x / Math.max(1, chartWidth)) * (flowLabels.length - 1))));
-                    setChartPoint({
-                      label: `${flowLabels[idx]}: Visits ${visitsData[idx]} / Consultations ${consultationsData[idx]}`,
-                      value: visitsData[idx],
-                    });
-                  }}
-                  onPointerLeave={() => setChartPoint(null)}
-                />
-                {chartPoint ? (
-                  <View style={{ marginTop: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
-                    <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>{chartPoint.label}</Text>
-                  </View>
-                ) : null}
+                <EChart option={chartOption as any} width={chartWidth} height={250} />
               </View>
             </Animated.View>
           </View>
