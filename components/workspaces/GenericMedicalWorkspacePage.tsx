@@ -4,7 +4,7 @@ import { WorkspaceFlatTabs, WorkspaceInputField, WorkspaceReadOnlyField } from "
 import { useTheme } from "@/theme/theme_provider";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 type FieldDef = { key: string; label: string; multiline?: boolean };
 type PreviousSnapshot = { visitLabel: string; values: Record<string, string> };
@@ -56,9 +56,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
           ],
     [props.previousSnapshots, props.initialValues, props.formFields]
   );
-  const [previousModalOpen, setPreviousModalOpen] = React.useState(false);
   const [selectedPrevIndex, setSelectedPrevIndex] = React.useState(0);
-  const selectedPrev = snapshots[selectedPrevIndex];
 
   const defaultFields = React.useMemo<FieldDef[]>(() => {
     if (props.defaultFields) return props.defaultFields;
@@ -266,16 +264,35 @@ export default function GenericMedicalWorkspacePage(props: Props) {
           {workspaceTab === "consultation_history" && (
             <View style={{ marginTop: 10, borderWidth: 1, borderColor: "rgba(0,0,0,0.10)", borderRadius: 10, overflow: "hidden" }}>
               {snapshots.map((p, idx) => {
-                const active = idx === selectedPrevIndex;
+                const expanded = idx === selectedPrevIndex;
                 return (
-                  <View key={p.visitLabel} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: active ? theme.colors.warningSoft : theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-                    <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={{ flex: 1, flexDirection: "row", alignItems: "center" }} activeOpacity={0.8}>
-                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: active ? theme.colors.warning : theme.colors.border }} />
-                      <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                  <View key={p.visitLabel} style={{ backgroundColor: expanded ? theme.colors.warningSoft : theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+                    <TouchableOpacity
+                      onPress={() => setSelectedPrevIndex((current) => (current === idx ? -1 : idx))}
+                      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12 }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: expanded ? theme.colors.warning : theme.colors.border }} />
+                      <Text style={{ flex: 1, fontWeight: "900", opacity: expanded ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                      <MaterialCommunityIcons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setSelectedPrevIndex(idx); setPreviousModalOpen(true); }} style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}>
-                      <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
+                    {expanded ? (
+                      <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+                        <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{p.visitLabel}</Text>
+                        {!!defaultFields.length && (
+                          <>
+                            <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Default consultation criteria</Text>
+                            {defaultFields.map((f) => (
+                              <WorkspaceReadOnlyField key={`prev-default-${p.visitLabel}-${f.key}`} theme={theme} label={`${f.label} :`} value={p.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key]} />
+                            ))}
+                          </>
+                        )}
+                        <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Specialty-specific criteria</Text>
+                        {specialtyFields.map((f) => (
+                          <WorkspaceReadOnlyField key={`prev-specialty-${p.visitLabel}-${f.key}`} theme={theme} label={`${f.label} :`} value={p.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key] ?? "file-document-outline"} />
+                        ))}
+                      </View>
+                    ) : null}
                   </View>
                 );
               })}
@@ -283,36 +300,6 @@ export default function GenericMedicalWorkspacePage(props: Props) {
           )}
         </View>
       </SpecialtyWorkspaceScaffold>
-
-      <Modal visible={previousModalOpen} transparent animationType="fade" onRequestClose={() => setPreviousModalOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
-          <View style={{ width: "100%", maxWidth: 920, borderRadius: 10, overflow: "hidden", backgroundColor: theme.colors.surface }}>
-            <View style={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primary }}>
-              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 0.5 }}>PREVIOUS PARAMETERS</Text>
-            </View>
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{selectedPrev?.visitLabel}</Text>
-              {!!defaultFields.length && (
-                <>
-                  <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Default consultation criteria</Text>
-                  {defaultFields.map((f) => (
-                    <WorkspaceReadOnlyField key={`prev-default-${f.key}`} theme={theme} label={`${f.label} :`} value={selectedPrev?.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key]} />
-                  ))}
-                </>
-              )}
-              <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Specialty-specific criteria</Text>
-              {specialtyFields.map((f) => (
-                <WorkspaceReadOnlyField key={`prev-specialty-${f.key}`} theme={theme} label={`${f.label} :`} value={selectedPrev?.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key] ?? "file-document-outline"} />
-              ))}
-            </ScrollView>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: theme.colors.border, backgroundColor: theme.colors.surfaceVariant }}>
-              <TouchableOpacity onPress={() => setPreviousModalOpen(false)} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
-                <Text style={{ color: "#fff", fontWeight: "900" }}>CLOSE</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </PageShell>
   );
 }

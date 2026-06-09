@@ -152,12 +152,6 @@ export default function InventoryPage() {
     <PageShell
       title="Clinic Inventory"
       subtitle="Stock control, reorder safety, and item-level adjustments."
-      actions={
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => setAddOpen(true)}>
-          <Ionicons name="add-outline" size={16} color="#fff" />
-          <Text style={styles.primaryBtnText}>Add Item</Text>
-        </TouchableOpacity>
-      }
     >
       {migrationMissing && (
         <View style={styles.banner}>
@@ -167,27 +161,40 @@ export default function InventoryPage() {
         </View>
       )}
 
-      <View style={styles.statsRow}>
-        <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
-        <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
-        <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
-      </View>
-
-      <View style={styles.controlsRow}>
-        <View style={styles.searchWrap}>
-          <Ionicons name="search-outline" size={16} color={theme.colors.textSecondary} />
-          <TextInput
-            placeholder="Search by name or SKU"
-            placeholderTextColor={theme.colors.textSecondary}
-            value={search}
-            onChangeText={setSearch}
-            style={styles.searchInput}
-          />
+      <View style={styles.heroCard}>
+        <View style={styles.heroHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroEyebrow}>Inventory desk</Text>
+            <Text style={styles.heroTitle}>Search, stock review, and item actions in one place.</Text>
+          </View>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setAddOpen(true)}>
+            <Ionicons name="add-outline" size={16} color="#fff" />
+            <Text style={styles.primaryBtnText}>Add Item</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
-          <Ionicons name="refresh" size={16} color={theme.colors.text} />
-          <Text style={styles.secondaryBtnText}>{loading ? "Loading..." : "Refresh"}</Text>
-        </TouchableOpacity>
+
+        <View style={styles.statsRow}>
+          <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
+          <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
+          <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
+        </View>
+
+        <View style={styles.controlsRow}>
+          <View style={styles.searchWrap}>
+            <Ionicons name="search-outline" size={16} color={theme.colors.textSecondary} />
+            <TextInput
+              placeholder="Search by name or SKU"
+              placeholderTextColor={theme.colors.textSecondary}
+              value={search}
+              onChangeText={setSearch}
+              style={styles.searchInput}
+            />
+          </View>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
+            <Ionicons name="refresh" size={16} color={theme.colors.text} />
+            <Text style={styles.secondaryBtnText}>{loading ? "Loading..." : "Refresh"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.listWrap}>
@@ -355,6 +362,34 @@ function Input({
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    heroCard: {
+      marginBottom: 12,
+      padding: 14,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      gap: 12,
+    },
+    heroHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    heroEyebrow: {
+      color: theme.colors.primary,
+      fontSize: 12,
+      fontWeight: "900",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    heroTitle: {
+      marginTop: 4,
+      color: theme.colors.text,
+      fontSize: 18,
+      fontWeight: "900",
+    },
     banner: {
       marginBottom: 12,
       padding: 12,

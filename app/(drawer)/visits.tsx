@@ -1,5 +1,6 @@
 ﻿import DatePickerField from "@/components/datepicker";
 import { ThemedCard } from "@/components/default_card";
+import { DateRangePickerField } from "@/components/datepicker";
 import { Dropdown } from "@/components/input_fields";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
@@ -140,8 +141,16 @@ export default function VisitsPage() {
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState(new Date());
-  const [toDate, setToDate] = useState(new Date());
+  const [fromDate, setFromDate] = useState(() => {
+    const next = new Date();
+    next.setHours(0, 0, 0, 0);
+    return next;
+  });
+  const [toDate, setToDate] = useState(() => {
+    const next = new Date();
+    next.setHours(23, 59, 0, 0);
+    return next;
+  });
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const [patientOptions, setPatientOptions] = useState<{ id: string; label: string }[]>([]);
@@ -180,8 +189,8 @@ export default function VisitsPage() {
         "rpc_get_appointments",
         {
           p_requester_id: user.id,
-          p_start_date: toDayStart(fromDate).toISOString(),
-          p_end_date: toDayEnd(toDate).toISOString(),
+          p_start_date: fromDate.toISOString(),
+          p_end_date: toDate.toISOString(),
           p_page: 1,
           p_items_per_page: 300,
         },
@@ -426,10 +435,25 @@ export default function VisitsPage() {
                 />
               </View>
 
-              <DatePickerField label="Du" date={fromDate} setDate={setFromDate} />
-              <DatePickerField label="Au" date={toDate} setDate={setToDate} />
+              <DateRangePickerField
+                label="Plage de date"
+                startDate={fromDate}
+                endDate={toDate}
+                setStartDate={setFromDate}
+                setEndDate={setToDate}
+              />
 
-              <TouchableOpacity style={styles.resetButton} onPress={() => { setFromDate(new Date()); setToDate(new Date()); }}>
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={() => {
+                  const nextStart = new Date();
+                  nextStart.setHours(0, 0, 0, 0);
+                  const nextEnd = new Date();
+                  nextEnd.setHours(23, 59, 0, 0);
+                  setFromDate(nextStart);
+                  setToDate(nextEnd);
+                }}
+              >
                 <Ionicons name="refresh" size={18} color={theme.colors.text} />
               </TouchableOpacity>
 

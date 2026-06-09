@@ -1,4 +1,4 @@
-import DatePickerField from "@/components/datepicker";
+import { DateRangePickerField } from "@/components/datepicker";
 import PatientFormWithMedical from "@/components/new_patient";
 import { Avatar } from "@/components/patient_avatar";
 import { PageShell } from "@/components/page_shell";
@@ -33,8 +33,8 @@ export default function PatientsPage() {
   const router = useRouter();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const tableStyles = createTableStyles(theme);
-  const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1));
-  const [toDate, setToDate] = useState(new Date(new Date().getFullYear(), 11, 31));
+  const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1, 0, 0));
+  const [toDate, setToDate] = useState(new Date(new Date().getFullYear(), 11, 31, 23, 59));
   const [searchInput, setSearchInput] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
   const [rows, setRows] = useState<Patient[]>([]);
@@ -79,8 +79,13 @@ export default function PatientsPage() {
           <TouchableOpacity style={styles.iconBtn} onPress={() => setGlobalSearch(searchInput)}>
             <Ionicons name="funnel-outline" size={18} color={theme.colors.text} />
           </TouchableOpacity>
-          <DatePickerField label="From" date={fromDate} setDate={setFromDate} />
-          <DatePickerField label="To" date={toDate} setDate={setToDate} />
+          <DateRangePickerField
+            label="Date range"
+            startDate={fromDate}
+            endDate={toDate}
+            setStartDate={setFromDate}
+            setEndDate={setToDate}
+          />
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowAddForm(true)}>
             <Ionicons name="add" size={16} color="#fff" />
             <Text style={styles.addTxt}>New Patient</Text>

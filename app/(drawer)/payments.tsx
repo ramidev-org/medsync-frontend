@@ -1,4 +1,4 @@
-import DatePickerField from "@/components/datepicker";
+import { DateRangePickerField } from "@/components/datepicker";
 import { PageShell } from "@/components/page_shell";
 import { Avatar } from "@/components/patient_avatar";
 import { getPayments } from "@/services/payments.services";
@@ -12,8 +12,8 @@ export default function PaymentsPage() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const tableStyles = createTableStyles(theme);
-  const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1));
-  const [toDate, setToDate] = useState(new Date(new Date().getFullYear(), 11, 31, 23, 59, 59));
+  const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1, 0, 0, 0, 0));
+  const [toDate, setToDate] = useState(new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999));
   const [globalSearch, setGlobalSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [payments, setPayments] = useState<any[]>([]);
@@ -64,8 +64,13 @@ export default function PaymentsPage() {
               style={styles.searchInput}
             />
           </View>
-          <DatePickerField label="Du" date={fromDate} setDate={setFromDate} />
-          <DatePickerField label="Au" date={toDate} setDate={setToDate} />
+          <DateRangePickerField
+            label="Plage de date"
+            startDate={fromDate}
+            endDate={toDate}
+            setStartDate={setFromDate}
+            setEndDate={setToDate}
+          />
         </View>
       }
     >

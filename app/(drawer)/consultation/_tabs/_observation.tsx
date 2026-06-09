@@ -154,6 +154,8 @@ export default function ObservationMedicalTab({
   const enabledSpecialties = React.useMemo(() => SPECIALTY_TABS, []);
   const [workspacePickerOpen, setWorkspacePickerOpen] = React.useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = React.useState<SpecialtyKey>(doctorSpecialtyKey);
+  const [expandedWorkspaceHistoryIndex, setExpandedWorkspaceHistoryIndex] = React.useState<number | null>(0);
+  const [expandedPreviousParamsIndex, setExpandedPreviousParamsIndex] = React.useState<number | null>(0);
 
   React.useEffect(() => {
     setSelectedWorkspace((workspaceKey as SpecialtyKey) || doctorSpecialtyKey);
@@ -617,12 +619,13 @@ export default function ObservationMedicalTab({
                   </Text>
                   <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 16, overflow: "hidden" }}>
                     {PROTO_PREVIOUS_PARAMS.map((p, idx) => {
-                      const active = idx === selectedPrevIndex;
+                      const active = idx === expandedWorkspaceHistoryIndex;
                       return (
                         <View
                           key={p.visitLabel}
                           style={{
                             flexDirection: "row",
+                            flexWrap: "wrap",
                             alignItems: "center",
                             paddingVertical: 12,
                             paddingHorizontal: 12,
@@ -632,7 +635,7 @@ export default function ObservationMedicalTab({
                           }}
                         >
                           <TouchableOpacity
-                            onPress={() => setSelectedPrevIndex(idx)}
+                            onPress={() => setExpandedWorkspaceHistoryIndex((current) => (current === idx ? null : idx))}
                             style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
                             activeOpacity={0.8}
                           >
@@ -647,15 +650,12 @@ export default function ObservationMedicalTab({
                             />
                             <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setSelectedPrevIndex(idx);
-                              setPreviousParamsModalOpen(true);
-                            }}
-                            style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}
-                          >
-                            <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
-                          </TouchableOpacity>
+                          <MaterialCommunityIcons name={active ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
+                          {active ? (
+                            <View style={{ width: "100%", paddingTop: 12 }}>
+                              <InlinePreviousParameters theme={theme} row={p} fields={activeFields} />
+                            </View>
+                          ) : null}
                         </View>
                       );
                     })}
@@ -675,14 +675,6 @@ export default function ObservationMedicalTab({
             </View>
           </View>
         </View>
-
-          <PreviousParametersModal
-            theme={theme}
-            visible={previousParamsModalOpen}
-            onClose={() => setPreviousParamsModalOpen(false)}
-            row={selectedPrev}
-            fields={activeFields}
-          />
 
       </View>
     );
@@ -1088,12 +1080,12 @@ export default function ObservationMedicalTab({
         <View style={{ marginTop: 10 }}>
           <View style={styles.prevList}>
             {PROTO_PREVIOUS_PARAMS.map((p, idx) => {
-              const active = idx === selectedPrevIndex;
+              const active = idx === expandedPreviousParamsIndex;
 
               return (
                 <View key={p.visitLabel}>
-                  <View style={[styles.prevItem, active && styles.prevItemActive]}>
-                    <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={styles.prevMainBtn} activeOpacity={0.8}>
+                  <View style={[styles.prevItem, active && styles.prevItemActive, { flexWrap: "wrap" }]}>
+                    <TouchableOpacity onPress={() => setExpandedPreviousParamsIndex((current) => (current === idx ? null : idx))} style={styles.prevMainBtn} activeOpacity={0.8}>
                       <View
                         style={[
                           styles.prevBar,
@@ -1104,16 +1096,9 @@ export default function ObservationMedicalTab({
                         {p.visitLabel}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setSelectedPrevIndex(idx);
-                        setPreviousParamsModalOpen(true);
-                      }}
-                      style={styles.viewBtn}
-                    >
-                      <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
+                    <MaterialCommunityIcons name={active ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
                   </View>
+                  {active ? <InlinePreviousParameters theme={theme} row={p} fields={parameterFields} /> : null}
                 </View>
               );
             })}
@@ -1149,14 +1134,6 @@ export default function ObservationMedicalTab({
         setObservations={setObservations}
       />
 
-
-      <PreviousParametersModal
-        theme={theme}
-        visible={previousParamsModalOpen}
-        onClose={() => setPreviousParamsModalOpen(false)}
-        row={selectedPrev}
-        fields={parameterFields}
-      />
 
       {/* "MODIFIER LE PATIENT" modal (matches the antecedents screenshot) */}
       <AntecedentsModal
@@ -1296,6 +1273,46 @@ function BorderBox({
         {title}
       </Text>
       <Text style={{ fontWeight: "900", opacity: 0.65 }}>{value}</Text>
+    </View>
+  );
+}
+
+function InlinePreviousParameters({
+  theme,
+  row,
+  fields,
+}: {
+  theme: any;
+  row: any;
+  fields?: ParameterField[];
+}) {
+  return (
+    <View
+      style={{
+        marginTop: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: 12,
+        backgroundColor: theme.colors.surface,
+        paddingHorizontal: 12,
+        paddingBottom: 12,
+        paddingTop: 10,
+      }}
+    >
+      <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+        {(fields ?? getConsultationFields("general_medicine")).map((field: ParameterField) => (
+          <View key={`${row?.visitLabel ?? "row"}-${field.key}`} style={{ flex: 1, minWidth: field.multiline ? 320 : 230 }}>
+            <WorkspaceReadOnlyField
+              theme={theme}
+              label={field.label}
+              value={String(row?.data?.[field.key] ?? "-")}
+              multiline={!!field.multiline}
+              icon={FIELD_ICON_MAP[field.key] ?? "file-document-outline"}
+            />
+          </View>
+        ))}
+      </View>
     </View>
   );
 }

@@ -176,8 +176,14 @@ const WORKSPACE_OPTIONS = [
   { key: "ophthalmology", label: "Ophtalmologie" },
   { key: "pulmonology", label: "Pneumologie" },
   { key: "gastroenterology", label: "Gastroenterologie" },
-  { key: "analyses_medicales", label: "Analyses Medicales" },
 ] as const;
+
+const WORKSPACE_OPTION_KEYS = new Set<string>(WORKSPACE_OPTIONS.map((option) => option.key));
+
+function sanitizeWorkspaceKey(value: unknown): string {
+  const key = String(value || "general_medicine");
+  return WORKSPACE_OPTION_KEYS.has(key) ? key : "general_medicine";
+}
 
 const initialVitals = {
   taille_cm: "",
@@ -328,10 +334,7 @@ export default function ConsultationPage() {
     : null;
   const doctorSpeciality =
     (user as any)?.doctorProfile?.speciality ?? null;
-  const [activeWorkspaceKey, setActiveWorkspaceKey] = useState<string>(() => {
-    const normalized = normalizeSpeciality((user as any)?.doctorProfile?.speciality ?? null);
-    return String(normalized || "general_medicine");
-  });
+  const [activeWorkspaceKey, setActiveWorkspaceKey] = useState<string>("general_medicine");
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
@@ -421,7 +424,7 @@ export default function ConsultationPage() {
           });
 
           if (session.consultation.speciality_key) {
-            setActiveWorkspaceKey(String(session.consultation.speciality_key));
+            setActiveWorkspaceKey(sanitizeWorkspaceKey(session.consultation.speciality_key));
           }
 
           // Hydrate UI fields
@@ -643,7 +646,7 @@ export default function ConsultationPage() {
           patientMeta={`${appointment?.patient?.age ?? "-"} ans • ${appointment?.patient?.sex === "female" ? "F" : "M"}`}
           workspaceLabel={WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace"}
           workspaceOptions={[...WORKSPACE_OPTIONS]}
-          onWorkspaceChange={(key) => setActiveWorkspaceKey(key)}
+          onWorkspaceChange={(key) => setActiveWorkspaceKey(sanitizeWorkspaceKey(key))}
           visitMeta={`Visite • ${formatVisitDateLabel(appointment?.time)}`}
           consultationStats={{
             statusLabel: appointment?.status === "completed" ? "TERMINEE" : "EN COURS",

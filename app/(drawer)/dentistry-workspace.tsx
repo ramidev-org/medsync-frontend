@@ -1,11 +1,9 @@
 import { PageShell } from "@/components/page_shell";
 import { SpecialtyWorkspaceScaffold } from "@/components/workspaces/SpecialtyWorkspaceScaffold";
-import { ToothTreatmentPanel } from "@/components/dentistry/ToothTreatmentPanel";
-import { DentistryHistoryFilters, DentistryTreatmentHistoryCards } from "@/components/dentistry/DentistryTreatmentHistoryCards";
 import { TreatmentSwipeSelector, type TreatmentSwipeOption } from "@/components/dentistry/TreatmentSwipeSelector";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { BlueField } from "./consultation/_tabs/_ui";
 import { useTheme } from "@/theme/theme_provider";
 
@@ -157,21 +155,12 @@ export default function DentistryWorkspacePage() {
   const [workspaceTab, setWorkspaceTab] = React.useState<DentistryWorkspaceTab>("treatment");
   const [isEditingCurrentParams, setIsEditingCurrentParams] = React.useState(false);
   const [draftCurrentParams, setDraftCurrentParams] = React.useState<any | null>(null);
-  const [previousModalOpen, setPreviousModalOpen] = React.useState(false);
-  const [selectedPrevIndex, setSelectedPrevIndex] = React.useState(0);
-  const selectedPrev = PREVIOUS_CONSULTATIONS[selectedPrevIndex];
-
-  const [state, setState] = React.useState<{ activeProcedure?: any; selectedTeeth?: string[]; odontogram?: any }>({});
   const [generalTreatmentType, setGeneralTreatmentType] =
     React.useState<DentistryWorkspaceTreatmentKey>("full_cleanup");
   const [generalTreatmentNote, setGeneralTreatmentNote] = React.useState("");
   const [generalTreatmentHistory, setGeneralTreatmentHistory] = React.useState<Array<{ id: string; type: string; note: string; createdAt: string }>>([]);
-  const [from, setFrom] = React.useState<Date>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d;
-  });
-  const [to, setTo] = React.useState<Date>(() => new Date());
+  const [expandedTreatmentHistoryId, setExpandedTreatmentHistoryId] = React.useState<string | null>(null);
+  const [expandedConsultationIndex, setExpandedConsultationIndex] = React.useState<number | null>(0);
 
   const [parameters, setParameters] = React.useState({
     chief_dental_complaint: "",
@@ -180,14 +169,6 @@ export default function DentistryWorkspacePage() {
     next_dental_step: "",
     clinical_notes: "",
   });
-
-  const resetFilters = React.useCallback(() => {
-    const d = new Date();
-    const f = new Date(d);
-    f.setDate(f.getDate() - 30);
-    setFrom(f);
-    setTo(d);
-  }, []);
 
   const activeTreatmentCard =
     DENTISTRY_TREATMENT_OPTIONS.find((option) => option.key === generalTreatmentType) ??
@@ -251,39 +232,41 @@ export default function DentistryWorkspacePage() {
                   </View>
                 </View>
 
-                <ToothTreatmentPanel
-                  theme={theme}
-                  selectedTeeth={state.selectedTeeth ?? []}
-                  onChangeSelectedTeeth={(next) => setState((s) => ({ ...s, selectedTeeth: next }))}
-                  activeProcedure={state.activeProcedure ?? "caries"}
-                  onChangeActiveProcedure={(next) => setState((s) => ({ ...s, activeProcedure: next }))}
-                  odontogram={state.odontogram ?? {}}
-                  onChangeOdontogram={(next) => setState((s) => ({ ...s, odontogram: next }))}
-                />
               </View>
             )}
 
             {workspaceTab === "treatment_history" && (
-              <>
-                <DentistryHistoryFilters theme={theme} from={from} to={to} onFromChange={setFrom} onToChange={setTo} onReset={resetFilters} />
-                <View style={{ marginTop: 4 }}>
-                  <DentistryTreatmentHistoryCards theme={theme} odontogram={state.odontogram ?? {}} from={from} to={to} maxHeight={340} />
-                </View>
-                <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.background, padding: 10, gap: 8, marginTop: 8 }}>
-                  <Text style={{ fontWeight: "900", color: theme.colors.text }}>General treatment history</Text>
-                  {generalTreatmentHistory.length === 0 ? (
-                    <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>No general treatments yet.</Text>
-                  ) : (
-                    generalTreatmentHistory.map((r) => (
-                      <View key={r.id} style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface }}>
-                        <Text style={{ fontWeight: "900", color: theme.colors.text }}>{r.type}</Text>
-                        <Text style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>{r.createdAt}</Text>
-                        {!!r.note && <Text style={{ marginTop: 6, fontWeight: "700", color: theme.colors.textSecondary }}>{r.note}</Text>}
+              <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.background, padding: 10, gap: 8 }}>
+                <Text style={{ fontWeight: "900", color: theme.colors.text }}>General treatment history</Text>
+                {generalTreatmentHistory.length === 0 ? (
+                  <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>No general treatments yet.</Text>
+                ) : (
+                  generalTreatmentHistory.map((r) => {
+                    const expanded = expandedTreatmentHistoryId === r.id;
+                    return (
+                      <View key={r.id} style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, overflow: "hidden", backgroundColor: theme.colors.surface }}>
+                        <TouchableOpacity
+                          onPress={() => setExpandedTreatmentHistoryId((current) => (current === r.id ? null : r.id))}
+                          activeOpacity={0.85}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 12 }}
+                        >
+                          <View style={{ width: 6, height: 24, borderRadius: 6, backgroundColor: expanded ? theme.colors.primary : theme.colors.border }} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontWeight: "900", color: theme.colors.text }}>{r.type}</Text>
+                            <Text style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>{r.createdAt}</Text>
+                          </View>
+                          <MaterialCommunityIcons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
+                        </TouchableOpacity>
+                        {expanded ? (
+                          <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+                            <ReadOnlyBlueBox theme={theme} label="Treatment note :" value={r.note || "-"} multiline />
+                          </View>
+                        ) : null}
                       </View>
-                    ))
-                  )}
-                </View>
-              </>
+                    );
+                  })
+                )}
+              </View>
             )}
           </View>
 
@@ -350,16 +333,28 @@ export default function DentistryWorkspacePage() {
           {workspaceTab === "consultation_history" && (
             <View style={{ marginTop: 10, borderWidth: 1, borderColor: "rgba(0,0,0,0.10)", borderRadius: 10, overflow: "hidden" }}>
               {PREVIOUS_CONSULTATIONS.map((p, idx) => {
-                const active = idx === selectedPrevIndex;
+                const expanded = idx === expandedConsultationIndex;
                 return (
-                  <View key={p.visitLabel} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12, backgroundColor: active ? "rgba(245, 179, 1, 0.08)" : "#fff", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)" }}>
-                    <TouchableOpacity onPress={() => setSelectedPrevIndex(idx)} style={{ flex: 1, flexDirection: "row", alignItems: "center" }} activeOpacity={0.8}>
-                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: active ? "#F5B301" : "rgba(0,0,0,0.08)" }} />
-                      <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                  <View key={p.visitLabel} style={{ backgroundColor: expanded ? "rgba(245, 179, 1, 0.08)" : "#fff", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)" }}>
+                    <TouchableOpacity
+                      onPress={() => setExpandedConsultationIndex((current) => (current === idx ? null : idx))}
+                      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 12 }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: expanded ? "#F5B301" : "rgba(0,0,0,0.08)" }} />
+                      <Text style={{ flex: 1, fontWeight: "900", opacity: expanded ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                      <MaterialCommunityIcons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setSelectedPrevIndex(idx); setPreviousModalOpen(true); }} style={{ marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 }}>
-                      <MaterialCommunityIcons name="eye-outline" size={16} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
+                    {expanded ? (
+                      <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+                        <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{p.visitLabel}</Text>
+                        <ReadOnlyBlueBox theme={theme} label="Chief dental complaint :" value={p.chiefComplaint} multiline />
+                        <ReadOnlyBlueBox theme={theme} label="Tooth records :" value={p.toothRecords} multiline />
+                        <ReadOnlyBlueBox theme={theme} label="Materials used :" value={p.materialsUsed} />
+                        <ReadOnlyBlueBox theme={theme} label="Next dental step :" value={p.nextStep} />
+                        <ReadOnlyBlueBox theme={theme} label="Notes :" value={p.notes} multiline />
+                      </View>
+                    ) : null}
                   </View>
                 );
               })}
@@ -367,29 +362,6 @@ export default function DentistryWorkspacePage() {
           )}
         </View>
       </SpecialtyWorkspaceScaffold>
-
-      <Modal visible={previousModalOpen} transparent animationType="fade" onRequestClose={() => setPreviousModalOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center", padding: 18 }}>
-          <View style={{ width: "100%", maxWidth: 920, borderRadius: 10, overflow: "hidden", backgroundColor: theme.colors.surface }}>
-            <View style={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primary }}>
-              <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 0.5 }}>PREVIOUS CONSULTATION</Text>
-            </View>
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{selectedPrev.visitLabel}</Text>
-              <ReadOnlyBlueBox theme={theme} label="Chief dental complaint :" value={selectedPrev.chiefComplaint} multiline />
-              <ReadOnlyBlueBox theme={theme} label="Tooth records :" value={selectedPrev.toothRecords} multiline />
-              <ReadOnlyBlueBox theme={theme} label="Materials used :" value={selectedPrev.materialsUsed} />
-              <ReadOnlyBlueBox theme={theme} label="Next dental step :" value={selectedPrev.nextStep} />
-              <ReadOnlyBlueBox theme={theme} label="Notes :" value={selectedPrev.notes} multiline />
-            </ScrollView>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.08)", backgroundColor: "rgba(0,0,0,0.02)" }}>
-              <TouchableOpacity onPress={() => setPreviousModalOpen(false)} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
-                <Text style={{ color: "#fff", fontWeight: "900" }}>CLOSE</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </PageShell>
   );
 }

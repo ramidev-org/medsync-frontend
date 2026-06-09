@@ -38,7 +38,6 @@ export const SPECIALTY_TABS: Array<{
   { key: "ophthalmology", label: "Ophtalmologie" },
   { key: "pulmonology", label: "Pneumologie" },
   { key: "gastroenterology", label: "Gastroenterologie" },
-  { key: "analyses_medicales", label: "Analyses Medicales" },
 ];
 
 const GENERIC_PARAMETER_FIELDS: ParameterField[] = [

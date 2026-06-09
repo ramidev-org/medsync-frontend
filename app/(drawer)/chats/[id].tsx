@@ -116,8 +116,12 @@ export default function ChatConversationPage() {
         <View style={styles.outer}>
           {isWideWeb && (
             <View style={styles.historyPane}>
+              <View style={styles.brandPill}>
+                <Ionicons name="chatbubbles-outline" size={15} color="#1D4ED8" />
+                <Text style={styles.brandPillText}>MedSync Chat</Text>
+              </View>
               <Text style={styles.historyTitle}>Chats</Text>
-              <Text style={styles.historySub}>Recent conversations</Text>
+              <Text style={styles.historySub}>Recent clinic conversations</Text>
               <View style={{ height: 10 }} />
               <ScrollView contentContainerStyle={styles.historyListContent}>
               {allConversations.map((row) => {
@@ -152,6 +156,7 @@ export default function ChatConversationPage() {
 
           <View style={styles.container}>
           {!!conversation && (
+            <>
             <View style={styles.chatTopBar}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <Avatar name={talkingWith} theme={theme} size={34} />
@@ -169,6 +174,25 @@ export default function ChatConversationPage() {
                 <Ionicons name="call-outline" size={18} color={theme.colors.textSecondary} />
               </View>
             </View>
+            <View style={styles.chatHero}>
+              <View style={styles.chatHeroText}>
+                <Text style={styles.chatHeroTitle}>Clinic conversation hub</Text>
+                <Text style={styles.chatHeroSub}>
+                  Follow live team updates with the same calm visual language as the lab workspace.
+                </Text>
+              </View>
+              <View style={styles.chatHeroStats}>
+                <View style={styles.chatHeroStat}>
+                  <Text style={styles.chatHeroStatValue}>{rows.length}</Text>
+                  <Text style={styles.chatHeroStatLabel}>Messages</Text>
+                </View>
+                <View style={styles.chatHeroStat}>
+                  <Text style={styles.chatHeroStatValue}>{conversation.members.length}</Text>
+                  <Text style={styles.chatHeroStatLabel}>Members</Text>
+                </View>
+              </View>
+            </View>
+            </>
           )}
 
           <FlatList
@@ -264,19 +288,35 @@ function Avatar({ name, theme, size = 36 }: { name: string; theme: any; size?: n
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    outer: { flex: 1, flexDirection: "row", gap: 12, minHeight: 0 },
+    outer: { flex: 1, flexDirection: "row", gap: 14, minHeight: 0 },
+    brandPill: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: "#EFF6FF",
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      marginBottom: 10,
+    },
+    brandPillText: {
+      color: "#1D4ED8",
+      fontWeight: "800",
+      fontSize: 12,
+    },
     historyPane: {
       width: 300,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 20,
+      borderRadius: 24,
       backgroundColor: theme.colors.surface,
-      padding: 14,
+      padding: 16,
       minHeight: 0,
       height: "100%",
     },
     historyListContent: { gap: 10, paddingBottom: 10 },
-    historyTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 18 },
+    historyTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 20 },
     historySub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
     historyRow: {
       flexDirection: "row",
@@ -284,8 +324,8 @@ const createStyles = (theme: any) =>
       gap: 8,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 10,
-      padding: 10,
+      borderRadius: 16,
+      padding: 12,
       backgroundColor: theme.colors.background,
     },
     historyRowTitle: { color: theme.colors.text, fontWeight: "900" },
@@ -294,41 +334,93 @@ const createStyles = (theme: any) =>
       flex: 1,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 20,
-      backgroundColor: theme.colors.surfaceVariant,
-      padding: 8,
+      borderRadius: 24,
+      backgroundColor: "#F8FBFF",
+      padding: 10,
       minHeight: 380,
       height: "100%",
     },
     chatTopBar: {
       marginHorizontal: 6,
-      marginBottom: 8,
+      marginBottom: 10,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 14,
+      borderRadius: 18,
       backgroundColor: theme.colors.surface,
-      paddingHorizontal: 8,
-      paddingVertical: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 10,
     },
-    chatTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 14 },
+    chatTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 15 },
     chatSub: { marginTop: 1, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11 },
+    chatHero: {
+      marginHorizontal: 6,
+      marginBottom: 10,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      padding: 14,
+      gap: 14,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+    },
+    chatHeroText: {
+      flex: 1,
+      minWidth: 220,
+    },
+    chatHeroTitle: {
+      color: theme.colors.text,
+      fontSize: 18,
+      fontWeight: "900",
+    },
+    chatHeroSub: {
+      marginTop: 6,
+      color: theme.colors.textSecondary,
+      fontWeight: "700",
+      lineHeight: 20,
+    },
+    chatHeroStats: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    chatHeroStat: {
+      minWidth: 96,
+      borderRadius: 16,
+      backgroundColor: "#EFF6FF",
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      alignItems: "center",
+    },
+    chatHeroStatValue: {
+      color: "#1D4ED8",
+      fontSize: 22,
+      fontWeight: "900",
+    },
+    chatHeroStatLabel: {
+      marginTop: 2,
+      color: "#334155",
+      fontSize: 11,
+      fontWeight: "800",
+      textTransform: "uppercase",
+    },
     messageRow: { marginTop: 7, flexDirection: "row", alignItems: "flex-end", gap: 8, maxWidth: "90%" },
     messageRowMine: { alignSelf: "flex-end" },
     messageRowOther: { alignSelf: "flex-start" },
     bubble: {
       maxWidth: "100%",
-      borderRadius: 16,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
       borderWidth: 1,
     },
     bubbleMine: {
-      backgroundColor: "#DCF8C6",
-      borderColor: "rgba(40,120,40,0.22)",
+      backgroundColor: "#DBEAFE",
+      borderColor: "rgba(37,99,235,0.18)",
     },
     bubbleOther: {
       backgroundColor: "#FFFFFF",
@@ -342,18 +434,21 @@ const createStyles = (theme: any) =>
     bodyOther: { color: "#1F2937" },
     metaRow: { marginTop: 4, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4 },
     time: { fontSize: 10, fontWeight: "700" },
-    timeMine: { color: "#3C6B40" },
+    timeMine: { color: "#1D4ED8" },
     timeOther: { color: theme.colors.textSecondary },
     composer: {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      paddingHorizontal: 10,
+      paddingHorizontal: 12,
       paddingTop: 8,
       paddingBottom: Platform.OS === "ios" ? 16 : 10,
       borderTopWidth: 1,
       borderTopColor: "rgba(15,23,42,0.08)",
-      backgroundColor: "#F0F2F5",
+      backgroundColor: theme.colors.surface,
+      borderRadius: 18,
+      marginHorizontal: 6,
+      marginTop: 6,
     },
     iconBtn: {
       width: 38,
@@ -361,6 +456,7 @@ const createStyles = (theme: any) =>
       borderRadius: 999,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor: "#EFF6FF",
     },
     input: {
       flex: 1,
@@ -373,13 +469,13 @@ const createStyles = (theme: any) =>
       paddingVertical: 9,
       color: theme.colors.text,
       fontWeight: "700",
-      backgroundColor: "#FFFFFF",
+      backgroundColor: theme.colors.background,
     },
     sendBtn: {
       width: 40,
       height: 40,
       borderRadius: 999,
-      backgroundColor: "#00A884",
+      backgroundColor: "#2563EB",
       alignItems: "center",
       justifyContent: "center",
     },

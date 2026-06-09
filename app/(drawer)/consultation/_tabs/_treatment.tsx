@@ -113,7 +113,7 @@ export default function TreatmentTab({
   const [treatmentExtra, setTreatmentExtra] = React.useState<Record<string, string>>({});
   const [treatmentHistory, setTreatmentHistory] = React.useState<TreatmentHistoryRow[]>([]);
   const [isEditingCurrentTreatment, setIsEditingCurrentTreatment] = React.useState(false);
-  const [selectedHistoryId, setSelectedHistoryId] = React.useState<string>("current-treatment");
+  const [selectedHistoryId, setSelectedHistoryId] = React.useState<string | null>("current-treatment");
   const [specialities, setSpecialities] = React.useState<SpecialitiesState>({
     gynecology: {},
     cardiology: {},
@@ -240,7 +240,7 @@ export default function TreatmentTab({
         ];
   }, [currentTreatmentRow, selectedWorkspace, treatmentHistory]);
 
-  const selectedHistoryRow = historyRows.find((row) => row.id === selectedHistoryId) ?? historyRows[0] ?? null;
+  const selectedHistoryRow = historyRows.find((row) => row.id === selectedHistoryId) ?? null;
 
   return (
     <View style={styles.wrap}>
@@ -471,7 +471,7 @@ export default function TreatmentTab({
                         }}
                       />
                       <TouchableOpacity
-                        onPress={() => setSelectedHistoryId(row.id)}
+                        onPress={() => setSelectedHistoryId((current) => (current === row.id ? null : row.id))}
                         style={{ flex: 1 }}
                         activeOpacity={0.8}
                       >
@@ -482,53 +482,55 @@ export default function TreatmentTab({
                           {row.createdAt}
                         </Text>
                       </TouchableOpacity>
+                      <MaterialCommunityIcons name={active ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
+                      {active ? (
+                        <View style={{ width: "100%", paddingTop: 12 }}>
+                          <View style={[styles.detailCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+                            <Text style={[styles.detailTitle, { color: theme.colors.text }]}>Detail du traitement</Text>
+                            <Text style={{ color: theme.colors.text, fontWeight: "900", marginBottom: 8 }}>
+                              {treatmentTypeLabel(row.type, row.workspace)}
+                            </Text>
+                            <WorkspaceReadOnlyField
+                              theme={theme}
+                              label="Treatment note :"
+                              value={row.note || "-"}
+                              multiline
+                              icon="notebook-outline"
+                            />
+                            {getTreatmentExtraFields(row.workspace)
+                              .filter((field) => row.extra?.[field.key])
+                              .map((field) => (
+                                <WorkspaceReadOnlyField
+                                  key={`${row.id}-${field.key}`}
+                                  theme={theme}
+                                  label={field.label}
+                                  value={String(row.extra?.[field.key] ?? "-")}
+                                  multiline={!!field.multiline}
+                                  icon={FIELD_ICON_MAP[field.key] ?? "file-document-outline"}
+                                />
+                              ))}
+                            {row.specialtySnapshot ? (
+                              <View
+                                pointerEvents="none"
+                                style={{
+                                  marginTop: 12,
+                                  borderWidth: 1,
+                                  borderColor: theme.colors.border,
+                                  borderRadius: 10,
+                                  backgroundColor: theme.colors.background,
+                                  padding: 8,
+                                }}
+                              >
+                                {renderSpecialtyReadonly(theme, row)}
+                              </View>
+                            ) : null}
+                          </View>
+                        </View>
+                      ) : null}
                     </View>
                   );
                 })}
               </View>
-
-              {selectedHistoryRow ? (
-                <View style={[styles.detailCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-                  <Text style={[styles.detailTitle, { color: theme.colors.text }]}>Detail du traitement</Text>
-                  <Text style={{ color: theme.colors.text, fontWeight: "900", marginBottom: 8 }}>
-                    {treatmentTypeLabel(selectedHistoryRow.type, selectedHistoryRow.workspace)}
-                  </Text>
-                  <WorkspaceReadOnlyField
-                    theme={theme}
-                    label="Treatment note :"
-                    value={selectedHistoryRow.note || "-"}
-                    multiline
-                    icon="notebook-outline"
-                  />
-                  {getTreatmentExtraFields(selectedHistoryRow.workspace)
-                    .filter((field) => selectedHistoryRow.extra?.[field.key])
-                    .map((field) => (
-                      <WorkspaceReadOnlyField
-                        key={`${selectedHistoryRow.id}-${field.key}`}
-                        theme={theme}
-                        label={field.label}
-                        value={String(selectedHistoryRow.extra?.[field.key] ?? "-")}
-                        multiline={!!field.multiline}
-                        icon={FIELD_ICON_MAP[field.key] ?? "file-document-outline"}
-                      />
-                    ))}
-                  {selectedHistoryRow.specialtySnapshot ? (
-                    <View
-                      pointerEvents="none"
-                      style={{
-                        marginTop: 12,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        borderRadius: 10,
-                        backgroundColor: theme.colors.background,
-                        padding: 8,
-                      }}
-                    >
-                      {renderSpecialtyReadonly(theme, selectedHistoryRow)}
-                    </View>
-                  ) : null}
-                </View>
-              ) : null}
             </View>
           )}
         </View>
@@ -621,6 +623,7 @@ const createStyles = (theme: any) =>
     },
     listRow: {
       flexDirection: "row",
+      flexWrap: "wrap",
       alignItems: "center",
       paddingHorizontal: 14,
       paddingVertical: 14,
