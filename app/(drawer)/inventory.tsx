@@ -148,10 +148,34 @@ export default function InventoryPage() {
     }
   };
 
+  const headerActions = (
+    <>
+      <View style={styles.searchWrap}>
+        <Ionicons name="search-outline" size={16} color={theme.colors.textSecondary} />
+        <TextInput
+          placeholder="Search by name or SKU"
+          placeholderTextColor={theme.colors.textSecondary}
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+        />
+      </View>
+      <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
+        <Ionicons name="refresh" size={16} color={theme.colors.text} />
+        <Text style={styles.secondaryBtnText}>{loading ? "Loading..." : "Refresh"}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.primaryBtn} onPress={() => setAddOpen(true)}>
+        <Ionicons name="add-outline" size={16} color="#fff" />
+        <Text style={styles.primaryBtnText}>Add Item</Text>
+      </TouchableOpacity>
+    </>
+  );
+
   return (
     <PageShell
       title="Clinic Inventory"
       subtitle="Stock control, reorder safety, and item-level adjustments."
+      actions={headerActions}
     >
       {migrationMissing && (
         <View style={styles.banner}>
@@ -163,37 +187,16 @@ export default function InventoryPage() {
 
       <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
-          <View style={{ flex: 1 }}>
+          <View style={styles.heroIntro}>
             <Text style={styles.heroEyebrow}>Inventory desk</Text>
             <Text style={styles.heroTitle}>Search, stock review, and item actions in one place.</Text>
           </View>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setAddOpen(true)}>
-            <Ionicons name="add-outline" size={16} color="#fff" />
-            <Text style={styles.primaryBtnText}>Add Item</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.statsRow}>
           <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
           <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
           <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
-        </View>
-
-        <View style={styles.controlsRow}>
-          <View style={styles.searchWrap}>
-            <Ionicons name="search-outline" size={16} color={theme.colors.textSecondary} />
-            <TextInput
-              placeholder="Search by name or SKU"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={search}
-              onChangeText={setSearch}
-              style={styles.searchInput}
-            />
-          </View>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
-            <Ionicons name="refresh" size={16} color={theme.colors.text} />
-            <Text style={styles.secondaryBtnText}>{loading ? "Loading..." : "Refresh"}</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -373,9 +376,10 @@ const createStyles = (theme: any) =>
     },
     heroHeader: {
       flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
+      alignItems: "flex-start",
+    },
+    heroIntro: {
+      flex: 1,
     },
     heroEyebrow: {
       color: theme.colors.primary,
@@ -410,9 +414,9 @@ const createStyles = (theme: any) =>
     },
     primaryBtnText: { color: "#fff", fontWeight: "900" },
     statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-    controlsRow: { flexDirection: "row", gap: 10, marginBottom: 10, alignItems: "center" },
     searchWrap: {
       flex: 1,
+      minWidth: 220,
       flexDirection: "row",
       alignItems: "center",
       gap: 8,

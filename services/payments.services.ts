@@ -6,6 +6,7 @@ export interface Payment {
   createdAt: string;
   visitId: string;
   patientId: string;
+  reference: string | null;
   method: string;
   status: string;
   nom: string;
@@ -22,6 +23,7 @@ export const getPayments = async (): Promise<Payment[]> => {
       created_at,
       visit_id,
       patient_id,
+      reference,
       method,
       status,
       patients!inner(first_name, last_name, code)
@@ -49,6 +51,7 @@ export const getPayments = async (): Promise<Payment[]> => {
     createdAt: payment.created_at,
     visitId: payment.visit_id,
     patientId: payment.patient_id,
+    reference: payment.reference ?? null,
     method: payment.method,
     status: statusLabel(payment.status),
     nom: payment.patients.last_name,
