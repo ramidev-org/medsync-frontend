@@ -68,10 +68,6 @@ export const AppDataProvider = ({ children }: any) => {
           .select("*")
           .eq("id", clinicId)
           .maybeSingle();
-        if (!cancelled) {
-          setClinic(clinicData ?? null);
-          setIsClinicAdmin(!!clinicData?.admin_id && clinicData.admin_id === user?.id);
-        }
 
         // License/subscription status (best-effort; does not block UI).
         try {
@@ -97,6 +93,13 @@ export const AppDataProvider = ({ children }: any) => {
               .eq("active", true),
           ]);
 
+          const explicitAdmin =
+            !!clinicData?.admin_id && String(clinicData.admin_id) === String(user?.id ?? "");
+          const legacySingleDoctorAdmin =
+            !clinicData?.admin_id &&
+            user?.user_type === "doctor" &&
+            doctorsCount === 1;
+
           let status: SubscriptionStatus = "missing";
           let expires_at: string | null = null;
           let days_left: number | null = null;
@@ -118,6 +121,8 @@ export const AppDataProvider = ({ children }: any) => {
           }
 
           if (!cancelled) {
+            setClinic(clinicData ?? null);
+            setIsClinicAdmin(explicitAdmin || legacySingleDoctorAdmin);
             setSubscription({
               status,
               tier_plan,
@@ -131,7 +136,13 @@ export const AppDataProvider = ({ children }: any) => {
             });
           }
         } catch {
-          if (!cancelled) setSubscription(DEFAULT_SUBSCRIPTION);
+          if (!cancelled) {
+            setClinic(clinicData ?? null);
+            setIsClinicAdmin(
+              !!clinicData?.admin_id && String(clinicData.admin_id) === String(user?.id ?? ""),
+            );
+            setSubscription(DEFAULT_SUBSCRIPTION);
+          }
         }
 
       } else if (!cancelled) {

@@ -1,32 +1,144 @@
 import { PageShell } from "@/components/page_shell";
+import { useAuth } from "@/contexts/auth_context";
+import { getClinicAnalytics } from "@/services/analytics.services";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const KPI_CARDS = [
-  { label: "Monthly Revenue", value: "$18,420", badge: "Stable", icon: "cash-outline" as const, tone: "#2563EB" },
-  { label: "Consultations", value: "312", badge: "+12%", icon: "document-text-outline" as const, tone: "#0F766E" },
-  { label: "No-show Rate", value: "4.8%", badge: "Low", icon: "trending-down-outline" as const, tone: "#C2410C" },
-  { label: "Avg Wait Time", value: "11 min", badge: "-3 min", icon: "time-outline" as const, tone: "#7C3AED" },
-];
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
 
-const PERFORMANCE_ROWS = [
-  { title: "Most booked service", meta: "Endodontics", detail: "48 appointments this week", accent: "#DBEAFE" },
-  { title: "Busiest doctor", meta: "Dr. Karim", detail: "92 patients handled this week", accent: "#DCFCE7" },
-  { title: "Best conversion source", meta: "Returning patients", detail: "63% of confirmed bookings", accent: "#FEF3C7" },
-];
-
-const EXPORT_ACTIONS = [
-  { label: "Export PDF", icon: "download-outline" as const },
-  { label: "Share Summary", icon: "send-outline" as const },
-];
+function percentOf(value: number, total: number) {
+  if (!total) return "0%";
+  return `${Math.round((value / total) * 100)}%`;
+}
 
 export default function ReportsPage() {
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const { user } = useAuth();
+  const styles = React.useMemo(() => createStyles(theme), [theme]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [report, setReport] = React.useState<Awaited<
+    ReturnType<typeof getClinicAnalytics>
+  > | null>(null);
+
+  const load = React.useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getClinicAnalytics({ requesterId: user.id });
+      setReport(data);
+    } catch (err) {
+      console.error("Failed to load reports:", err);
+      setError(err instanceof Error ? err.message : "Failed to load reports");
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
+
+  const summary = report?.summary;
+  const bestDay = React.useMemo(() => {
+    if (!report?.daily?.length) return null;
+    return [...report.daily].sort(
+      (a, b) => b.appointments + b.consultations - (a.appointments + a.consultations),
+    )[0];
+  }, [report?.daily]);
+
+  const kpiCards = summary
+    ? [
+        {
+          label: "Revenue",
+          value: formatMoney(summary.revenueTotal),
+          badge: formatMoney(summary.revenueTotal - summary.expensesTotal),
+          icon: "cash-outline" as const,
+          tone: "#2563EB",
+        },
+        {
+          label: "Consultations",
+          value: String(summary.consultationsTotal),
+          badge: `${summary.completedAppointments} completed`,
+          icon: "document-text-outline" as const,
+          tone: "#0F766E",
+        },
+        {
+          label: "No-show Rate",
+          value: percentOf(summary.noShowAppointments, summary.appointmentsTotal),
+          badge: `${summary.noShowAppointments} no-shows`,
+          icon: "trending-down-outline" as const,
+          tone: "#C2410C",
+        },
+        {
+          label: "Open Tasks",
+          value: String(summary.pendingTasks),
+          badge: `${summary.doneTasks} done`,
+          icon: "checkbox-outline" as const,
+          tone: "#4F46E5",
+        },
+      ]
+    : [];
+
+  const performanceRows = report
+    ? [
+        {
+          title: "Most active day",
+          meta: bestDay ? bestDay.label : "No activity yet",
+          detail: bestDay
+            ? `${bestDay.appointments} appointments and ${bestDay.consultations} consultations`
+            : "Fresh appointments will start shaping the trend here.",
+          accent: "#DBEAFE",
+        },
+        {
+          title: "Low stock watch",
+          meta: `${report.lowStock.length} flagged item${report.lowStock.length === 1 ? "" : "s"}`,
+          detail: report.lowStock.length
+            ? report.lowStock
+                .slice(0, 2)
+                .map((item) => `${item.name} (${item.qty_on_hand})`)
+                .join(" • ")
+            : "Inventory looks healthy for now.",
+          accent: "#FEF3C7",
+        },
+        {
+          title: "Team workload",
+          meta: `${summary?.pendingTasks ?? 0} open tasks`,
+          detail: `${summary?.doneTasks ?? 0} completed tasks in the current board`,
+          accent: "#DCFCE7",
+        },
+      ]
+    : [];
+
+  const snapshotLead = summary
+    ? summary.pendingTasks > 6
+      ? "Operations need attention this week."
+      : "Operations are moving in a healthy rhythm."
+    : "Clinic summary is preparing.";
 
   return (
-    <PageShell title="Clinic Reports" subtitle="Operational and financial insights with a clearer daily reporting layout.">
+    <PageShell
+      title="Clinic Reports"
+      subtitle="Operational and financial insights backed by the live clinic workspace."
+    >
       <View style={styles.heroCard}>
         <View style={styles.brandPill}>
           <Ionicons name="analytics-outline" size={16} color="#1D4ED8" />
@@ -35,34 +147,51 @@ export default function ReportsPage() {
 
         <View style={styles.heroTop}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>A cleaner reporting desk for the clinic team.</Text>
+            <Text style={styles.heroTitle}>A reporting desk tied to the real workflow.</Text>
             <Text style={styles.heroDescription}>
-              Follow income, consultation flow, patient behavior, and the week’s highlights from one bright summary layer.
+              Revenue, consultations, open tasks, and stock pressure now come from the live
+              clinic data instead of placeholder widgets.
             </Text>
           </View>
 
           <View style={styles.heroActions}>
-            {EXPORT_ACTIONS.map((action, index) => (
-              <TouchableOpacity
-                key={action.label}
-                style={[styles.heroButton, index === 0 ? styles.heroButtonPrimary : styles.heroButtonDark]}
-              >
-                <Ionicons name={action.icon} size={16} color="#fff" />
-                <Text style={styles.heroButtonText}>{action.label}</Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              style={[styles.heroButton, styles.heroButtonPrimary]}
+              onPress={load}
+            >
+              <Ionicons name="refresh-outline" size={16} color="#fff" />
+              <Text style={styles.heroButtonText}>Refresh Summary</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
 
+      {error ? (
+        <View style={styles.feedbackCard}>
+          <Ionicons name="alert-circle-outline" size={18} color={theme.colors.error} />
+          <Text style={[styles.feedbackText, { color: theme.colors.error }]}>
+            {error}
+          </Text>
+        </View>
+      ) : null}
+
+      {loading ? (
+        <View style={styles.feedbackCard}>
+          <ActivityIndicator color={theme.colors.primary} />
+          <Text style={styles.feedbackText}>Loading the clinic reporting layer…</Text>
+        </View>
+      ) : null}
+
       <View style={styles.kpiGrid}>
-        {KPI_CARDS.map((card) => (
+        {kpiCards.map((card) => (
           <View key={card.label} style={styles.kpiCard}>
             <View style={styles.kpiHeader}>
               <View style={[styles.kpiIconWrap, { backgroundColor: `${card.tone}14` }]}>
                 <Ionicons name={card.icon} size={18} color={card.tone} />
               </View>
-              <Text style={[styles.badge, { color: card.tone, backgroundColor: `${card.tone}14` }]}>{card.badge}</Text>
+              <Text style={[styles.badge, { color: card.tone, backgroundColor: `${card.tone}14` }]}>
+                {card.badge}
+              </Text>
             </View>
             <Text style={styles.kpiValue}>{card.value}</Text>
             <Text style={styles.kpiLabel}>{card.label}</Text>
@@ -73,10 +202,13 @@ export default function ReportsPage() {
       <View style={styles.contentGrid}>
         <View style={styles.contentCard}>
           <Text style={styles.sectionTitle}>Weekly Highlights</Text>
-          <Text style={styles.sectionSubtitle}>Quick operational wins and pressure points for the team.</Text>
+          <Text style={styles.sectionSubtitle}>
+            Short, current signals pulled from the same appointments, payments, and tasks
+            the team works with every day.
+          </Text>
 
           <View style={styles.highlightList}>
-            {PERFORMANCE_ROWS.map((item) => (
+            {performanceRows.map((item) => (
               <View key={item.title} style={styles.highlightRow}>
                 <View style={[styles.highlightAccent, { backgroundColor: item.accent }]} />
                 <View style={{ flex: 1 }}>
@@ -91,23 +223,33 @@ export default function ReportsPage() {
 
         <View style={styles.contentCard}>
           <Text style={styles.sectionTitle}>Executive Snapshot</Text>
-          <Text style={styles.sectionSubtitle}>Short narrative for admin review or export.</Text>
+          <Text style={styles.sectionSubtitle}>
+            A fast admin-readable story generated from the current month window.
+          </Text>
 
           <View style={styles.snapshotBox}>
-            <Text style={styles.snapshotLead}>This week stayed healthy across operations.</Text>
+            <Text style={styles.snapshotLead}>{snapshotLead}</Text>
             <Text style={styles.snapshotText}>
-              Consultation demand is strong, no-show rate remains controlled, and wait time improved compared to the previous period.
+              The clinic logged {summary?.appointmentsTotal ?? 0} appointments,{" "}
+              {summary?.consultationsTotal ?? 0} consultations, and{" "}
+              {formatMoney(summary?.revenueTotal ?? 0)} in payments during the active period.
             </Text>
           </View>
 
           <View style={styles.snapshotMetric}>
             <Text style={styles.snapshotMetricLabel}>Revenue pacing</Text>
-            <Text style={styles.snapshotMetricValue}>78% of monthly target reached</Text>
+            <Text style={styles.snapshotMetricValue}>
+              {formatMoney(summary?.revenueTotal ?? 0)} revenue vs{" "}
+              {formatMoney(summary?.expensesTotal ?? 0)} expenses
+            </Text>
           </View>
 
           <View style={styles.snapshotMetric}>
-            <Text style={styles.snapshotMetricLabel}>Follow-up pressure</Text>
-            <Text style={styles.snapshotMetricValue}>21 pending callbacks need review</Text>
+            <Text style={styles.snapshotMetricLabel}>Front desk pressure</Text>
+            <Text style={styles.snapshotMetricValue}>
+              {summary?.cancelledAppointments ?? 0} cancelled and{" "}
+              {summary?.noShowAppointments ?? 0} no-show appointments
+            </Text>
           </View>
         </View>
       </View>
@@ -177,13 +319,22 @@ const createStyles = (theme: any) =>
     heroButtonPrimary: {
       backgroundColor: "#2563EB",
     },
-    heroButtonDark: {
-      backgroundColor: "#0F172A",
-    },
     heroButtonText: {
       color: "#fff",
       fontWeight: "900",
     },
+    feedbackCard: {
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      padding: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 12,
+    },
+    feedbackText: { color: theme.colors.textSecondary, fontWeight: "800" },
     kpiGrid: {
       flexDirection: "row",
       flexWrap: "wrap",

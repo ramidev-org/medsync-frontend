@@ -4,6 +4,7 @@ import { getCurrentRoleImage } from "@/config/runtime";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAuth } from "@/contexts/auth_context";
 import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
+import { getClinicAnalytics } from "@/services/analytics.services";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";
 import { FontAwesome5, FontAwesome6, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
@@ -27,13 +28,13 @@ export default function DoctorDashboardPage() {
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
   const router = useRouter();
-  const { recentTasks } = useTasks();
+  const { recentTasks, loading: tasksLoading } = useTasks();
   const [counts, setCounts] = useState<any | null>(null);
   const [chartWidth, setChartWidth] = useState(420);
   const chartAnim = useMemo(() => new Animated.Value(0), []);
-  const flowLabels = useMemo(() => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], []);
-  const visitsData = useMemo(() => [12, 18, 15, 22, 20, 11, 9], []);
-  const consultationsData = useMemo(() => [9, 14, 12, 17, 16, 8, 7], []);
+  const [flowLabels, setFlowLabels] = useState<string[]>(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+  const [visitsData, setVisitsData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [consultationsData, setConsultationsData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const chartOption = useMemo(
     () => ({
       animationDuration: 500,
@@ -100,7 +101,17 @@ export default function DoctorDashboardPage() {
         const c = await callRpc<any, Record<string, unknown>>("rpc_get_clinic_dashboard_counts", {
           p_requester_id: user.id,
         });
+        const analytics = await getClinicAnalytics({
+          requesterId: user.id,
+          startDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+          endDate: new Date(),
+        }).catch(() => null);
         if (!cancelled) setCounts(c ?? null);
+        if (!cancelled && analytics?.daily?.length) {
+          setFlowLabels(analytics.daily.map((item) => item.label));
+          setVisitsData(analytics.daily.map((item) => item.appointments));
+          setConsultationsData(analytics.daily.map((item) => item.consultations));
+        }
       } catch {
         if (!cancelled) setCounts(null);
       }
@@ -189,7 +200,7 @@ export default function DoctorDashboardPage() {
                 </TouchableOpacity>
               </View>
               <View style={styles.activityList}>
-                {recentTasks.map((task) => (
+                {!tasksLoading && recentTasks.map((task) => (
                   <ActivityItem
                     key={task.id}
                     title={task.title}
@@ -199,6 +210,11 @@ export default function DoctorDashboardPage() {
                     theme={theme}
                   />
                 ))}
+                {!tasksLoading && recentTasks.length === 0 ? (
+                  <Text style={{ color: theme.colors.muted, fontWeight: "700" }}>
+                    No recent tasks yet.
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>

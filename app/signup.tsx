@@ -32,7 +32,14 @@ export default function Signup() {
 
   const goInvite = () => {
     const t = inviteToken.trim();
-    router.push(t ? `/accept-invite?token=${encodeURIComponent(t)}` : "/accept-invite");
+    router.push(
+      t
+        ? {
+            pathname: "/invite/[token]",
+            params: { token: t },
+          }
+        : "/accept-invite",
+    );
   };
 
   return (

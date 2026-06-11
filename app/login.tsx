@@ -120,7 +120,7 @@ export default function Login() {
               style={styles.secondaryButton}
             >
               <Text style={styles.secondaryButtonText}>
-                Invited as staff? Accept invite
+                Invited as staff? Register with invite
               </Text>
             </Pressable>
           </View>

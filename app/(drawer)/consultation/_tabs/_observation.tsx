@@ -774,7 +774,7 @@ export default function ObservationMedicalTab({
         <View style={styles.noteBox}>
           <Text style={styles.noteTitle}>Étiquette</Text>
           <Text style={styles.noteText}>
-            (Prototype) Add more label/summary fields from your backend here.
+            Add any extra label or summary fields for your clinic here.
           </Text>
         </View>
       </View>
@@ -1547,7 +1547,7 @@ function AntecedentsModal({
               <View style={styles.noteBox}>
                 <Text style={styles.noteTitle}>Etat Civil</Text>
                 <Text style={styles.noteText}>
-                  (Prototype) Add patient civil status fields here (name, DOB, address, etc.).
+                  Extend this block with patient civil status details when needed.
                 </Text>
               </View>
             )}

@@ -3,7 +3,11 @@ import { getCurrentRoleImage } from "@/config/runtime";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { getConversations } from "@/services/chats.services";
-import type { ConversationRow } from "@/services/backend.types";
+import type { ClinicNotificationRow, ConversationRow } from "@/services/backend.types";
+import {
+  getNotifications,
+  markNotificationsRead,
+} from "@/services/notifications.services";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -22,11 +26,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatRows, setChatRows] = useState<ConversationRow[]>([]);
-  const [notifications, setNotifications] = useState([
-    { id: "n1", title: "New appointment booked", time: "2m", read: false },
-    { id: "n2", title: "Lab result uploaded", time: "12m", read: false },
-    { id: "n3", title: "Subscription renews in 5 days", time: "1h", read: true },
-  ]);
+  const [notifications, setNotifications] = useState<ClinicNotificationRow[]>([]);
   const { logout, user } = useAuth();
   const { clinic, isClinicAdmin, subscription } = useAppData();
   const router = useRouter();
@@ -59,6 +59,52 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
       cancelled = true;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadNotifications = async () => {
+      if (!user?.id) return;
+      try {
+        const rows = await getNotifications({ requesterId: user.id, limit: 6 });
+        if (!cancelled) setNotifications(rows ?? []);
+      } catch (err) {
+        if (!cancelled) setNotifications([]);
+        console.error("Failed to load top bar notifications:", err);
+      }
+    };
+    loadNotifications();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const markRead = async (notificationKeys: string[]) => {
+    if (!user?.id || !notificationKeys.length) return;
+    setNotifications((old) =>
+      old.map((item) =>
+        notificationKeys.includes(item.notification_key)
+          ? { ...item, unread: false }
+          : item,
+      ),
+    );
+    try {
+      await markNotificationsRead({
+        requesterId: user.id,
+        notificationKeys,
+      });
+    } catch (err) {
+      console.error("Failed to persist notification read state:", err);
+    }
+  };
+
+  const notificationTime = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    const diffHours = Math.round((Date.now() - date.getTime()) / (1000 * 60 * 60));
+    if (diffHours <= 0) return "Just now";
+    if (diffHours < 24) return `${diffHours}h`;
+    return `${Math.round(diffHours / 24)}d`;
+  };
 
   const toggleFullscreen = async () => {
     if (Platform.OS !== "web") return;
@@ -180,21 +226,29 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
               <View style={styles.notificationMenu}>
                 <View style={styles.notificationHeader}>
                   <Text style={styles.notificationTitle}>Notifications</Text>
-                  <Pressable onPress={() => setNotifications((old) => old.map((x) => ({ ...x, read: true })))}>
+                  <Pressable
+                    onPress={() =>
+                      markRead(
+                        notifications
+                          .filter((item) => item.unread)
+                          .map((item) => item.notification_key),
+                      )
+                    }
+                  >
                     <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>Mark all read</Text>
                   </Pressable>
                 </View>
                 {notifications.map((item) => (
                   <View key={item.id} style={styles.notificationRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.notificationText, !item.read && { color: theme.colors.text, fontWeight: "800" }]}>{item.title}</Text>
-                      <Text style={styles.notificationTime}>{item.time}</Text>
+                      <Text style={[styles.notificationText, item.unread && { color: theme.colors.text, fontWeight: "800" }]}>{item.title}</Text>
+                      <Text style={styles.notificationTime}>{notificationTime(item.created_at)}</Text>
                     </View>
                     <Pressable
-                      onPress={() => setNotifications((old) => old.map((x) => (x.id === item.id ? { ...x, read: true } : x)))}
+                      onPress={() => markRead([item.notification_key])}
                       style={{ padding: 6 }}
                     >
-                      <Ionicons name={item.read ? "checkmark-done-outline" : "checkmark-circle-outline"} size={18} color={item.read ? theme.colors.success : theme.colors.primary} />
+                      <Ionicons name={item.unread ? "checkmark-circle-outline" : "checkmark-done-outline"} size={18} color={item.unread ? theme.colors.primary : theme.colors.success} />
                     </Pressable>
                   </View>
                 ))}

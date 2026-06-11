@@ -46,7 +46,17 @@ export type RpcName =
   | "rpc_get_messages"
   | "rpc_send_message"
   | "rpc_update_my_profile"
-  | "rpc_get_prescription_items";
+  | "rpc_get_prescription_items"
+  | "rpc_get_tasks"
+  | "rpc_create_task"
+  | "rpc_update_task"
+  | "rpc_get_notifications"
+  | "rpc_mark_notifications_read"
+  | "rpc_get_consultation_documents"
+  | "rpc_create_consultation_document"
+  | "rpc_delete_consultation_document"
+  | "rpc_get_prescriptions"
+  | "rpc_upsert_prescription";
 
 const asErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;

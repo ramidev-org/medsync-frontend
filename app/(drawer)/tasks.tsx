@@ -3,7 +3,16 @@ import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type TaskForm = {
   title: string;
@@ -15,8 +24,9 @@ type TaskForm = {
 export default function TasksPage() {
   const { theme } = useTheme();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
-  const { stats, grouped, addTask, moveTask } = useTasks();
+  const { stats, grouped, addTask, moveTask, loading, error, refresh } = useTasks();
   const [open, setOpen] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const [draft, setDraft] = React.useState<TaskForm>({
     title: "",
     assignee: "",
@@ -24,11 +34,16 @@ export default function TasksPage() {
     priority: "medium",
   });
 
-  const createTask = () => {
+  const createTask = async () => {
     if (!draft.title.trim() || !draft.assignee.trim()) return;
-    addTask(draft);
-    setOpen(false);
-    setDraft({ title: "", assignee: "", dueText: "", priority: "medium" });
+    setSaving(true);
+    try {
+      await addTask(draft);
+      setOpen(false);
+      setDraft({ title: "", assignee: "", dueText: "", priority: "medium" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -36,16 +51,28 @@ export default function TasksPage() {
       title="Task Workflow"
       subtitle="Operations board for clinical and admin coordination."
       actions={
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => setOpen(true)}>
-          <Ionicons name="add-outline" size={16} color="#fff" />
-          <Text style={styles.primaryBtnText}>New Task</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
+            <Ionicons name="refresh-outline" size={16} color={theme.colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setOpen(true)}>
+            <Ionicons name="add-outline" size={16} color="#fff" />
+            <Text style={styles.primaryBtnText}>New Task</Text>
+          </TouchableOpacity>
+        </View>
       }
     >
       <View style={styles.notice}>
         <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
-        <Text style={styles.noticeText}>Tasks are shared with the dashboard for the solo doctor daily workflow.</Text>
+        <Text style={styles.noticeText}>Tasks are saved for the clinic workspace and appear across the dashboards.</Text>
       </View>
+
+      {error ? (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.statsRow}>
         <StatCard label="Total" value={String(stats.total)} tone={theme.colors.primary} theme={theme} />
@@ -77,6 +104,13 @@ export default function TasksPage() {
           theme={theme}
         />
       </View>
+
+      {loading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading live clinic tasks…</Text>
+        </View>
+      ) : null}
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.modalBackdrop}>
@@ -114,8 +148,8 @@ export default function TasksPage() {
               <TouchableOpacity style={styles.modalCancel} onPress={() => setOpen(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSave} onPress={createTask}>
-                <Text style={styles.modalSaveText}>Create</Text>
+              <TouchableOpacity style={[styles.modalSave, saving && { opacity: 0.7 }]} onPress={createTask} disabled={saving}>
+                <Text style={styles.modalSaveText}>{saving ? "Saving..." : "Create"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -246,6 +280,16 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.primary,
     },
     primaryBtnText: { color: "#fff", fontWeight: "900" },
+    secondaryBtn: {
+      width: 38,
+      height: 36,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.surface,
+    },
     notice: {
       flexDirection: "row",
       alignItems: "center",
@@ -258,8 +302,32 @@ const createStyles = (theme: any) =>
       marginBottom: 10,
     },
     noticeText: { color: theme.colors.textSecondary, fontWeight: "700" },
+    errorBox: {
+      marginBottom: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: `${theme.colors.error}33`,
+      borderRadius: 10,
+      backgroundColor: `${theme.colors.error}10`,
+      padding: 10,
+    },
+    errorText: { color: theme.colors.error, fontWeight: "800" },
     statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
     board: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
+    loadingBox: {
+      marginTop: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+      backgroundColor: theme.colors.surface,
+      padding: 12,
+    },
+    loadingText: { color: theme.colors.textSecondary, fontWeight: "800" },
     modalBackdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.35)",

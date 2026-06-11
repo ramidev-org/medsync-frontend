@@ -15,6 +15,7 @@ import { printOrdonnanceA4 } from "@/services/print.services";
 
 // Tab pages (separate files)
 import ConsultationHeader from "./_tabs/_consultation_header";
+import DocumentsTab from "./_tabs/_documents";
 import LettresTab from "./_tabs/_lettres";
 import MaladiesTab from "./_tabs/_maladies";
 import ObservationMedicalTab from "./_tabs/_observation";
@@ -113,22 +114,6 @@ interface Consultation {
   speciality_payload?: ObservationPayload;
 }
 
-interface PrescriptionDrug {
-  name: string;
-  dose: string;
-  frequency: string;
-  duration: string;
-}
-
-interface Prescription {
-  id: string;
-  consultation_id: string;
-  patient_id: string;
-  drugs: PrescriptionDrug[];
-  template_name: string;
-  signed_by: string;
-}
-
 type SelectedOrdonnanceDrug = {
   name: string;
   qty?: string;
@@ -148,6 +133,7 @@ type MainTabKey =
   | "observation"
   | "treatment"
   | "prescriptions"
+  | "documents"
   | "letters"
   | "diagnoses"
   | "symptoms";
@@ -158,6 +144,7 @@ const MAIN_TABS: { key: MainTabKey; label: string }[] = [
   { key: "observation", label: "Observation médicale" },
   { key: "treatment", label: "Traitements" },
   { key: "prescriptions", label: "Ordonnances" },
+  { key: "documents", label: "Documents" },
   { key: "letters", label: "Lettres" },
   { key: "diagnoses", label: "Maladies" },
   { key: "symptoms", label: "Symptômes" },
@@ -347,8 +334,8 @@ export default function ConsultationPage() {
   const [vitals, setVitals] = useState<ConsultationVitals>(initialVitals);
   const [parameters, setParameters] = useState<ConsultationParameters>(initialParams);
   const [observations, setObservations] = useState("");
-
-  const [prescriptions] = useState<Prescription[]>([]);
+  const [diagnosisCodes, setDiagnosisCodes] = useState<string[]>([]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedOrdonnance, setSelectedOrdonnance] = useState<SelectedOrdonnance | null>(null);
 
   /* ================= LOAD ================= */
@@ -422,6 +409,7 @@ export default function ConsultationPage() {
             parameters: { ...initialParams },
             speciality_payload: sessionPayload,
           });
+          setDiagnosisCodes((session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean));
 
           if (session.consultation.speciality_key) {
             setActiveWorkspaceKey(sanitizeWorkspaceKey(session.consultation.speciality_key));
@@ -434,6 +422,11 @@ export default function ConsultationPage() {
             const nextState = extractObservationPayloadState(sessionPayload);
             setParameters(nextState.parameters);
             setVitals(nextState.vitals);
+            setSelectedSymptoms(
+              Array.isArray(sessionPayload.symptoms_selected)
+                ? sessionPayload.symptoms_selected.map((item) => String(item)).filter(Boolean)
+                : [],
+            );
           } else if (session.parameters) {
             setParameters({
               motif_consultation: String(session.parameters.motif_consultation ?? ""),
@@ -442,8 +435,10 @@ export default function ConsultationPage() {
               examen_clinique: String(session.parameters.examen_clinique ?? ""),
               conclusion: String(session.parameters.conclusion ?? ""),
             });
+            setSelectedSymptoms([]);
           } else {
             setParameters({ ...initialParams });
+            setSelectedSymptoms([]);
           }
 
           // Map DB vitals to existing UI shape
@@ -478,6 +473,8 @@ export default function ConsultationPage() {
           setObservations("");
           setVitals({ ...initialVitals });
           setParameters({ ...initialParams });
+          setDiagnosisCodes([]);
+          setSelectedSymptoms([]);
         }
       } catch (e) {
         console.error("Load consultation details error:", e);
@@ -498,14 +495,14 @@ export default function ConsultationPage() {
 
   /* ================= ORDONNANCES HELPERS ================= */
 
-  const currentPrescription = useMemo(() => {
-    if (!consultation || !appointment?.patient) return null;
-    return prescriptions.find((p) => p.consultation_id === consultation.id) || null;
-  }, [consultation, appointment?.patient, prescriptions]);
-  const currentObservationPayload = useMemo(
-    () => buildObservationPayload(vitals, parameters),
-    [parameters, vitals],
-  );
+  const currentObservationPayload = useMemo(() => {
+    const payload = buildObservationPayload(vitals, parameters);
+    if (selectedSymptoms.length) {
+      payload.symptoms_selected = selectedSymptoms;
+      payload.symptoms_summary = selectedSymptoms.join(", ");
+    }
+    return payload;
+  }, [parameters, selectedSymptoms, vitals]);
 
   const handlePrintOrdonnance = () => {
     if (!selectedOrdonnance) {
@@ -524,7 +521,7 @@ export default function ConsultationPage() {
       doctorName: (doctor as any)?.nom_complet || "MÃ©decin",
       doctorSpeciality: (doctor as any)?.specialite || "",
       doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
-      signedBy: currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin",
+      signedBy: (doctor as any)?.signature_numerique || "MÃ©decin",
       drugs: selectedOrdonnance.drugs,
     });
   };
@@ -532,10 +529,17 @@ export default function ConsultationPage() {
   /* ================= SAVE ================= */
   const save = async () => {
     if (!consultation) return;
-    const specialityPayload = buildObservationPayload(vitals, parameters);
+    const specialityPayload: ObservationPayload = {
+      ...buildObservationPayload(vitals, parameters),
+    };
+    if (selectedSymptoms.length) {
+      specialityPayload.symptoms_selected = selectedSymptoms;
+      specialityPayload.symptoms_summary = selectedSymptoms.join(", ");
+    }
 
     const updated: Consultation = {
       ...consultation,
+      diagnosis: diagnosisCodes,
       observations,
       parameters: { ...parameters },
       vitals: {
@@ -579,6 +583,10 @@ export default function ConsultationPage() {
               examen_clinique: parameters.examen_clinique || null,
               conclusion: parameters.conclusion || null,
             },
+            p_diagnoses: diagnosisCodes.map((code) => ({
+              code,
+              label: code,
+            })),
             p_speciality_key: activeWorkspaceKey,
             p_speciality_payload: specialityPayload,
           });
@@ -637,9 +645,9 @@ export default function ConsultationPage() {
           title="CONSULTATION"
           stepText="1/4"
           onBack={() => router.push("/visits")}
-          onLastVisit={() => Alert.alert("Dernière visite", "Prototype")}
+          onLastVisit={() => router.push("/consultations")}
           onSave={save}
-          onClose={() => Alert.alert("Clôturer", "Prototype")}
+          onClose={save}
           onPrint={handlePrintOrdonnance}
           status={appointment?.status === "completed" ? "closed" : "in_consultation"}
           patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
@@ -717,7 +725,9 @@ export default function ConsultationPage() {
             <OrdonnancesTab
               theme={consultationTheme}
               requesterId={user?.id}
-              signedBy={currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin"}
+              consultationId={consultation?.id}
+              patientId={appointment?.patient?.id}
+              signedBy={(doctor as any)?.signature_numerique || "MÃ©decin"}
               onSelectedPrescriptionChange={(rx) => {
                 if (!rx) return setSelectedOrdonnance(null);
                 setSelectedOrdonnance({
@@ -743,9 +753,9 @@ export default function ConsultationPage() {
                   patientAge: appointment?.patient?.age != null ? `${appointment.patient.age} ans` : "",
                   patientSex: appointment?.patient?.sex === "female" ? "F" : "M",
                   doctorName: (doctor as any)?.nom_complet || "MÃ©decin",
-        doctorSpeciality: (doctor as any)?.specialite || "",
-        doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
-        signedBy: currentPrescription?.signed_by || (doctor as any)?.signature_numerique || "MÃ©decin",
+                  doctorSpeciality: (doctor as any)?.specialite || "",
+                  doctorLicenseNumber: String((user as any)?.doctorProfile?.license_number || ""),
+                  signedBy: (doctor as any)?.signature_numerique || "MÃ©decin",
                   drugs: (rx.drugs || []).map((d) => ({
                     name: String(d.name || ""),
                     qty: d.qty ?? "",
@@ -758,6 +768,15 @@ export default function ConsultationPage() {
               }}
             />
           )}
+
+          {activeMainTab === "documents" && consultation?.id && appointment?.patient?.id ? (
+            <DocumentsTab
+              theme={consultationTheme}
+              consultationId={consultation.id}
+              patientId={appointment.patient.id}
+              requesterId={user?.id}
+            />
+          ) : null}
 
           {activeMainTab === "letters" && (
           <LettresTab
@@ -772,10 +791,20 @@ export default function ConsultationPage() {
         )}
 
           {activeMainTab === "diagnoses" && (
-          <MaladiesTab theme={consultationTheme} initialDiagnosisCodes={consultation?.diagnosis || []} />
-        )}
+            <MaladiesTab
+              theme={consultationTheme}
+              initialDiagnosisCodes={diagnosisCodes}
+              onChangeDiagnosisCodes={setDiagnosisCodes}
+            />
+          )}
 
-          {activeMainTab === "symptoms" && <SymptomesTab theme={consultationTheme} />}
+          {activeMainTab === "symptoms" && (
+            <SymptomesTab
+              theme={consultationTheme}
+              value={selectedSymptoms}
+              onChange={setSelectedSymptoms}
+            />
+          )}
 
         </View>
       </ScrollView>

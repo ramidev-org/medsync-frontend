@@ -1,7 +1,10 @@
 import { DrugSuggestion, getPrescriptionItems, searchDrugsByName } from "@/services/drugs.services";
+import { getPrescriptions, upsertPrescription } from "@/services/prescriptions.services";
+import type { PrescriptionRow } from "@/services/backend.types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,12 +44,9 @@ type Prescription = {
   id: string;
   ref: string;
   title?: string;
+  createdAt?: string;
   drugs: Drug[];
 };
-
-function uid(prefix = "id") {
-  return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
-}
 
 type LeftSubTabKey = "types" | "previous";
 
@@ -55,9 +55,40 @@ const LEFT_SUB_TABS: Array<{ key: LeftSubTabKey; label: string }> = [
   { key: "previous", label: "Ordonnances Précédentes" },
 ];
 
+function mapPrescriptionRow(row: PrescriptionRow, index: number): Prescription {
+  return {
+    id: row.id,
+    ref: String(index + 1).padStart(2, "0"),
+    title: row.template_name || "Consultation",
+    createdAt: row.created_at,
+    drugs: (row.medications || []).map((medication) => ({
+      id: medication.id,
+      name: medication.medicine_name,
+      validated: row.status === "signed",
+      dose: medication.dose || "",
+      frequency: medication.frequency || "",
+      duration: medication.duration || "",
+      instructions: medication.instructions || "",
+      qty: "",
+    })),
+  };
+}
+
+function toMedicationPayload(drugs: Drug[]) {
+  return drugs.map((drug) => ({
+    name: drug.name,
+    dose: drug.dose ?? "",
+    frequency: drug.frequency ?? "",
+    duration: drug.duration ?? "",
+    instructions: drug.instructions ?? "",
+  }));
+}
+
 export default function OrdonnancesTab({
   theme,
   requesterId,
+  consultationId,
+  patientId,
   signedBy,
   onPrint,
   onOverflow,
@@ -65,59 +96,81 @@ export default function OrdonnancesTab({
 }: {
   theme: any;
   requesterId?: string;
+  consultationId?: string;
+  patientId?: string;
   signedBy?: string;
   onPrint?: (rx?: Prescription) => void;
   onOverflow?: (rx?: Prescription) => void;
   onSelectedPrescriptionChange?: (rx?: Prescription) => void;
 }) {
-  const styles = createStyles(theme);
-
+  const styles = React.useMemo(() => createStyles(theme), [theme]);
   const [leftSubTab, setLeftSubTab] = React.useState<LeftSubTabKey>("types");
-
   const [medQuery, setMedQuery] = React.useState("");
   const debouncedMedQuery = useDebouncedValue(medQuery, 200);
   const [suggestions, setSuggestions] = React.useState<DrugSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = React.useState(false);
   const [dbItems, setDbItems] = React.useState<DrugSuggestion[]>([]);
-
-  const [prescriptions, setPrescriptions] = React.useState<Prescription[]>([
-    {
-      id: uid("rx"),
-      ref: "23",
-      title: "Consultation",
-      drugs: [],
-    },
-  ]);
-
-  const [selectedRxId, setSelectedRxId] = React.useState(prescriptions[0]?.id);
-  const selectedRx = prescriptions.find((p) => p.id === selectedRxId);
+  const [prescriptions, setPrescriptions] = React.useState<Prescription[]>([]);
+  const [previousPrescriptions, setPreviousPrescriptions] = React.useState<Prescription[]>([]);
+  const [selectedRxId, setSelectedRxId] = React.useState<string | undefined>(undefined);
   const [expandedDrugId, setExpandedDrugId] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const selectedRx = prescriptions.find((p) => p.id === selectedRxId);
   const onSelectedPrescriptionChangeRef = React.useRef(onSelectedPrescriptionChange);
 
   React.useEffect(() => {
     onSelectedPrescriptionChangeRef.current = onSelectedPrescriptionChange;
   }, [onSelectedPrescriptionChange]);
 
+  const loadPrescriptions = React.useCallback(async () => {
+    if (!requesterId || !consultationId || !patientId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const [catalogItems, currentRows, patientRows] = await Promise.all([
+        getPrescriptionItems(String(requesterId ?? ""), 12).catch(() => []),
+        getPrescriptions({
+          requesterId,
+          consultationId,
+          patientId,
+          limit: 12,
+        }),
+        getPrescriptions({
+          requesterId,
+          patientId,
+          limit: 12,
+        }),
+      ]);
+
+      const currentList = currentRows.map(mapPrescriptionRow);
+      const previousList = patientRows
+        .filter((row) => row.consultation_id !== consultationId)
+        .map(mapPrescriptionRow);
+
+      setDbItems(catalogItems);
+      setPrescriptions(currentList);
+      setPreviousPrescriptions(previousList);
+      setSelectedRxId(currentList[0]?.id);
+    } catch (err) {
+      console.error("Failed to load prescriptions:", err);
+      setError(err instanceof Error ? err.message : "Failed to load prescriptions");
+    } finally {
+      setLoading(false);
+    }
+  }, [consultationId, patientId, requesterId]);
+
   React.useEffect(() => {
-    let alive = true;
-    getPrescriptionItems(String(requesterId ?? ""), 12)
-      .then((items) => {
-        if (!alive) return;
-        setDbItems(items);
-      })
-      .catch((error) => {
-        if (!alive) return;
-        console.error("Failed to load prescription_items:", error);
-        setDbItems([]);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [requesterId]);
+    loadPrescriptions();
+  }, [loadPrescriptions]);
 
   React.useEffect(() => {
     const q = debouncedMedQuery.trim();
-    if (!q) {
+    if (!q || !requesterId) {
       setSuggestions([]);
       return;
     }
@@ -148,30 +201,81 @@ export default function OrdonnancesTab({
     onSelectedPrescriptionChangeRef.current?.(selectedRx);
   }, [selectedRx]);
 
-  function addPrescription() {
-    const nextRef = String(Math.max(0, ...prescriptions.map((p) => Number(p.ref) || 0)) + 1);
-    const newRx: Prescription = { id: uid("rx"), ref: nextRef, title: "Consultation", drugs: [] };
-    setPrescriptions((prev) => [newRx, ...prev]);
-    setSelectedRxId(newRx.id);
-    setExpandedDrugId(null);
-  }
+  const persistPrescription = async (nextPrescription: Prescription) => {
+    if (!requesterId || !consultationId || !patientId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await upsertPrescription({
+        requesterId,
+        consultationId,
+        patientId,
+        prescriptionId: nextPrescription.id,
+        templateName: nextPrescription.title || "Consultation",
+        signedBy: signedBy ?? null,
+        status:
+          nextPrescription.drugs.length > 0 &&
+          nextPrescription.drugs.every((drug) => drug.validated)
+            ? "signed"
+            : "draft",
+        medications: toMedicationPayload(nextPrescription.drugs),
+      });
+    } catch (err) {
+      console.error("Failed to save prescription:", err);
+      setError(err instanceof Error ? err.message : "Failed to save prescription");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-  function ensureSelectedRx(): Prescription {
-    const found = prescriptions.find((p) => p.id === selectedRxId);
-    if (found) return found;
+  const addPrescription = async (): Promise<Prescription | null> => {
+    if (!requesterId || !consultationId || !patientId) return null;
+    setSaving(true);
+    setError(null);
+    try {
+      const row = await upsertPrescription({
+        requesterId,
+        consultationId,
+        patientId,
+        templateName: "Consultation",
+        signedBy: signedBy ?? null,
+        status: "draft",
+        medications: [],
+      });
+      const next = mapPrescriptionRow(row, prescriptions.length);
+      setPrescriptions((prev) => [next, ...prev]);
+      setSelectedRxId(next.id);
+      setExpandedDrugId(null);
+      return next;
+    } catch (err) {
+      console.error("Failed to create prescription:", err);
+      setError(err instanceof Error ? err.message : "Failed to create prescription");
+    } finally {
+      setSaving(false);
+    }
+    return null;
+  };
 
-    const nextRef = String(Math.max(0, ...prescriptions.map((p) => Number(p.ref) || 0)) + 1);
-    const created: Prescription = { id: uid("rx"), ref: nextRef, title: "Consultation", drugs: [] };
-    setPrescriptions((prev) => [created, ...prev]);
-    setSelectedRxId(created.id);
-    return created;
-  }
+  const patchSelectedPrescription = async (
+    patcher: (current: Prescription) => Prescription,
+  ) => {
+    if (!selectedRx) return;
+    const nextPrescription = patcher(selectedRx);
+    setPrescriptions((prev) =>
+      prev.map((row) => (row.id === nextPrescription.id ? nextPrescription : row)),
+    );
+    await persistPrescription(nextPrescription);
+  };
 
-  function addDrugFromCatalog(drug: DrugSuggestion) {
-    const rx = ensureSelectedRx();
+  const addDrugFromCatalog = async (drug: DrugSuggestion) => {
+    let active: Prescription | null = selectedRx ?? null;
+    if (!active) {
+      active = await addPrescription();
+    }
+    if (!active) return;
 
     const newDrug: Drug = {
-      id: uid("drug"),
+      id: `drug_${Date.now()}_${Math.random().toString(16).slice(2)}`,
       name: drug.drugName,
       brand: drug.brand ?? null,
       form: drug.form ?? null,
@@ -183,47 +287,81 @@ export default function OrdonnancesTab({
       instructions: "",
     };
 
+    const nextPrescription = {
+      ...active,
+      drugs: [newDrug, ...active.drugs],
+    };
     setPrescriptions((prev) =>
-      prev.map((p) => (p.id === rx.id ? { ...p, drugs: [newDrug, ...p.drugs] } : p)),
+      prev.map((row) => (row.id === active.id ? nextPrescription : row)),
     );
-
     setMedQuery("");
     setExpandedDrugId(newDrug.id);
-  }
+    await persistPrescription(nextPrescription);
+  };
 
-  function toggleValidated(drugId: string) {
+  const toggleValidated = async (drugId: string) => {
+    await patchSelectedPrescription((current) => ({
+      ...current,
+      drugs: current.drugs.map((drug) =>
+        drug.id === drugId ? { ...drug, validated: !drug.validated } : drug,
+      ),
+    }));
+  };
+
+  const deleteDrug = async (drugId: string) => {
+    await patchSelectedPrescription((current) => ({
+      ...current,
+      drugs: current.drugs.filter((drug) => drug.id !== drugId),
+    }));
+    if (expandedDrugId === drugId) setExpandedDrugId(null);
+  };
+
+  const updateDrug = (drugId: string, patch: Partial<Drug>) => {
     if (!selectedRx) return;
     setPrescriptions((prev) =>
-      prev.map((p) => {
-        if (p.id !== selectedRx.id) return p;
+      prev.map((row) => {
+        if (row.id !== selectedRx.id) return row;
         return {
-          ...p,
-          drugs: p.drugs.map((d) => (d.id === drugId ? { ...d, validated: !d.validated } : d)),
+          ...row,
+          drugs: row.drugs.map((drug) =>
+            drug.id === drugId ? { ...drug, ...patch } : drug,
+          ),
         };
       }),
     );
-  }
+  };
 
-  function deleteDrug(drugId: string) {
+  const saveExpandedDrug = async () => {
     if (!selectedRx) return;
-    setPrescriptions((prev) =>
-      prev.map((p) => {
-        if (p.id !== selectedRx.id) return p;
-        return { ...p, drugs: p.drugs.filter((d) => d.id !== drugId) };
-      }),
-    );
-    if (expandedDrugId === drugId) setExpandedDrugId(null);
-  }
+    await persistPrescription(selectedRx);
+    setExpandedDrugId(null);
+  };
 
-  function updateDrug(drugId: string, patch: Partial<Drug>) {
-    if (!selectedRx) return;
-    setPrescriptions((prev) =>
-      prev.map((p) => {
-        if (p.id !== selectedRx.id) return p;
-        return { ...p, drugs: p.drugs.map((d) => (d.id === drugId ? { ...d, ...patch } : d)) };
-      }),
-    );
-  }
+  const reusePrescription = async (row: Prescription) => {
+    if (!requesterId || !consultationId || !patientId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const created = await upsertPrescription({
+        requesterId,
+        consultationId,
+        patientId,
+        templateName: row.title || "Consultation",
+        signedBy: signedBy ?? null,
+        status: "draft",
+        medications: toMedicationPayload(row.drugs),
+      });
+      const next = mapPrescriptionRow(created, prescriptions.length);
+      setPrescriptions((prev) => [next, ...prev]);
+      setSelectedRxId(next.id);
+      setLeftSubTab("types");
+    } catch (err) {
+      console.error("Failed to reuse previous prescription:", err);
+      setError(err instanceof Error ? err.message : "Failed to reuse prescription");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={styles.rootRow}>
@@ -231,9 +369,9 @@ export default function OrdonnancesTab({
         <View style={styles.flatPanel}>
           <View style={styles.leftHeaderRow}>
             <Text style={styles.panelTitle}>Médicaments</Text>
-            <TouchableOpacity style={styles.blueBtn} onPress={() => {}}>
-              <Ionicons name="add" size={16} color={theme.colors.textOnPrimary} />
-              <Text style={styles.blueBtnText}>NOUVEAU MÉDICAMENT</Text>
+            <TouchableOpacity style={styles.blueBtn} onPress={loadPrescriptions}>
+              <Ionicons name="refresh-outline" size={16} color={theme.colors.textOnPrimary} />
+              <Text style={styles.blueBtnText}>REFRESH</Text>
             </TouchableOpacity>
           </View>
 
@@ -250,7 +388,9 @@ export default function OrdonnancesTab({
           {!!medQuery.trim() && (suggestionsLoading || !!suggestions.length) && (
             <View style={styles.suggestDropdown}>
               {suggestionsLoading && !suggestions.length ? (
-                <Text style={[styles.suggestText, { paddingVertical: 10, paddingHorizontal: 12 }]}>Recherche...</Text>
+                <Text style={[styles.suggestText, { paddingVertical: 10, paddingHorizontal: 12 }]}>
+                  Recherche...
+                </Text>
               ) : null}
               {suggestions.map((s) => (
                 <TouchableOpacity key={s.id} onPress={() => addDrugFromCatalog(s)} style={styles.suggestItem}>
@@ -288,11 +428,27 @@ export default function OrdonnancesTab({
           )}
 
           {leftSubTab === "previous" && (
-            <View style={styles.mutedBox}>
-              <Text style={styles.mutedTitle}>Ordonnances Précédentes</Text>
-              <Text style={styles.mutedText}>
-                (À connecter) Chargez ici les ordonnances des visites précédentes.
-              </Text>
+            <View style={{ marginTop: 10, gap: 10 }}>
+              {previousPrescriptions.length ? (
+                previousPrescriptions.map((row) => (
+                  <TouchableOpacity key={row.id} style={styles.typeRow} onPress={() => reusePrescription(row)}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.typeText}>{row.title || "Prescription précédente"}</Text>
+                      <Text style={styles.mutedText}>
+                        {row.drugs.length} lignes • {row.createdAt ? new Date(row.createdAt).toLocaleDateString("fr-FR") : "Date inconnue"}
+                      </Text>
+                    </View>
+                    <Ionicons name="copy-outline" size={16} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.mutedBox}>
+                  <Text style={styles.mutedTitle}>Ordonnances Précédentes</Text>
+                  <Text style={styles.mutedText}>
+                    Les ordonnances validées des autres consultations de ce patient s&apos;afficheront ici.
+                  </Text>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -303,11 +459,25 @@ export default function OrdonnancesTab({
           <View style={styles.rightHeaderRow}>
             <Text style={styles.panelTitle}>Ordonnances</Text>
 
-            <TouchableOpacity style={styles.greenBtn} onPress={addPrescription}>
+            <TouchableOpacity style={[styles.greenBtn, saving && { opacity: 0.7 }]} onPress={addPrescription} disabled={saving}>
               <Ionicons name="add" size={16} color={theme.colors.textOnPrimary} />
-              <Text style={styles.greenBtnText}>AJOUTER ORDONNANCE</Text>
+              <Text style={styles.greenBtnText}>{saving ? "EN COURS..." : "AJOUTER ORDONNANCE"}</Text>
             </TouchableOpacity>
           </View>
+
+          {error ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={styles.mutedText}>Chargement des ordonnances…</Text>
+            </View>
+          ) : null}
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -429,7 +599,7 @@ export default function OrdonnancesTab({
                           style={[styles.editorTextarea, { backgroundColor: theme.colors.surface }]}
                         />
 
-                        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]} onPress={() => setExpandedDrugId(null)}>
+                        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]} onPress={saveExpandedDrug}>
                           <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
                           <Text style={styles.saveBtnText}>ENREGISTRER</Text>
                         </TouchableOpacity>
@@ -527,13 +697,11 @@ const createStyles = (theme: any) =>
     flatPanel: {
       backgroundColor: "transparent",
     },
-
     panelTitle: {
       fontSize: 16,
       fontWeight: "900",
       opacity: 0.88,
     },
-
     leftHeaderRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -546,7 +714,6 @@ const createStyles = (theme: any) =>
       justifyContent: "space-between",
       gap: 12,
     },
-
     blueBtn: {
       backgroundColor: theme.colors.info,
       paddingVertical: 10,
@@ -561,7 +728,6 @@ const createStyles = (theme: any) =>
       fontWeight: "900",
       fontSize: 12,
     },
-
     greenBtn: {
       backgroundColor: theme.colors.success,
       paddingVertical: 10,
@@ -576,7 +742,6 @@ const createStyles = (theme: any) =>
       fontWeight: "900",
       fontSize: 12,
     },
-
     searchWrap: {
       marginTop: 12,
       borderWidth: 1,
@@ -594,7 +759,6 @@ const createStyles = (theme: any) =>
       minHeight: 22,
       padding: 0,
     },
-
     suggestDropdown: {
       marginTop: 6,
       borderWidth: 1,
@@ -613,7 +777,6 @@ const createStyles = (theme: any) =>
       fontWeight: "800",
       opacity: 0.82,
     },
-
     typeRow: {
       paddingVertical: 12,
       paddingHorizontal: 12,
@@ -629,8 +792,8 @@ const createStyles = (theme: any) =>
     typeText: {
       fontWeight: "900",
       opacity: 0.82,
+      color: theme.colors.text,
     },
-
     mutedBox: {
       marginTop: 12,
       borderWidth: 1,
@@ -639,9 +802,31 @@ const createStyles = (theme: any) =>
       padding: 12,
       backgroundColor: theme.colors.surfaceVariant,
     },
-    mutedTitle: { fontWeight: "900", marginBottom: 6, opacity: 0.8 },
-    mutedText: { fontWeight: "800", opacity: 0.65, lineHeight: 18 },
-
+    mutedTitle: { fontWeight: "900", marginBottom: 6, opacity: 0.8, color: theme.colors.text },
+    mutedText: { fontWeight: "800", opacity: 0.65, lineHeight: 18, color: theme.colors.textSecondary },
+    loadingBox: {
+      marginTop: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 10,
+      backgroundColor: theme.colors.surface,
+      padding: 12,
+    },
+    errorBox: {
+      marginTop: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: `${theme.colors.error}33`,
+      borderRadius: 10,
+      backgroundColor: `${theme.colors.error}10`,
+      padding: 10,
+    },
+    errorText: { color: theme.colors.error, fontWeight: "800" },
     rxChip: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -656,7 +841,6 @@ const createStyles = (theme: any) =>
     },
     rxChipText: { fontWeight: "900", opacity: 0.75, fontSize: 12 },
     rxChipTextActive: { opacity: 1, color: theme.colors.primary },
-
     orangeBanner: {
       marginTop: 10,
       backgroundColor: theme.colors.warning,
@@ -682,7 +866,6 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       backgroundColor: theme.colors.primarySoft,
     },
-
     drugCard: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -706,17 +889,18 @@ const createStyles = (theme: any) =>
     drugName: {
       fontWeight: "900",
       opacity: 0.9,
+      color: theme.colors.text,
     },
     drugMeta: {
       fontWeight: "800",
       opacity: 0.55,
       marginTop: 2,
       fontSize: 12,
+      color: theme.colors.textSecondary,
     },
     rowIconBtn: {
       padding: 4,
     },
-
     drugEditor: {
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
@@ -725,7 +909,7 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.surfaceVariant,
     },
     editorRow: { flexDirection: "row", gap: 12 },
-    editorLabel: { fontWeight: "900", opacity: 0.7, marginBottom: 6 },
+    editorLabel: { fontWeight: "900", opacity: 0.7, marginBottom: 6, color: theme.colors.text },
     editorInput: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -755,5 +939,3 @@ const createStyles = (theme: any) =>
     },
     saveBtnText: { color: theme.colors.textOnPrimary, fontWeight: "900", letterSpacing: 0.3 },
   });
-
-

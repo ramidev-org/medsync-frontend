@@ -1,18 +1,27 @@
 import { EChart } from "@/components/charts/echart";
 import { PageShell } from "@/components/page_shell";
+import { useAuth } from "@/contexts/auth_context";
+import { getClinicAnalytics } from "@/services/analytics.services";
 import { useTheme } from "@/theme/theme_provider";
 import type { EChartsOption } from "echarts";
 import React from "react";
-import { Animated, Easing, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type StatTab =
   | "patient_flow"
-  | "vitals_trend"
-  | "bp_control"
-  | "hba1c_glucose"
-  | "lab_critical"
-  | "diagnosis_status"
-  | "treatment_response";
+  | "revenue"
+  | "appointment_status"
+  | "consultation_status"
+  | "task_status"
+  | "stock_alerts";
 
 type SeriesModel = {
   name: string;
@@ -33,21 +42,48 @@ type ChartModel =
 
 const TABS: { key: StatTab; label: string }[] = [
   { key: "patient_flow", label: "Patient Flow" },
-  { key: "vitals_trend", label: "Vitals Trend" },
-  { key: "bp_control", label: "BP Control" },
-  { key: "hba1c_glucose", label: "HbA1c/Glucose" },
-  { key: "lab_critical", label: "Critical Labs" },
-  { key: "diagnosis_status", label: "Diagnosis Status" },
-  { key: "treatment_response", label: "Treatment Response" },
+  { key: "revenue", label: "Revenue Trend" },
+  { key: "appointment_status", label: "Appointment Status" },
+  { key: "consultation_status", label: "Consultation Status" },
+  { key: "task_status", label: "Task Board" },
+  { key: "stock_alerts", label: "Stock Alerts" },
 ];
 
 export default function StatistiquesPage() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = React.useState<StatTab>("patient_flow");
   const [chartWidth, setChartWidth] = React.useState(600);
   const [pointHint, setPointHint] = React.useState("");
   const [selectedPointIndex, setSelectedPointIndex] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [analytics, setAnalytics] = React.useState<Awaited<
+    ReturnType<typeof getClinicAnalytics>
+  > | null>(null);
   const enterAnim = React.useMemo(() => new Animated.Value(0), []);
+
+  const load = React.useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getClinicAnalytics({ requesterId: user.id });
+      setAnalytics(data);
+    } catch (err) {
+      console.error("Failed to load statistics:", err);
+      setError(err instanceof Error ? err.message : "Failed to load statistics");
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
 
   React.useEffect(() => {
     setPointHint("");
@@ -61,75 +97,93 @@ export default function StatistiquesPage() {
   }, [activeTab, enterAnim]);
 
   const chartModel = React.useMemo<ChartModel>(() => {
+    if (!analytics) {
+      return { kind: "line", labels: [], series: [] };
+    }
+
     if (activeTab === "patient_flow") {
       return {
         kind: "line",
-        labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+        labels: analytics.daily.map((point) => point.label),
         series: [
-          { name: "Visits", data: [12, 18, 15, 22, 20, 11, 9], color: "#2563eb" },
-          { name: "Consultations", data: [9, 14, 12, 17, 16, 8, 7], color: "#06b6d4" },
+          {
+            name: "Appointments",
+            data: analytics.daily.map((point) => point.appointments),
+            color: "#2563eb",
+          },
+          {
+            name: "Consultations",
+            data: analytics.daily.map((point) => point.consultations),
+            color: "#06b6d4",
+          },
         ],
       };
     }
 
-    if (activeTab === "vitals_trend") {
-      return {
-        kind: "line",
-        labels: ["D1", "D2", "D3", "D4", "D5", "D6", "D7"],
-        series: [
-          { name: "Temp C", data: [37.1, 37.0, 37.4, 37.2, 36.9, 37.3, 37.1], color: "#f59e0b" },
-          { name: "SpO2 %", data: [96, 95, 94, 97, 98, 96, 97], color: "#06b6d4" },
-        ],
-      };
-    }
-
-    if (activeTab === "bp_control") {
-      return {
-        kind: "line",
-        labels: ["W1", "W2", "W3", "W4", "W5", "W6"],
-        series: [
-          { name: "Systolic", data: [138, 136, 134, 132, 130, 128], color: "#ef4444" },
-          { name: "Diastolic", data: [88, 86, 84, 83, 82, 80], color: "#2563eb" },
-        ],
-      };
-    }
-
-    if (activeTab === "hba1c_glucose") {
-      return {
-        kind: "line",
-        labels: ["M1", "M2", "M3", "M4", "M5", "M6"],
-        series: [
-          { name: "HbA1c %", data: [8.6, 8.2, 7.9, 7.5, 7.2, 6.9], color: "#7c3aed" },
-          { name: "Fasting Glucose g/L", data: [1.9, 1.8, 1.7, 1.5, 1.4, 1.3], color: "#f59e0b" },
-        ],
-      };
-    }
-
-    if (activeTab === "lab_critical") {
+    if (activeTab === "revenue") {
       return {
         kind: "bar",
-        labels: ["Troponin", "K+", "CRP", "Creat", "Hb"],
-        series: [{ name: "Critical", data: [4, 7, 3, 5, 2], color: "#ef4444" }],
+        labels: analytics.daily.map((point) => point.label),
+        series: [
+          {
+            name: "Revenue",
+            data: analytics.daily.map((point) => point.revenue),
+            color: "#16a34a",
+          },
+        ],
       };
     }
 
-    if (activeTab === "diagnosis_status") {
+    if (activeTab === "appointment_status") {
       return {
         kind: "pie",
-        pieData: [
-          { name: "Confirmed", value: 58, color: "#16A34A" },
-          { name: "Suspected", value: 27, color: "#F59E0B" },
-          { name: "Ruled Out", value: 15, color: "#64748B" },
-        ],
+        pieData: analytics.appointmentStatus.map((item, index) => ({
+          name: item.name.replaceAll("_", " "),
+          value: item.value,
+          color: ["#2563EB", "#F59E0B", "#16A34A", "#DC2626", "#6366F1"][index % 5],
+        })),
+      };
+    }
+
+    if (activeTab === "consultation_status") {
+      return {
+        kind: "pie",
+        pieData: analytics.consultationStatus.map((item, index) => ({
+          name: item.name.replaceAll("_", " "),
+          value: item.value,
+          color: ["#0F766E", "#F97316", "#64748B", "#2563EB"][index % 4],
+        })),
+      };
+    }
+
+    if (activeTab === "task_status") {
+      return {
+        kind: "pie",
+        pieData: analytics.taskStatus.map((item, index) => ({
+          name: item.name.replaceAll("_", " "),
+          value: item.value,
+          color: ["#F59E0B", "#2563EB", "#16A34A"][index % 3],
+        })),
       };
     }
 
     return {
-      kind: "line",
-      labels: ["W1", "W2", "W3", "W4", "W5", "W6"],
-      series: [{ name: "Response Score /10", data: [3, 4, 5, 6, 7, 8], color: "#10b981" }],
+      kind: "bar",
+      labels: analytics.lowStock.map((item) => item.name),
+      series: [
+        {
+          name: "Qty On Hand",
+          data: analytics.lowStock.map((item) => Number(item.qty_on_hand ?? 0)),
+          color: "#EF4444",
+        },
+        {
+          name: "Reorder Threshold",
+          data: analytics.lowStock.map((item) => Number(item.reorder_threshold ?? 0)),
+          color: "#94A3B8",
+        },
+      ],
     };
-  }, [activeTab]);
+  }, [activeTab, analytics]);
 
   const activePoint = React.useMemo(() => {
     if (chartModel.kind === "pie" || !chartModel.labels.length) return null;
@@ -146,7 +200,11 @@ export default function StatistiquesPage() {
 
   const chartOption = React.useMemo<EChartsOption>(() => {
     const axisLabelStyle = { color: theme.colors.textSecondary, fontSize: 11 };
-    const legendTextStyle = { color: theme.colors.text, fontSize: 12, fontWeight: 700 as any };
+    const legendTextStyle = {
+      color: theme.colors.text,
+      fontSize: 12,
+      fontWeight: 700 as any,
+    };
 
     if (chartModel.kind === "pie") {
       return {
@@ -217,21 +275,70 @@ export default function StatistiquesPage() {
         smooth: chartModel.kind === "line",
         symbol: chartModel.kind === "line" ? "circle" : undefined,
         symbolSize: chartModel.kind === "line" ? 8 : undefined,
-        lineStyle: chartModel.kind === "line" ? { width: 3, color: series.color } : undefined,
-        itemStyle: { color: series.color, borderRadius: chartModel.kind === "bar" ? 8 : 0 },
-        areaStyle: chartModel.kind === "line" && chartModel.series.length === 1 ? { opacity: 0.08 } : undefined,
+        lineStyle:
+          chartModel.kind === "line" ? { width: 3, color: series.color } : undefined,
+        itemStyle: {
+          color: series.color,
+          borderRadius: chartModel.kind === "bar" ? 8 : 0,
+        },
+        areaStyle:
+          chartModel.kind === "line" && chartModel.series.length === 1
+            ? { opacity: 0.08 }
+            : undefined,
         barMaxWidth: chartModel.kind === "bar" ? 42 : undefined,
       })),
     };
-  }, [chartModel, theme.colors.border, theme.colors.surface, theme.colors.text, theme.colors.textSecondary]);
+  }, [
+    chartModel,
+    theme.colors.border,
+    theme.colors.surface,
+    theme.colors.text,
+    theme.colors.textSecondary,
+  ]);
 
   return (
     <PageShell scrollable={false} contentStyle={{ flex: 1, paddingTop: 14 }}>
       <ScrollView contentContainerStyle={{ gap: 12, paddingBottom: 12 }}>
-        <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 20, backgroundColor: theme.colors.surface, padding: 16 }}>
-          <Text style={{ fontSize: 24, fontWeight: "900", color: theme.colors.text }}>Statistiques</Text>
-          <Text style={{ marginTop: 4, fontWeight: "700", color: theme.colors.textSecondary }}>Medical chart previews with mock data.</Text>
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 20,
+            backgroundColor: theme.colors.surface,
+            padding: 16,
+          }}
+        >
+          <Text style={{ fontSize: 24, fontWeight: "900", color: theme.colors.text }}>
+            Statistics
+          </Text>
+          <Text
+            style={{
+              marginTop: 4,
+              fontWeight: "700",
+              color: theme.colors.textSecondary,
+            }}
+          >
+            Live operational charts generated from appointments, consultations, tasks,
+            payments, and stock data.
+          </Text>
         </View>
+
+        {error ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: `${theme.colors.error}33`,
+              borderRadius: 16,
+              backgroundColor: `${theme.colors.error}10`,
+              padding: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <Text style={{ color: theme.colors.error, fontWeight: "800" }}>{error}</Text>
+          </View>
+        ) : null}
 
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           {TABS.map((tab) => {
@@ -249,32 +356,111 @@ export default function StatistiquesPage() {
                   backgroundColor: active ? theme.colors.primary : theme.colors.surface,
                 }}
               >
-                <Text style={{ fontWeight: "900", fontSize: 12, color: active ? "#fff" : theme.colors.text }}>{tab.label}</Text>
+                <Text
+                  style={{
+                    fontWeight: "900",
+                    fontSize: 12,
+                    color: active ? "#fff" : theme.colors.text,
+                  }}
+                >
+                  {tab.label}
+                </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
-
-        <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 20, backgroundColor: theme.colors.surface, padding: 16 }} onLayout={(e) => setChartWidth(Math.max(320, e.nativeEvent.layout.width - 40))}>
-          <Text style={{ fontWeight: "900", fontSize: 18, color: theme.colors.text, marginBottom: 12 }}>
-            {TABS.find((x) => x.key === activeTab)?.label}
-          </Text>
-          <Animated.View
+          <TouchableOpacity
+            onPress={load}
             style={{
-              alignItems: "center",
-              justifyContent: "center",
-              transform: [{ translateY: enterAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
-              opacity: enterAnim,
-              paddingVertical: 4,
+              paddingVertical: 9,
+              paddingHorizontal: 12,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface,
             }}
           >
-            <EChart option={chartOption} width={chartWidth} height={320} />
-            {pointHint ? (
-              <View style={{ marginTop: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: theme.colors.primarySoft }}>
-                <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>{pointHint}</Text>
-              </View>
-            ) : null}
-          </Animated.View>
+            <Text style={{ fontWeight: "900", fontSize: 12, color: theme.colors.text }}>
+              Refresh
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 20,
+            backgroundColor: theme.colors.surface,
+            padding: 16,
+          }}
+          onLayout={(e) => setChartWidth(Math.max(320, e.nativeEvent.layout.width - 40))}
+        >
+          <Text
+            style={{
+              fontWeight: "900",
+              fontSize: 18,
+              color: theme.colors.text,
+              marginBottom: 12,
+            }}
+          >
+            {TABS.find((x) => x.key === activeTab)?.label}
+          </Text>
+
+          {loading ? (
+            <View
+              style={{
+                minHeight: 240,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>
+                Loading chart data…
+              </Text>
+            </View>
+          ) : (
+            <Animated.View
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                transform: [
+                  {
+                    translateY: enterAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [14, 0],
+                    }),
+                  },
+                ],
+                opacity: enterAnim,
+                paddingVertical: 4,
+              }}
+            >
+              <EChart option={chartOption} width={chartWidth} height={320} />
+              {pointHint ? (
+                <View
+                  style={{
+                    marginTop: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 999,
+                    backgroundColor: theme.colors.primarySoft,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: theme.colors.primary,
+                      fontWeight: "800",
+                      fontSize: 12,
+                    }}
+                  >
+                    {pointHint}
+                  </Text>
+                </View>
+              ) : null}
+            </Animated.View>
+          )}
 
           {activePoint ? (
             <>
@@ -308,7 +494,9 @@ export default function StatistiquesPage() {
                         key={`${activeTab}-${label}-${index}`}
                         onPress={() => {
                           setSelectedPointIndex(index);
-                          const values = chartModel.series.map((series) => `${series.name} ${series.data[index]}`).join(" | ");
+                          const values = chartModel.series
+                            .map((series) => `${series.name} ${series.data[index]}`)
+                            .join(" | ");
                           setPointHint(`${label}: ${values}`);
                         }}
                         style={{
@@ -320,7 +508,13 @@ export default function StatistiquesPage() {
                           backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
                         }}
                       >
-                        <Text style={{ fontWeight: "800", fontSize: 12, color: active ? theme.colors.primary : theme.colors.text }}>
+                        <Text
+                          style={{
+                            fontWeight: "800",
+                            fontSize: 12,
+                            color: active ? theme.colors.primary : theme.colors.text,
+                          }}
+                        >
                           {label}
                         </Text>
                       </TouchableOpacity>
@@ -334,4 +528,3 @@ export default function StatistiquesPage() {
     </PageShell>
   );
 }
-

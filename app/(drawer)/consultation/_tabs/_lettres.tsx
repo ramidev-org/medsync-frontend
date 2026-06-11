@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type LetterTemplate = {
   id: string;
@@ -67,6 +67,27 @@ export default function LettresTab({
 
   const [text, setText] = useState(initialText);
 
+  const printLetter = () => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const popup = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+    if (!popup) return;
+    popup.document.write(`<pre style="font-family: ui-monospace, monospace; white-space: pre-wrap; padding: 24px;">${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  };
+
+  const saveLetter = () => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${templates.find((item) => item.id === selectedId)?.name || "letter"}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // keep editor in sync when switching template
   const switchTemplate = (id: string) => {
     setSelectedId(id);
@@ -82,7 +103,7 @@ export default function LettresTab({
         <View style={{ flexDirection: "row", gap: 10 }}>
           <TouchableOpacity
             style={styles.outlineBtn}
-            onPress={() => Alert.alert("PDF", "Génération PDF (prototype)")}
+            onPress={printLetter}
           >
             <Ionicons name="print-outline" size={16} color={theme.colors.info} />
             <Text style={[styles.outlineText, { color: theme.colors.info }]}>IMPRIMER</Text>
@@ -90,7 +111,7 @@ export default function LettresTab({
 
           <TouchableOpacity
             style={styles.primaryBtn}
-            onPress={() => Alert.alert("Sauvegarde", "Lettre sauvegardée (prototype)")}
+            onPress={saveLetter}
           >
             <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
             <Text style={styles.primaryText}>SAUVEGARDER</Text>

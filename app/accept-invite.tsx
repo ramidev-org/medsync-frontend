@@ -27,6 +27,9 @@ type TokenState = {
 const isBlocked = (s: TokenState["status"]) =>
   s === "invalid" || s === "expired" || s === "accepted";
 
+const roleLabel = (userType: UserType) =>
+  userType === "doctor" ? "Doctor" : "Assistant";
+
 const normalizeUserType = (v: unknown): UserType | null => {
   const raw = String(v ?? "").toLowerCase();
   if (raw === "doctor") return "doctor";
@@ -142,7 +145,12 @@ export default function AcceptInvitePage() {
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
 
-  const canSubmit = !submitting && !!token.trim() && !isBlocked(tokenState.status);
+  const inviteEmail = tokenState.details?.email ? String(tokenState.details.email) : "";
+  const inviteClinicName = tokenState.details?.clinic_name
+    ? String(tokenState.details.clinic_name)
+    : "";
+  const canSubmit =
+    !submitting && !!token.trim() && tokenState.status === "valid" && !tokenState.loading;
 
   const handleSubmit = async () => {
     setError("");
@@ -154,6 +162,13 @@ export default function AcceptInvitePage() {
     if (!form.full_name.trim()) return setError("Full name is required.");
 
     if (isBlocked(tokenState.status)) return setError("This invite cannot be used.");
+    if (tokenState.status !== "valid") return setError("Please wait for invite validation.");
+    if (
+      inviteEmail &&
+      inviteEmail.trim().toLowerCase() !== form.email.trim().toLowerCase()
+    ) {
+      return setError("This invite can only be accepted with the invited email address.");
+    }
 
     if (userType === "doctor") {
       // Optional doctor profile fields; no extra required fields here by default.
@@ -227,6 +242,15 @@ export default function AcceptInvitePage() {
             Create your account using the invite link you received.
           </Text>
 
+          {!!inviteClinicName && tokenState.status === "valid" ? (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Clinic</Text>
+              <Text style={styles.summaryValue}>{inviteClinicName}</Text>
+              <Text style={styles.summaryLabel}>Invited role</Text>
+              <Text style={styles.summaryValue}>{roleLabel(userType)}</Text>
+            </View>
+          ) : null}
+
           {!!tokenBanner && (
             <Text
               style={[
@@ -298,38 +322,14 @@ export default function AcceptInvitePage() {
             </View>
 
             <View style={styles.pillRow}>
-              <Pressable
-                onPress={() => setUserType("doctor")}
-                style={[
-                  styles.pill,
-                  userType === "doctor" && styles.pillActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    userType === "doctor" && styles.pillTextActive,
-                  ]}
-                >
-                  Doctor
+              <View style={[styles.pill, styles.pillActive, styles.pillLocked]}>
+                <Text style={[styles.pillText, styles.pillTextActive]}>
+                  {roleLabel(userType)}
                 </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setUserType("assistant")}
-                style={[
-                  styles.pill,
-                  userType === "assistant" && styles.pillActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    userType === "assistant" && styles.pillTextActive,
-                  ]}
-                >
-                  Assistant
-                </Text>
-              </Pressable>
+              </View>
+              <Text style={styles.helpText}>
+                The invite token decides the staff role. This cannot be changed here.
+              </Text>
             </View>
 
             {userType === "doctor" ? (
@@ -474,6 +474,17 @@ const styles = StyleSheet.create({
   },
   bannerOk: { backgroundColor: "#DCFCE7", color: "#166534" },
   bannerBad: { backgroundColor: "#FEE2E2", color: "#991B1B" },
+  summaryCard: {
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+    backgroundColor: "#eff6ff",
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
+    marginBottom: 14,
+  },
+  summaryLabel: { fontSize: 12, fontWeight: "700", color: "#1d4ed8", textTransform: "uppercase" },
+  summaryValue: { fontSize: 16, fontWeight: "800", color: "#0f172a" },
   form: { gap: 14 },
   row: { flexDirection: "row", gap: 10 },
   rowItem: { flex: 1 },
@@ -498,8 +509,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   pillActive: { borderColor: "#0D6EFD", backgroundColor: "#EFF6FF" },
+  pillLocked: { alignSelf: "flex-start" },
   pillText: { fontWeight: "800", color: "#334155" },
   pillTextActive: { color: "#0D6EFD" },
+  helpText: { flex: 1, color: "#64748b", fontSize: 13, lineHeight: 18 },
   button: {
     backgroundColor: "#0D6EFD",
     padding: 15,

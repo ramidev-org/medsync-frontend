@@ -12,28 +12,63 @@ import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { getDashboardStyles } from "./_styles";
 
 type VisitStatus = "pending" | "in_consultation" | "completed" | "cancelled";
+type AgendaAppointment = {
+  id: string;
+  scheduled_at: string;
+  status: VisitStatus | string;
+  type: string;
+  patient_first_name?: string | null;
+  patient_last_name?: string | null;
+};
+type RpcGetAppointmentsResponse = { appointments: AgendaAppointment[] };
 
 export default function ReceptionDashboardPage() {
   const { theme } = useTheme();
   const styles = useMemo(() => getDashboardStyles(theme), [theme]);
   const { user } = useAuth();
   const { clinic, subscription } = useAppData();
-  const { recentTasks } = useTasks();
+  const { recentTasks, loading: tasksLoading } = useTasks();
   const router = useRouter();
   const [counts, setCounts] = useState<any | null>(null);
+  const [agenda, setAgenda] = useState<AgendaAppointment[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       try {
         if (!user?.id) return;
-        const c = await callRpc<any, Record<string, unknown>>(
-          "rpc_get_clinic_dashboard_counts",
-          { p_requester_id: user.id },
-        );
-        if (!cancelled) setCounts(c ?? null);
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+
+        const [c, agendaRes] = await Promise.all([
+          callRpc<any, Record<string, unknown>>("rpc_get_clinic_dashboard_counts", {
+            p_requester_id: user.id,
+          }),
+          callRpc<RpcGetAppointmentsResponse, Record<string, unknown>>(
+            "rpc_get_appointments",
+            {
+              p_requester_id: user.id,
+              p_search: null,
+              p_status: null,
+              p_doctor_id: null,
+              p_start_date: start.toISOString(),
+              p_end_date: end.toISOString(),
+              p_page: 1,
+              p_items_per_page: 80,
+            },
+          ).catch(() => ({ appointments: [] })),
+        ]);
+        if (!cancelled) {
+          setCounts(c ?? null);
+          setAgenda(agendaRes?.appointments ?? []);
+        }
       } catch {
-        if (!cancelled) setCounts(null);
+        if (!cancelled) {
+          setCounts(null);
+          setAgenda([]);
+        }
       }
     };
     run();
@@ -42,21 +77,17 @@ export default function ReceptionDashboardPage() {
     };
   }, [user?.id]);
 
-  // TODO: Replace with real data from database when appointments/visits table is added
-  const visits = [] as any[];
+  const visits = agenda;
   const pendingCount =
     counts?.appointments_pending ?? counts?.pending_appointments ?? counts?.pending_count ?? 0;
-  const inConsultCount = 0;
-  const completedCount = 0;
-  const cancelledCount = 0;
+  const inConsultCount = visits.filter((item) => item.status === "in_consultation").length;
+  const completedCount = visits.filter((item) => item.status === "completed").length;
+  const cancelledCount = visits.filter((item) => item.status === "cancelled").length;
 
   // Reception-focused "work queue"
   const toConfirm = pendingCount;
-  const toBill = 0;
-  const toReschedule = 0;
-
-  // "Today agenda" (instead of waiting room)
-  const agenda: any[] = [];
+  const toBill = visits.filter((item) => item.status === "completed").length;
+  const toReschedule = visits.filter((item) => item.status === "cancelled").length;
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
@@ -127,10 +158,14 @@ export default function ReceptionDashboardPage() {
               </View>
 
               <View style={{ gap: 10 }}>
-                {agenda.map((a: any) => {
-                  const patientName = `${a.patient?.first_name ?? ""} ${a.patient?.last_name ?? ""}`.trim() || "Patient";
+                {agenda.map((a) => {
+                  const patientName = `${a.patient_first_name ?? ""} ${a.patient_last_name ?? ""}`.trim() || "Patient";
                   const status = (a.status ?? "pending") as VisitStatus;
                   const chip = statusChip(status, theme);
+                  const timeLabel = new Intl.DateTimeFormat("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(a.scheduled_at));
 
                   return (
                     <View
@@ -175,7 +210,7 @@ export default function ReceptionDashboardPage() {
                             {patientName}
                           </Text>
                           <Text style={{ color: theme.colors.muted, marginTop: 2 }}>
-                            {a.time ?? "—"} • {a.reason ?? "Consultation"}
+                            {timeLabel} • {String(a.type || "consultation").replaceAll("_", " ")}
                           </Text>
                         </View>
                       </View>
@@ -202,7 +237,7 @@ export default function ReceptionDashboardPage() {
 
                 {!agenda.length && (
                   <Text style={{ color: theme.colors.muted, fontWeight: "800" }}>
-                    Aucun rendez-vous planifié.
+                    Aucun rendez-vous planifie pour aujourd&apos;hui.
                   </Text>
                 )}
               </View>
@@ -273,7 +308,7 @@ export default function ReceptionDashboardPage() {
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
 
               <View style={styles.activityList}>
-                {recentTasks.map((task) => (
+                {!tasksLoading && recentTasks.map((task) => (
                   <ActivityItem
                     key={task.id}
                     title={task.title}
@@ -282,6 +317,11 @@ export default function ReceptionDashboardPage() {
                     theme={theme}
                   />
                 ))}
+                {!tasksLoading && recentTasks.length === 0 ? (
+                  <Text style={{ color: theme.colors.muted, fontWeight: "700" }}>
+                    Aucune tache recente.
+                  </Text>
+                ) : null}
               </View>
             </View>
 

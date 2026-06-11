@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const ICD_CATALOG = [
   { code: "A00", label: "Choléra" },
@@ -15,14 +15,24 @@ const ICD_CATALOG = [
 export default function MaladiesTab({
   theme,
   initialDiagnosisCodes,
+  onChangeDiagnosisCodes,
 }: {
   theme: any;
   initialDiagnosisCodes: string[];
+  onChangeDiagnosisCodes?: (codes: string[]) => void;
 }) {
   const styles = createStyles(theme);
 
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>(initialDiagnosisCodes || []);
+
+  useEffect(() => {
+    setSelected(initialDiagnosisCodes || []);
+  }, [initialDiagnosisCodes]);
+
+  useEffect(() => {
+    onChangeDiagnosisCodes?.(selected);
+  }, [onChangeDiagnosisCodes, selected]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -44,13 +54,10 @@ export default function MaladiesTab({
     <View style={styles.flatRoot}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Maladies</Text>
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={() => Alert.alert("Sauvegarde", "Maladies sauvegardées (prototype)")}
-        >
-          <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
-          <Text style={styles.primaryText}>SAUVEGARDER</Text>
-        </TouchableOpacity>
+        <View style={styles.infoPill}>
+          <Ionicons name="sync-outline" size={16} color={theme.colors.primary} />
+          <Text style={styles.infoPillText}>Synced with consultation save</Text>
+        </View>
       </View>
 
       <Text style={styles.label}>Recherche ICD</Text>
@@ -110,8 +117,8 @@ const createStyles = (theme: any) =>
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     title: { fontSize: 16, fontWeight: "900" },
 
-    primaryBtn: {
-      backgroundColor: theme.colors.info,
+    infoPill: {
+      backgroundColor: theme.colors.primarySoft,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -119,7 +126,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    primaryText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
+    infoPillText: { color: theme.colors.primary, fontWeight: "900" },
 
     label: { marginTop: 14, fontWeight: "900", opacity: 0.8 },
     search: { marginTop: 8, borderRadius: 10, padding: 12, minHeight: 44 },

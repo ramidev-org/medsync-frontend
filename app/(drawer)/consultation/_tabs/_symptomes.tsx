@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const SYMPTOMS = [
   "Fièvre",
@@ -14,11 +14,27 @@ const SYMPTOMS = [
   "Douleur thoracique",
 ];
 
-export default function SymptomesTab({ theme }: { theme: any }) {
+export default function SymptomesTab({
+  theme,
+  value,
+  onChange,
+}: {
+  theme: any;
+  value?: string[];
+  onChange?: (items: string[]) => void;
+}) {
   const styles = createStyles(theme);
 
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string[]>(["Fièvre", "Toux"]); // seeded mock
+  const [selected, setSelected] = useState<string[]>(value || []);
+
+  useEffect(() => {
+    setSelected(value || []);
+  }, [value]);
+
+  useEffect(() => {
+    onChange?.(selected);
+  }, [onChange, selected]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -33,13 +49,10 @@ export default function SymptomesTab({ theme }: { theme: any }) {
     <View style={styles.flatRoot}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Symptômes</Text>
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={() => Alert.alert("Sauvegarde", "Symptômes sauvegardés (prototype)")}
-        >
-          <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
-          <Text style={styles.primaryText}>SAUVEGARDER</Text>
-        </TouchableOpacity>
+        <View style={styles.infoPill}>
+          <Ionicons name="sync-outline" size={16} color={theme.colors.primary} />
+          <Text style={styles.infoPillText}>Saved with the consultation</Text>
+        </View>
       </View>
 
       <Text style={styles.label}>Recherche</Text>
@@ -94,8 +107,8 @@ const createStyles = (theme: any) =>
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     title: { fontSize: 16, fontWeight: "900" },
 
-    primaryBtn: {
-      backgroundColor: theme.colors.info,
+    infoPill: {
+      backgroundColor: theme.colors.primarySoft,
       paddingVertical: 10,
       paddingHorizontal: 12,
       borderRadius: 8,
@@ -103,7 +116,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    primaryText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
+    infoPillText: { color: theme.colors.primary, fontWeight: "900" },
 
     label: { marginTop: 14, fontWeight: "900", opacity: 0.8 },
     search: { marginTop: 8, borderRadius: 10, padding: 12, minHeight: 44 },

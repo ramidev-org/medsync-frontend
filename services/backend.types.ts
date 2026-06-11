@@ -68,6 +68,16 @@ export type CreateStaffInviteBody = {
   user_type: UserType;
 };
 
+export type CreateStaffInviteResult = {
+  invite_id?: string | null;
+  token?: string | null;
+  invite_token?: string | null;
+  url?: string | null;
+  invite_url?: string | null;
+  link?: string | null;
+  expires_at?: string | null;
+};
+
 export type AcceptStaffInviteBody = {
   token: string;
   email: string;
@@ -110,6 +120,17 @@ export type StaffInviteStatus = {
 
   // Backward-compat shape (older deployments)
   status?: "valid" | "invalid" | "expired" | "accepted";
+};
+
+export type StaffInviteRow = {
+  id: string;
+  clinic_id: string;
+  email: string;
+  user_type: UserType;
+  invited_by: string | null;
+  expires_at: string | null;
+  accepted_at: string | null;
+  created_at: string | null;
 };
 
 export type ConsultationRow = {
@@ -198,6 +219,67 @@ export type ConsultationDocumentRow = {
   document_type: string | null;
   title: string | null;
   notes: string | null;
+};
+
+export type ClinicTaskPriority = "high" | "medium" | "low";
+export type ClinicTaskStatus = "todo" | "in_progress" | "done";
+
+export type ClinicTaskRow = {
+  id: string;
+  clinic_id: string;
+  title: string;
+  assignee_id: string | null;
+  assignee_name: string;
+  priority: ClinicTaskPriority;
+  status: ClinicTaskStatus;
+  due_text: string | null;
+  due_at: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClinicNotificationKind =
+  | "follow_up"
+  | "payment"
+  | "system"
+  | "task";
+
+export type ClinicNotificationRow = {
+  id: string;
+  notification_key: string;
+  kind: ClinicNotificationKind | string;
+  title: string;
+  description: string;
+  created_at: string;
+  unread: boolean;
+};
+
+export type PrescriptionMedicationRow = {
+  id: string;
+  medicine_name: string;
+  dose: string | null;
+  frequency: string | null;
+  duration: string | null;
+  instructions: string | null;
+  created_at: string;
+};
+
+export type PrescriptionRow = {
+  id: string;
+  consultation_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  template_name: string | null;
+  signed_by: string | null;
+  created_at: string;
+  updated_at: string;
+  treatment_case_id: string | null;
+  status: PrescriptionStatus | string;
+  notes: string | null;
+  signed_at: string | null;
+  medications: PrescriptionMedicationRow[];
 };
 
 export type ConsultationEventRow = {
