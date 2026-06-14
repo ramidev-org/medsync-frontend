@@ -50,6 +50,7 @@ export default function TasksPage() {
     <PageShell
       title="Task Workflow"
       subtitle="Operations board for clinical and admin coordination."
+      scrollable={false}
       actions={
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity style={styles.secondaryBtn} onPress={refresh}>
@@ -62,47 +63,49 @@ export default function TasksPage() {
         </View>
       }
     >
-      <View style={styles.notice}>
-        <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
-        <Text style={styles.noticeText}>Tasks are saved for the clinic workspace and appear across the dashboards.</Text>
-      </View>
-
-      {error ? (
-        <View style={styles.errorBox}>
-          <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
+      <View style={styles.pageContent}>
+        <View style={styles.notice}>
+          <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
+          <Text style={styles.noticeText}>Tasks are saved for the clinic workspace and appear across the dashboards.</Text>
         </View>
-      ) : null}
 
-      <View style={styles.statsRow}>
-        <StatCard label="Total" value={String(stats.total)} tone={theme.colors.primary} theme={theme} />
-        <StatCard label="To Do" value={String(stats.todo)} tone={theme.colors.warning} theme={theme} />
-        <StatCard label="In Progress" value={String(stats.inProgress)} tone={theme.colors.info} theme={theme} />
-        <StatCard label="Done" value={String(stats.done)} tone={theme.colors.success} theme={theme} />
-      </View>
+        {error ? (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
 
-      <View style={styles.board}>
-        <TaskColumn
-          title="To Do"
-          icon="clipboard-outline"
-          rows={grouped.todo}
-          onMove={moveTask}
-          theme={theme}
-        />
-        <TaskColumn
-          title="In Progress"
-          icon="time-outline"
-          rows={grouped.in_progress}
-          onMove={moveTask}
-          theme={theme}
-        />
-        <TaskColumn
-          title="Done"
-          icon="checkmark-done-outline"
-          rows={grouped.done}
-          onMove={moveTask}
-          theme={theme}
-        />
+        <View style={styles.statsRow}>
+          <StatCard label="Total" value={String(stats.total)} tone={theme.colors.primary} theme={theme} />
+          <StatCard label="To Do" value={String(stats.todo)} tone={theme.colors.warning} theme={theme} />
+          <StatCard label="In Progress" value={String(stats.inProgress)} tone={theme.colors.info} theme={theme} />
+          <StatCard label="Done" value={String(stats.done)} tone={theme.colors.success} theme={theme} />
+        </View>
+
+        <View style={styles.board}>
+          <TaskColumn
+            title="To Do"
+            icon="clipboard-outline"
+            rows={grouped.todo}
+            onMove={moveTask}
+            theme={theme}
+          />
+          <TaskColumn
+            title="In Progress"
+            icon="time-outline"
+            rows={grouped.in_progress}
+            onMove={moveTask}
+            theme={theme}
+          />
+          <TaskColumn
+            title="Done"
+            icon="checkmark-done-outline"
+            rows={grouped.done}
+            onMove={moveTask}
+            theme={theme}
+          />
+        </View>
       </View>
 
       {loading ? (
@@ -181,7 +184,7 @@ function TaskColumn({
         </View>
         <Text style={{ color: theme.colors.textSecondary, fontWeight: "800", fontSize: 12 }}>{rows.length}</Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: 10, gap: 8, maxHeight: 440 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 10, gap: 8 }}>
         {rows.length === 0 && <Text style={{ color: theme.colors.textSecondary, fontWeight: "700" }}>No tasks</Text>}
         {rows.map((task) => (
           <View key={task.id} style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.background, padding: 10 }}>
@@ -315,7 +318,8 @@ const createStyles = (theme: any) =>
     },
     errorText: { color: theme.colors.error, fontWeight: "800" },
     statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-    board: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
+    pageContent: { flex: 1, minHeight: 0 },
+    board: { flex: 1, minHeight: 0, flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "stretch" },
     loadingBox: {
       marginTop: 12,
       flexDirection: "row",

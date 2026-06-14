@@ -1,7 +1,6 @@
 // app.config.ts
-// Loads .env and exposes EXPO_PUBLIC_* flags in expo.extra so they work on Web/Native.
-
-import "dotenv/config";
+// Expo CLI already loads .env before evaluating this file, so we can read
+// EXPO_PUBLIC_* directly from process.env without importing dotenv here.
 
 export default ({ config }: any) => {
   const role = process.env.EXPO_PUBLIC_ROLE;

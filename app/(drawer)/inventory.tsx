@@ -176,68 +176,71 @@ export default function InventoryPage() {
       title="Clinic Inventory"
       subtitle="Stock control, reorder safety, and item-level adjustments."
       actions={headerActions}
+      scrollable={false}
     >
-      {migrationMissing && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>
-            Database migration missing. Apply `database/sql/2026_05_09_inventory_and_chats.sql` in Supabase to enable inventory.
-          </Text>
-        </View>
-      )}
+      <View style={styles.pageContent}>
+        {migrationMissing && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>
+              Database migration missing. Apply `database/sql/2026_05_09_inventory_and_chats.sql` in Supabase to enable inventory.
+            </Text>
+          </View>
+        )}
 
-      <View style={styles.heroCard}>
-        <View style={styles.heroHeader}>
-          <View style={styles.heroIntro}>
-            <Text style={styles.heroEyebrow}>Inventory desk</Text>
-            <Text style={styles.heroTitle}>Search, stock review, and item actions in one place.</Text>
+        <View style={styles.heroCard}>
+          <View style={styles.heroHeader}>
+            <View style={styles.heroIntro}>
+              <Text style={styles.heroEyebrow}>Inventory desk</Text>
+              <Text style={styles.heroTitle}>Search, stock review, and item actions in one place.</Text>
+            </View>
+          </View>
+
+          <View style={styles.statsRow}>
+            <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
+            <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
+            <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
           </View>
         </View>
 
-        <View style={styles.statsRow}>
-          <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
-          <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
-          <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
-        </View>
-      </View>
+        <View style={styles.listWrap}>
+          <View style={styles.headerRow}>
+            <Text style={styles.hCell}>Item</Text>
+            <Text style={styles.hCell}>Stock</Text>
+            <Text style={styles.hCell}>Threshold</Text>
+            <Text style={styles.hCell}>State</Text>
+            <Text style={styles.hCell}>Actions</Text>
+          </View>
 
-      <View style={styles.listWrap}>
-        <View style={styles.headerRow}>
-          <Text style={styles.hCell}>Item</Text>
-          <Text style={styles.hCell}>Stock</Text>
-          <Text style={styles.hCell}>Threshold</Text>
-          <Text style={styles.hCell}>State</Text>
-          <Text style={styles.hCell}>Actions</Text>
-        </View>
-
-        <ScrollView>
-          {items.length === 0 && !loading && (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>No inventory items found.</Text>
-            </View>
-          )}
-          {items.map((item) => {
-            const low = Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0);
-            return (
-              <View key={item.id} style={styles.itemRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>{item.name}</Text>
-                  <Text style={styles.itemSub}>
-                    {(item.sku && `SKU: ${item.sku}`) || "No SKU"}{item.unit ? ` • Unit: ${item.unit}` : ""}
-                  </Text>
-                </View>
-                <Text style={styles.cell}>{String(item.qty_on_hand ?? 0)}</Text>
-                <Text style={styles.cell}>{String(item.reorder_threshold ?? 0)}</Text>
-                <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "900" }]}>
-                  {low ? "Low" : "Healthy"}
-                </Text>
-                <TouchableOpacity style={styles.rowActionBtn} onPress={() => onOpenAdjust(item)}>
-                  <Ionicons name="swap-horizontal-outline" size={16} color={theme.colors.text} />
-                  <Text style={styles.rowActionText}>Adjust</Text>
-                </TouchableOpacity>
+          <ScrollView style={styles.listScroller} contentContainerStyle={styles.listScrollerContent}>
+            {items.length === 0 && !loading && (
+              <View style={styles.emptyRow}>
+                <Text style={styles.emptyText}>No inventory items found.</Text>
               </View>
-            );
-          })}
-        </ScrollView>
+            )}
+            {items.map((item) => {
+              const low = Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0);
+              return (
+                <View key={item.id} style={styles.itemRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{item.name}</Text>
+                    <Text style={styles.itemSub}>
+                      {(item.sku && `SKU: ${item.sku}`) || "No SKU"}{item.unit ? ` - Unit: ${item.unit}` : ""}
+                    </Text>
+                  </View>
+                  <Text style={styles.cell}>{String(item.qty_on_hand ?? 0)}</Text>
+                  <Text style={styles.cell}>{String(item.reorder_threshold ?? 0)}</Text>
+                  <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "900" }]}>
+                    {low ? "Low" : "Healthy"}
+                  </Text>
+                  <TouchableOpacity style={styles.rowActionBtn} onPress={() => onOpenAdjust(item)}>
+                    <Ionicons name="swap-horizontal-outline" size={16} color={theme.colors.text} />
+                    <Text style={styles.rowActionText}>Adjust</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
       </View>
 
       <Modal visible={addOpen} transparent animationType="fade" onRequestClose={() => setAddOpen(false)}>
@@ -365,6 +368,7 @@ function Input({
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    pageContent: { flex: 1, minHeight: 0 },
     heroCard: {
       marginBottom: 12,
       padding: 14,
@@ -441,13 +445,16 @@ const createStyles = (theme: any) =>
     },
     secondaryBtnText: { color: theme.colors.text, fontWeight: "800" },
     listWrap: {
+      flex: 1,
+      minHeight: 0,
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: 14,
       backgroundColor: theme.colors.surface,
       overflow: "hidden",
-      maxHeight: 520,
     },
+    listScroller: { flex: 1 },
+    listScrollerContent: { flexGrow: 1 },
     headerRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -536,4 +543,3 @@ const createStyles = (theme: any) =>
     },
     adjustBtnText: { color: "#fff", fontWeight: "900" },
   });
-

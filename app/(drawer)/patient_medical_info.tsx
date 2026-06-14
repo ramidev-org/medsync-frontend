@@ -361,63 +361,64 @@ export default function PatientMedicalDocument() {
           </View>
         )}
 
-        {/* Disabilities */}
-        {medicalInfo?.disabilities && medicalInfo.disabilities.length > 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="accessibility" size={24} color="#06b6d4" />
-              <Text style={styles.cardTitle}>Handicaps / Limitations</Text>
-            </View>
-            <View style={styles.listContainer}>
-              {medicalInfo.disabilities.map((disability, index) => (
-                <View key={index} style={styles.listItem}>
-                  <View style={styles.bulletPoint} />
-                  <Text style={styles.listText}>{disability}</Text>
+        {(medicalInfo?.disabilities?.length || patient.emergency_contact_name || patient.insurance_provider) ? (
+          <View style={styles.bottomCardsRow}>
+            {medicalInfo?.disabilities && medicalInfo.disabilities.length > 0 && (
+              <View style={[styles.card, styles.bottomCard]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="accessibility" size={24} color="#06b6d4" />
+                  <Text style={styles.cardTitle}>Handicaps / Limitations</Text>
                 </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Emergency Contact */}
-        {patient.emergency_contact_name && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="call" size={24} color="#ef4444" />
-              <Text style={styles.cardTitle}>Contact d&apos;Urgence</Text>
-            </View>
-            <View style={styles.emergencyContact}>
-              <Text style={styles.emergencyName}>{patient.emergency_contact_name}</Text>
-              {patient.emergency_contact_relationship && (
-                <Text style={styles.emergencyRelation}>
-                  {patient.emergency_contact_relationship}
-                </Text>
-              )}
-              {patient.emergency_contact_phone && (
-                <View style={styles.infoRow}>
-                  <Ionicons name="call" size={16} color={theme.colors.primary} />
-                  <Text style={styles.emergencyPhone}>{patient.emergency_contact_phone}</Text>
+                <View style={styles.listContainer}>
+                  {medicalInfo.disabilities.map((disability, index) => (
+                    <View key={index} style={styles.listItem}>
+                      <View style={styles.bulletPoint} />
+                      <Text style={styles.listText}>{disability}</Text>
+                    </View>
+                  ))}
                 </View>
-              )}
-            </View>
-          </View>
-        )}
+              </View>
+            )}
 
-        {/* Insurance */}
-        {patient.insurance_provider && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="shield-checkmark" size={24} color="#10b981" />
-              <Text style={styles.cardTitle}>Assurance</Text>
-            </View>
-            <View style={styles.insuranceInfo}>
-              <Text style={styles.insuranceProvider}>{patient.insurance_provider}</Text>
-              {patient.insurance_policy_number && (
-                <Text style={styles.insurancePolicy}>N° {patient.insurance_policy_number}</Text>
-              )}
-            </View>
+            {patient.emergency_contact_name && (
+              <View style={[styles.card, styles.bottomCard]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="call" size={24} color="#ef4444" />
+                  <Text style={styles.cardTitle}>Contact d&apos;Urgence</Text>
+                </View>
+                <View style={styles.emergencyContact}>
+                  <Text style={styles.emergencyName}>{patient.emergency_contact_name}</Text>
+                  {patient.emergency_contact_relationship && (
+                    <Text style={styles.emergencyRelation}>
+                      {patient.emergency_contact_relationship}
+                    </Text>
+                  )}
+                  {patient.emergency_contact_phone && (
+                    <View style={styles.infoRow}>
+                      <Ionicons name="call" size={16} color={theme.colors.primary} />
+                      <Text style={styles.emergencyPhone}>{patient.emergency_contact_phone}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {patient.insurance_provider && (
+              <View style={[styles.card, styles.bottomCard]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="shield-checkmark" size={24} color="#10b981" />
+                  <Text style={styles.cardTitle}>Assurance</Text>
+                </View>
+                <View style={styles.insuranceInfo}>
+                  <Text style={styles.insuranceProvider}>{patient.insurance_provider}</Text>
+                  {patient.insurance_policy_number && (
+                    <Text style={styles.insurancePolicy}>N° {patient.insurance_policy_number}</Text>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
-        )}
+        ) : null}
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -586,6 +587,17 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 16,
+    },
+    bottomCardsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 20,
+      alignItems: "stretch",
+    },
+    bottomCard: {
+      flex: 1,
+      minWidth: 280,
+      marginBottom: 0,
     },
     sectionLabel: {
       fontSize: 12,

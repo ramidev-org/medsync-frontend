@@ -59,6 +59,7 @@ export default function PaymentsPage() {
     <PageShell
       title="Gestion des Paiements"
       subtitle={`${filteredPayments.length} paiement${filteredPayments.length > 1 ? "s" : ""}`}
+      scrollable={false}
       actions={
         <View style={styles.filterSection}>
           <View style={styles.searchFieldWrap}>
@@ -90,8 +91,8 @@ export default function PaymentsPage() {
         </View>
       }
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={tableStyles.tableCard}>
+      <View style={styles.pageContent}>
+        <View style={[tableStyles.tableCard, styles.tableCard]}>
           <View style={tableStyles.tableHeader}>
             {["Avatar", "Code", "Nom", "Prenom", "Montant", "Motif", "Statut", "Date"].map((header) => (
               <View key={header} style={tableStyles.headerCell}>
@@ -99,49 +100,50 @@ export default function PaymentsPage() {
               </View>
             ))}
           </View>
-
-          {loading ? (
-            <View style={tableStyles.emptyState}>
-              <Text style={tableStyles.emptyText}>Chargement...</Text>
-            </View>
-          ) : visibleRows.length === 0 ? (
-            <View style={tableStyles.emptyState}>
-              <Text style={tableStyles.emptyText}>Aucun paiement</Text>
-            </View>
-          ) : (
-            visibleRows.map((payment, index) => (
-              <View key={`${payment.code}-${index}`} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
-                <View style={tableStyles.cell}>
-                  <Avatar firstName={payment.prenom} lastName={payment.nom} size={44} borderRadius={11} />
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={[tableStyles.cellText, { color: theme.colors.primary, fontWeight: "800" }]}>#{payment.code}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{payment.nom}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{payment.prenom}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{payment.amount} DA</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{getPaymentReason(payment)}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <View style={[tableStyles.badge, styles.statusBadge, getStatusBadgeStyle(payment.status)]}>
-                    <Text style={[styles.statusBadgeText, getStatusTextStyle(payment.status)]}>{payment.status}</Text>
+          <ScrollView style={styles.tableScroller} contentContainerStyle={styles.tableScrollerContent}>
+            {loading ? (
+              <View style={tableStyles.emptyState}>
+                <Text style={tableStyles.emptyText}>Chargement...</Text>
+              </View>
+            ) : visibleRows.length === 0 ? (
+              <View style={tableStyles.emptyState}>
+                <Text style={tableStyles.emptyText}>Aucun paiement</Text>
+              </View>
+            ) : (
+              visibleRows.map((payment, index) => (
+                <View key={`${payment.code}-${index}`} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
+                  <View style={tableStyles.cell}>
+                    <Avatar firstName={payment.prenom} lastName={payment.nom} size={44} borderRadius={11} />
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={[tableStyles.cellText, { color: theme.colors.primary, fontWeight: "800" }]}>#{payment.code}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{payment.nom}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{payment.prenom}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{payment.amount} DA</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{getPaymentReason(payment)}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <View style={[tableStyles.badge, styles.statusBadge, getStatusBadgeStyle(payment.status)]}>
+                      <Text style={[styles.statusBadgeText, getStatusTextStyle(payment.status)]}>{payment.status}</Text>
+                    </View>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>
+                      {new Date(payment.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                    </Text>
                   </View>
                 </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>
-                    {new Date(payment.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                  </Text>
-                </View>
-              </View>
-            ))
-          )}
+              ))
+            )}
+          </ScrollView>
         </View>
 
         <View style={tableStyles.paginationContainer}>
@@ -157,7 +159,7 @@ export default function PaymentsPage() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </PageShell>
   );
 }
@@ -227,5 +229,8 @@ const createStyles = (theme: any) =>
     statusBadge: { borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
     statusBadgeText: { fontWeight: "800", fontSize: 12 },
     paginationRight: { flexDirection: "row", alignItems: "center", gap: 10, marginLeft: "auto" },
-    container: { ...(Platform.OS === "web" ? ({ width: "100%" } as any) : null) },
+    pageContent: { flex: 1, minHeight: 0, ...(Platform.OS === "web" ? ({ width: "100%" } as any) : null) },
+    tableCard: { flex: 1, minHeight: 0 },
+    tableScroller: { flex: 1 },
+    tableScrollerContent: { flexGrow: 1 },
   });

@@ -75,13 +75,20 @@ export default function PatientsPage() {
       title="Patients"
       subtitle={`${total} patient${total > 1 ? "s" : ""}`}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchRows} />}
+      scrollable={false}
       actions={
         <View style={styles.actions}>
           <View style={styles.searchFieldWrap}>
             <View style={styles.fieldLabelSpacer} />
             <View style={styles.searchWrap}>
               <Ionicons name="search-outline" size={18} color={theme.colors.textSecondary} />
-              <TextInput value={searchInput} onChangeText={setSearchInput} placeholder="Search patient..." placeholderTextColor={theme.colors.textSecondary} style={styles.searchInput} />
+              <TextInput
+                value={searchInput}
+                onChangeText={setSearchInput}
+                placeholder="Search patient..."
+                placeholderTextColor={theme.colors.textSecondary}
+                style={styles.searchInput}
+              />
               {searchInput ? (
                 <TouchableOpacity style={styles.clearBtn} onPress={() => setSearchInput("")} hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}>
                   <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
@@ -107,30 +114,46 @@ export default function PatientsPage() {
         </View>
       }
     >
-      <ScrollView contentContainerStyle={{ paddingBottom: 18 }}>
-        <View style={tableStyles.tableCard}>
+      <View style={styles.pageContent}>
+        <View style={[tableStyles.tableCard, styles.tableCard]}>
           <View style={tableStyles.tableHeader}>
             {["Avatar", "Name", "Age", "Sex", "Phone", "City", "Action"].map((h) => (
-              <View key={h} style={tableStyles.headerCell}><Text style={tableStyles.headerText}>{h}</Text></View>
+              <View key={h} style={tableStyles.headerCell}>
+                <Text style={tableStyles.headerText}>{h}</Text>
+              </View>
             ))}
           </View>
-          {rows.map((patient, index) => (
-            <View key={patient.id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
-              <View style={tableStyles.cell}><Avatar firstName={patient.first_name} lastName={patient.last_name} size={40} borderRadius={10} /></View>
-              <View style={tableStyles.cell}><Text style={tableStyles.cellText}>{patient.first_name} {patient.last_name}</Text></View>
-              <View style={tableStyles.cell}><Text style={tableStyles.cellText}>{patient.age ?? "—"}</Text></View>
-              <View style={tableStyles.cell}><Text style={tableStyles.cellText}>{patient.sex}</Text></View>
-              <View style={tableStyles.cell}><Text style={tableStyles.cellText}>{patient.phone || "—"}</Text></View>
-              <View style={tableStyles.cell}><Text style={tableStyles.cellText}>{patient.address_city || "—"}</Text></View>
-              <View style={tableStyles.cell}>
-                <TouchableOpacity onPress={() => router.push({ pathname: "/patient_medical_info", params: { patientId: patient.id } })}>
-                  <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
-                </TouchableOpacity>
+          <ScrollView style={styles.tableScroller} contentContainerStyle={styles.tableScrollerContent}>
+            {rows.map((patient, index) => (
+              <View key={patient.id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
+                <View style={tableStyles.cell}>
+                  <Avatar firstName={patient.first_name} lastName={patient.last_name} size={40} borderRadius={10} />
+                </View>
+                <View style={tableStyles.cell}>
+                  <Text style={tableStyles.cellText}>{patient.first_name} {patient.last_name}</Text>
+                </View>
+                <View style={tableStyles.cell}>
+                  <Text style={tableStyles.cellText}>{patient.age ?? "-"}</Text>
+                </View>
+                <View style={tableStyles.cell}>
+                  <Text style={tableStyles.cellText}>{patient.sex}</Text>
+                </View>
+                <View style={tableStyles.cell}>
+                  <Text style={tableStyles.cellText}>{patient.phone || "-"}</Text>
+                </View>
+                <View style={tableStyles.cell}>
+                  <Text style={tableStyles.cellText}>{patient.address_city || "-"}</Text>
+                </View>
+                <View style={tableStyles.cell}>
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/patient_medical_info", params: { patientId: patient.id } })}>
+                    <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
 
       <PatientFormWithMedical visible={showAddForm} onClose={() => setShowAddForm(false)} onSuccess={fetchRows} />
     </PageShell>
@@ -148,4 +171,8 @@ const createStyles = (theme: any) =>
     iconBtn: { width: 42, height: 42, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surface },
     addBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 10, minHeight: 42 },
     addTxt: { color: "#fff", fontWeight: "800" },
+    pageContent: { flex: 1, minHeight: 0 },
+    tableCard: { flex: 1, minHeight: 0 },
+    tableScroller: { flex: 1 },
+    tableScrollerContent: { flexGrow: 1, paddingBottom: 18 },
   });
