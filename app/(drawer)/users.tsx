@@ -2,9 +2,8 @@ import { PageShell } from "@/components/page_shell";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
-import { callRpc, invokeEdgeFunction } from "@/services/backend";
+import { callRpc } from "@/services/backend";
 import type {
-  CreateStaffInviteBody,
   CreateStaffInviteResult,
   StaffInviteRow,
   UserType,
@@ -41,8 +40,11 @@ const formatInviteUrl = (result: CreateStaffInviteResult) => {
   const token = result.invite_token || result.token;
   if (!token || typeof window === "undefined") return "";
 
-  return `${window.location.origin}/invite/${encodeURIComponent(String(token))}`;
+  return `${window.location.origin}/accept-invite?token=${encodeURIComponent(String(token))}`;
 };
+
+const createInviteToken = () =>
+  `invite_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
 
 const formatDate = (value: string | null | undefined) => {
   if (!value) return "No expiry set";
@@ -177,14 +179,25 @@ export default function UsersPage() {
 
     setSubmitting(true);
     try {
-      const result = await invokeEdgeFunction<CreateStaffInviteResult, CreateStaffInviteBody>(
-        "create-staff-invite",
+      const inviteToken = createInviteToken();
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
+
+      const inviteId = await callRpc<string, Record<string, unknown>>(
+        "rpc_create_staff_invite",
         {
-          email: normalizedEmail,
-          user_type: role,
+          p_requester_id: user?.id,
+          p_email: normalizedEmail,
+          p_user_type: role,
+          p_token_hash: inviteToken,
+          p_expires_at: expiresAt,
         },
-        session?.access_token,
       );
+
+      const result: CreateStaffInviteResult = {
+        invite_id: inviteId,
+        invite_token: inviteToken,
+        expires_at: expiresAt,
+      };
 
       const inviteUrl = formatInviteUrl(result ?? {});
       setSuccess(

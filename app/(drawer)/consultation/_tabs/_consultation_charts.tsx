@@ -2,7 +2,7 @@ import { db } from "@/database/database_conn";
 import { EChart } from "@/components/charts/echart";
 import { getConsultationFields, type ParameterField, type SpecialtyKey } from "@/components/consultation/observation_fields";
 import React from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { SubTabBar } from "./_ui";
 
@@ -12,6 +12,16 @@ type ObservationHistoryRow = {
   updated_at: string | null;
   speciality_key: string | null;
   data: Record<string, unknown>;
+};
+
+type MeasurementHistoryRow = {
+  id: string;
+  recorded_at: string | null;
+  weight: number | null;
+  height: number | null;
+  temperature: number | null;
+  systolic_bp: number | null;
+  diastolic_bp: number | null;
 };
 
 type ChartField = ParameterField & {
@@ -25,6 +35,8 @@ const VITAL_CHART_FIELDS: ChartField[] = [
   { key: "blood_pressure", label: "Tension arterielle", aliases: ["blood_pressure", "tension", "bloodPressure"], kind: "blood_pressure" },
   { key: "temperature_c", label: "Temperature (C)", aliases: ["temperature_c", "temperature"], kind: "number" },
 ];
+
+const VITAL_FIELD_KEYS = new Set(VITAL_CHART_FIELDS.map((field) => field.key));
 
 function normalizeFieldLabel(label: string) {
   return String(label ?? "")
@@ -210,6 +222,7 @@ export default function ConsultationChartsTab({
   const chartFields = React.useMemo(() => buildChartFields(workspaceKey), [workspaceKey]);
   const [activeFieldKey, setActiveFieldKey] = React.useState<string>(chartFields[0]?.key ?? "weight_kg");
   const [historyRows, setHistoryRows] = React.useState<ObservationHistoryRow[]>([]);
+  const [measurementRows, setMeasurementRows] = React.useState<MeasurementHistoryRow[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [chartWidth, setChartWidth] = React.useState(720);
@@ -226,6 +239,7 @@ export default function ConsultationChartsTab({
     const run = async () => {
       if (!patientId) {
         setHistoryRows([]);
+        setMeasurementRows([]);
         return;
       }
 
@@ -233,18 +247,27 @@ export default function ConsultationChartsTab({
       setErrorMessage(null);
 
       try {
-        const { data, error } = await db
-          .from("consultation_observations")
-          .select("consultation_id, created_at, updated_at, speciality_key, data")
-          .eq("patient_id", patientId)
-          .eq("speciality_key", workspaceKey)
-          .order("created_at", { ascending: true });
+        const [{ data: observationData, error: observationError }, { data: measurementData, error: measurementError }] =
+          await Promise.all([
+            db
+              .from("consultation_observations")
+              .select("consultation_id, created_at, updated_at, speciality_key, data")
+              .eq("patient_id", patientId)
+              .eq("speciality_key", workspaceKey)
+              .order("created_at", { ascending: true }),
+            db
+              .from("patient_measurements")
+              .select("id, recorded_at, weight, height, temperature, systolic_bp, diastolic_bp")
+              .eq("patient_id", patientId)
+              .order("recorded_at", { ascending: true }),
+          ]);
 
-        if (error) throw error;
+        if (observationError) throw observationError;
+        if (measurementError) throw measurementError;
         if (cancelled) return;
 
         setHistoryRows(
-          (data ?? []).map((row: any) => ({
+          (observationData ?? []).map((row: any) => ({
             consultation_id: String(row.consultation_id),
             created_at: row.created_at ? String(row.created_at) : null,
             updated_at: row.updated_at ? String(row.updated_at) : null,
@@ -252,9 +275,21 @@ export default function ConsultationChartsTab({
             data: asRecord(row.data),
           })),
         );
+        setMeasurementRows(
+          (measurementData ?? []).map((row: any) => ({
+            id: String(row.id),
+            recorded_at: row.recorded_at ? String(row.recorded_at) : null,
+            weight: row.weight == null ? null : Number(row.weight),
+            height: row.height == null ? null : Number(row.height),
+            temperature: row.temperature == null ? null : Number(row.temperature),
+            systolic_bp: row.systolic_bp == null ? null : Number(row.systolic_bp),
+            diastolic_bp: row.diastolic_bp == null ? null : Number(row.diastolic_bp),
+          })),
+        );
       } catch (error: any) {
         if (!cancelled) {
           setHistoryRows([]);
+          setMeasurementRows([]);
           setErrorMessage(error?.message || "Impossible de charger l'historique des observations.");
         }
       } finally {
@@ -300,8 +335,44 @@ export default function ConsultationChartsTab({
     [activeFieldKey, chartFields],
   );
 
+  const measurementEntries = React.useMemo(() => {
+    if (!activeField || !VITAL_FIELD_KEYS.has(activeField.key)) return [];
+
+    return measurementRows
+      .map((row) => {
+        const rawValue = (() => {
+          if (activeField.key === "weight_kg") return row.weight;
+          if (activeField.key === "height_cm") return row.height;
+          if (activeField.key === "temperature_c") return row.temperature;
+          if (activeField.key === "blood_pressure") {
+            if (row.systolic_bp == null || row.diastolic_bp == null) return null;
+            return `${row.systolic_bp}/${row.diastolic_bp}`;
+          }
+          return null;
+        })();
+
+        return {
+          id: row.id,
+          dateLabel: formatShortDate(row.recorded_at),
+          fullDateLabel: formatLongDate(row.recorded_at),
+          rawValue,
+          displayValue: humanizeValue(rawValue),
+          numericValue: parseNumericValue(rawValue),
+          bloodPressure:
+            activeField.kind === "blood_pressure"
+              ? {
+                  systolic: row.systolic_bp,
+                  diastolic: row.diastolic_bp,
+                }
+              : { systolic: null, diastolic: null },
+        };
+      })
+      .filter((entry) => isPresent(entry.rawValue));
+  }, [activeField, measurementRows]);
+
   const fieldEntries = React.useMemo(() => {
     if (!activeField) return [];
+    if (VITAL_FIELD_KEYS.has(activeField.key)) return measurementEntries;
 
     return mergedRows
       .map((row) => {
@@ -320,7 +391,7 @@ export default function ConsultationChartsTab({
         };
       })
       .filter((entry) => isPresent(entry.rawValue));
-  }, [activeField, mergedRows]);
+  }, [activeField, measurementEntries, mergedRows]);
 
   const numericEntries = React.useMemo(
     () => fieldEntries.filter((entry) => entry.numericValue != null),
@@ -458,7 +529,7 @@ export default function ConsultationChartsTab({
         </View>
         <View style={[styles.metaBadge, { backgroundColor: theme.colors.primarySoft }]}>
           <Text style={[styles.metaBadgeText, { color: theme.colors.primary }]}>
-            {mergedRows.length} visite{mergedRows.length > 1 ? "s" : ""}
+            {fieldEntries.length} point{fieldEntries.length > 1 ? "s" : ""}
           </Text>
         </View>
       </View>
@@ -527,25 +598,6 @@ export default function ConsultationChartsTab({
               {numericChartOption ? <EChart option={numericChartOption as any} width={chartWidth} height={260} style={styles.chart} /> : null}
             </View>
           ) : null}
-
-          <ScrollView contentContainerStyle={styles.historyList}>
-            {fieldEntries
-              .slice()
-              .reverse()
-              .map((entry) => (
-                <View
-                  key={`${activeField.key}-${entry.id}`}
-                  style={[styles.historyItem, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
-                >
-                  <Text style={[styles.historyDate, { color: theme.colors.textSecondary }]}>{entry.fullDateLabel}</Text>
-                  <Text style={[styles.historyValue, { color: theme.colors.text }]}>
-                    {activeField.kind === "blood_pressure"
-                      ? `${entry.bloodPressure.systolic}/${entry.bloodPressure.diastolic}`
-                      : entry.displayValue}
-                  </Text>
-                </View>
-              ))}
-          </ScrollView>
         </>
       )}
     </View>
@@ -630,23 +682,5 @@ const createStyles = (theme: any) =>
     },
     chart: {
       borderRadius: 12,
-    },
-    historyList: {
-      gap: 10,
-      paddingBottom: 4,
-    },
-    historyItem: {
-      borderWidth: 1,
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-    },
-    historyDate: {
-      fontSize: 12,
-      marginBottom: 4,
-    },
-    historyValue: {
-      fontSize: 14,
-      fontWeight: "800",
     },
   });

@@ -25,13 +25,37 @@ export const getPayments = async (): Promise<Payment[]> => {
       patient_id,
       reference,
       method,
-      status,
-      patients!inner(first_name, last_name, code)
+      status
     `);
 
   if (error) {
     console.error('Error fetching payments:', error);
     return [];
+  }
+
+  const patientIds = Array.from(
+    new Set((data ?? []).map((payment: any) => payment.patient_id).filter(Boolean)),
+  );
+
+  const patientMap = new Map<string, { first_name: string; last_name: string; code: string }>();
+
+  if (patientIds.length > 0) {
+    const { data: patients, error: patientsError } = await db
+      .from("patients")
+      .select("id, first_name, last_name, code")
+      .in("id", patientIds);
+
+    if (patientsError) {
+      console.error("Error fetching payment patients:", patientsError);
+    } else {
+      for (const patient of patients ?? []) {
+        patientMap.set(String((patient as any).id), {
+          first_name: String((patient as any).first_name ?? ""),
+          last_name: String((patient as any).last_name ?? ""),
+          code: String((patient as any).code ?? ""),
+        });
+      }
+    }
   }
 
   const statusLabel = (raw: unknown) => {
@@ -45,18 +69,21 @@ export const getPayments = async (): Promise<Payment[]> => {
     return String(raw ?? "");
   };
 
-  return (data || []).map((payment: any) => ({
-    id: payment.id,
-    amount: payment.amount,
-    createdAt: payment.created_at,
-    visitId: payment.visit_id,
-    patientId: payment.patient_id,
-    reference: payment.reference ?? null,
-    method: payment.method,
-    status: statusLabel(payment.status),
-    nom: payment.patients.last_name,
-    prenom: payment.patients.first_name,
-    code: payment.patients.code,
-  }));
+  return (data || []).map((payment: any) => {
+    const patient = patientMap.get(String(payment.patient_id));
+    return {
+      id: payment.id,
+      amount: payment.amount,
+      createdAt: payment.created_at,
+      visitId: payment.visit_id,
+      patientId: payment.patient_id,
+      reference: payment.reference ?? null,
+      method: payment.method,
+      status: statusLabel(payment.status),
+      nom: patient?.last_name ?? "",
+      prenom: patient?.first_name ?? "",
+      code: patient?.code ?? "",
+    };
+  });
 };
 

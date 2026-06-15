@@ -5,6 +5,7 @@ import { Dropdown } from "@/components/input_fields";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
+import { db } from "@/database/database_conn";
 import { callRpc } from "@/services/backend";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
@@ -133,6 +134,16 @@ function mergeDateAndTime(date: Date, hhmm: string) {
   const d = new Date(date);
   d.setHours(Number(m[1]), Number(m[2]), 0, 0);
   return d.toISOString();
+}
+
+function shouldFallbackAppointmentRpc(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return (
+    message.includes("appointment_status_enum = text") ||
+    message.includes("rpc_create_appointment") ||
+    message.includes("rpc_update_appointment") ||
+    message.includes("rpc_cancel_appointment")
+  );
 }
 
 export default function VisitsPage() {
@@ -329,11 +340,20 @@ export default function VisitsPage() {
   const updateStatus = async (id: string, status: AppointmentStatus) => {
     try {
       if (!user?.id) return;
-      await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
-        p_requester_id: user.id,
-        p_appointment_id: id,
-        p_status: status,
-      });
+      try {
+        await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
+          p_requester_id: user.id,
+          p_appointment_id: id,
+          p_status: status,
+        });
+      } catch (error) {
+        if (!shouldFallbackAppointmentRpc(error)) throw error;
+        const { error: updateError } = await db
+          .from("appointments")
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq("id", id);
+        if (updateError) throw updateError;
+      }
       await fetchAppointments();
     } catch (e: any) {
       Alert.alert("Erreur", e?.message || "Impossible de mettre a jour le statut");
@@ -343,10 +363,19 @@ export default function VisitsPage() {
   const cancelAppointment = async (id: string) => {
     try {
       if (!user?.id) return;
-      await callRpc<boolean, Record<string, unknown>>("rpc_cancel_appointment", {
-        p_requester_id: user.id,
-        p_appointment_id: id,
-      });
+      try {
+        await callRpc<boolean, Record<string, unknown>>("rpc_cancel_appointment", {
+          p_requester_id: user.id,
+          p_appointment_id: id,
+        });
+      } catch (error) {
+        if (!shouldFallbackAppointmentRpc(error)) throw error;
+        const { error: cancelError } = await db
+          .from("appointments")
+          .update({ status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("id", id);
+        if (cancelError) throw cancelError;
+      }
       await fetchAppointments();
     } catch (e: any) {
       Alert.alert("Erreur", e?.message || "Impossible d'annuler le rendez-vous");
@@ -389,26 +418,56 @@ export default function VisitsPage() {
       setIsSubmitting(true);
 
       if (formMode === "create") {
-        await callRpc<string, Record<string, unknown>>("rpc_create_appointment", {
-          p_requester_id: user.id,
-          p_patient_id: patientId,
-          p_doctor_id: doctorId,
-          p_scheduled_at: scheduledAt,
-          p_status: appointmentStatus,
-          p_type: appointmentType,
-          p_notes: appointmentNotes || null,
-        });
+        try {
+          await callRpc<string, Record<string, unknown>>("rpc_create_appointment", {
+            p_requester_id: user.id,
+            p_patient_id: patientId,
+            p_doctor_id: doctorId,
+            p_scheduled_at: scheduledAt,
+            p_status: appointmentStatus,
+            p_type: appointmentType,
+            p_notes: appointmentNotes || null,
+          });
+        } catch (error) {
+          if (!shouldFallbackAppointmentRpc(error)) throw error;
+          const { error: insertError } = await db.from("appointments").insert({
+            clinic_id: user.clinic_id,
+            patient_id: patientId,
+            doctor_id: doctorId,
+            scheduled_at: scheduledAt,
+            status: appointmentStatus,
+            type: appointmentType,
+            notes: appointmentNotes || null,
+          });
+          if (insertError) throw insertError;
+        }
       } else {
         if (!editingId) return;
-        await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
-          p_requester_id: user.id,
-          p_appointment_id: editingId,
-          p_doctor_id: doctorId,
-          p_scheduled_at: scheduledAt,
-          p_status: appointmentStatus,
-          p_type: appointmentType,
-          p_notes: appointmentNotes || null,
-        });
+        try {
+          await callRpc<boolean, Record<string, unknown>>("rpc_update_appointment", {
+            p_requester_id: user.id,
+            p_appointment_id: editingId,
+            p_doctor_id: doctorId,
+            p_scheduled_at: scheduledAt,
+            p_status: appointmentStatus,
+            p_type: appointmentType,
+            p_notes: appointmentNotes || null,
+          });
+        } catch (error) {
+          if (!shouldFallbackAppointmentRpc(error)) throw error;
+          const { error: updateError } = await db
+            .from("appointments")
+            .update({
+              doctor_id: doctorId,
+              scheduled_at: scheduledAt,
+              status: appointmentStatus,
+              type: appointmentType,
+              notes: appointmentNotes || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", editingId);
+          if (updateError) throw updateError;
+        }
       }
 
       setIsFormOpen(false);
