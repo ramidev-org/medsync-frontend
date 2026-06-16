@@ -38,6 +38,10 @@ export type RpcName =
   | "rpc_get_invoices"
   | "rpc_get_expenses"
   | "rpc_create_expense"
+  | "rpc_get_lab_orders"
+  | "rpc_get_lab_order"
+  | "rpc_create_lab_order"
+  | "rpc_save_lab_results"
   | "rpc_get_inventory_items"
   | "rpc_get_inventory"
   | "rpc_upsert_inventory_item"
@@ -53,9 +57,6 @@ export type RpcName =
   | "rpc_update_task"
   | "rpc_get_notifications"
   | "rpc_mark_notifications_read"
-  | "rpc_get_consultation_documents"
-  | "rpc_create_consultation_document"
-  | "rpc_delete_consultation_document"
   | "rpc_get_prescriptions"
   | "rpc_upsert_prescription";
 

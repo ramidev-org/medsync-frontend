@@ -19,6 +19,7 @@ export default function PaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   const resetDateRange = useCallback(() => {
@@ -26,14 +27,26 @@ export default function PaymentsPage() {
     setToDate(new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999));
   }, []);
 
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true);
+  const loadPayments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
       setPayments(await getPayments());
+    } catch (err) {
+      setPayments([]);
+      setError(err instanceof Error ? err.message : "Impossible de charger les paiements");
+    } finally {
       setLoading(false);
-    };
-    run();
+    }
   }, []);
+
+  useEffect(() => {
+    loadPayments();
+  }, [loadPayments]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [fromDate, toDate, globalSearch]);
 
   const filteredPayments = useMemo(
     () =>
@@ -53,7 +66,8 @@ export default function PaymentsPage() {
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
-  const visibleRows = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const safePage = Math.min(currentPage, totalPages);
+  const visibleRows = filteredPayments.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
   return (
     <PageShell
@@ -62,6 +76,10 @@ export default function PaymentsPage() {
       scrollable={false}
       actions={
         <View style={styles.filterSection}>
+          <TouchableOpacity style={styles.refreshBtn} onPress={loadPayments} disabled={loading}>
+            <Ionicons name="refresh-outline" size={16} color={theme.colors.textOnPrimary} />
+            <Text style={styles.refreshBtnText}>{loading ? "Chargement..." : "Actualiser"}</Text>
+          </TouchableOpacity>
           <View style={styles.searchFieldWrap}>
             <View style={styles.fieldLabelSpacer} />
             <View style={styles.searchContainer}>
@@ -104,6 +122,10 @@ export default function PaymentsPage() {
             {loading ? (
               <View style={tableStyles.emptyState}>
                 <Text style={tableStyles.emptyText}>Chargement...</Text>
+              </View>
+            ) : error ? (
+              <View style={tableStyles.emptyState}>
+                <Text style={tableStyles.emptyText}>{error}</Text>
               </View>
             ) : visibleRows.length === 0 ? (
               <View style={tableStyles.emptyState}>
@@ -148,7 +170,7 @@ export default function PaymentsPage() {
 
         <View style={tableStyles.paginationContainer}>
           <View style={styles.paginationRight}>
-            <Text style={tableStyles.paginationText}>Page {currentPage} / {totalPages}</Text>
+            <Text style={tableStyles.paginationText}>Page {safePage} / {totalPages}</Text>
             <View style={tableStyles.paginationButtons}>
               <TouchableOpacity style={tableStyles.paginationButton} onPress={() => setCurrentPage((prev) => Math.max(1, prev - 1))}>
                 <Text style={tableStyles.paginationText}>{"<"}</Text>
@@ -169,9 +191,9 @@ function getPaymentReason(payment: Payment) {
   if (reference) {
     const lower = reference.toLowerCase();
     if (lower.includes("consult")) return "Consultation";
-    if (lower.includes("lab")) return "Lab diagnosis";
-    if (lower.includes("diag")) return "Diagnosis";
-    if (lower.includes("visit")) return "Follow-up visit";
+    if (lower.includes("lab")) return "Analyses medicales";
+    if (lower.includes("diag")) return "Diagnostic";
+    if (lower.includes("visit")) return "Visite de suivi";
     if (lower.includes("scan") || lower.includes("radio") || lower.includes("imag")) return "Imaging";
     if (!/^pay[-_ ]?\d+/i.test(reference)) return reference;
   }
@@ -210,6 +232,17 @@ function getStatusTextStyle(status: string) {
 const createStyles = (theme: any) =>
   StyleSheet.create({
     filterSection: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "flex-end" },
+    refreshBtn: {
+      minHeight: 42,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: theme.colors.primary,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    refreshBtnText: { color: theme.colors.textOnPrimary, fontWeight: "800" },
     searchFieldWrap: { width: 340 },
     fieldLabelSpacer: { height: 22 },
     searchContainer: {

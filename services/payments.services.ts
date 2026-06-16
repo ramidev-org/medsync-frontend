@@ -4,7 +4,7 @@ export interface Payment {
   id: string;
   amount: number;
   createdAt: string;
-  visitId: string;
+  visitId: string | null;
   patientId: string;
   reference: string | null;
   method: string;
@@ -16,7 +16,7 @@ export interface Payment {
 
 export const getPayments = async (): Promise<Payment[]> => {
   const { data, error } = await db
-    .from('payments')
+    .from("payments")
     .select(`
       id,
       amount,
@@ -26,10 +26,11 @@ export const getPayments = async (): Promise<Payment[]> => {
       reference,
       method,
       status
-    `);
+    `)
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error('Error fetching payments:', error);
+    console.error("Error fetching payments:", error);
     return [];
   }
 
@@ -60,12 +61,12 @@ export const getPayments = async (): Promise<Payment[]> => {
 
   const statusLabel = (raw: unknown) => {
     const v = String(raw ?? "").toLowerCase();
-    if (v === "paid") return "Payé";
+    if (v === "paid") return "Paye";
     if (v === "pending") return "En attente";
     if (v === "partial") return "Partiel";
-    if (v === "cancelled") return "Annulé";
-    if (v === "failed") return "Échoué";
-    if (v === "refunded") return "Remboursé";
+    if (v === "cancelled") return "Annule";
+    if (v === "failed") return "Echoue";
+    if (v === "refunded") return "Rembourse";
     return String(raw ?? "");
   };
 
@@ -86,4 +87,3 @@ export const getPayments = async (): Promise<Payment[]> => {
     };
   });
 };
-

@@ -19,7 +19,7 @@ import {
 
 type ConsultationListRow = {
   consultation_id: string;
-  appointment_id: string;
+  appointment_id: string | null;
   patient_id: string;
   doctor_id: string | null;
   status: string;
@@ -209,11 +209,17 @@ export default function ConsultationsPage() {
 
             <View style={{ width: 110, alignItems: "flex-end" }}>
               <TouchableOpacity
-                style={styles.openBtn}
-                onPress={() => router.push(`/consultation?id=${r.appointment_id}`)}
+                style={[styles.openBtn, !r.appointment_id && styles.openBtnDisabled]}
+                disabled={!r.appointment_id}
+                onPress={() => {
+                  if (!r.appointment_id) return;
+                  router.push(`/consultation?id=${r.appointment_id}`);
+                }}
               >
                 <Ionicons name="open-outline" size={16} color="#fff" />
-                <Text style={styles.openBtnText}>Ouvrir</Text>
+                <Text style={styles.openBtnText}>
+                  {r.appointment_id ? "Ouvrir" : "Sans RDV"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -284,6 +290,9 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
+    },
+    openBtnDisabled: {
+      opacity: 0.45,
     },
     openBtnText: { color: "#fff", fontWeight: "900" },
 

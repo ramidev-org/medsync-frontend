@@ -32,21 +32,8 @@ const escapeHtml = (value: string) =>
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-export function printOrdonnanceA4(payload: PrintOrdonnancePayload) {
-  if (Platform.OS !== "web") return;
-
-  const w = window.open("", "_blank");
-  if (!w) return;
-
+function buildOrdonnanceHtml(payload: PrintOrdonnancePayload) {
   const now = new Date().toLocaleDateString("fr-FR");
-
-  const escapeHtml = (value: string) =>
-    value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
-      .replace(/'/g, "&#39;");
 
   const lines =
     payload.drugs?.length
@@ -262,6 +249,14 @@ body {
 </head>
 
 <body>
+<div style="padding:12px 16px; border-bottom:1px solid #dbe3ea; font-family:Arial, Helvetica, sans-serif; display:flex; justify-content:space-between; gap:12px; align-items:center;">
+  <div style="font-size:12px; color:#476072;">
+    Ordonnance ouverte. Si l'impression automatique ne demarre pas, utilisez le bouton Imprimer.
+  </div>
+  <button onclick="window.print()" style="border:none; background:#0097a9; color:#fff; padding:10px 14px; border-radius:8px; font-weight:700; cursor:pointer;">
+    Imprimer
+  </button>
+</div>
 <div class="sheet">
 
 <div class="top-band"></div>
@@ -322,13 +317,142 @@ ${lines}
 </div>
 
 <script>
-window.onload = () => setTimeout(() => window.print(), 100);
+window.onload = () => {
+  setTimeout(() => {
+    try {
+      window.focus();
+      window.print();
+    } catch (error) {
+      console.warn('Auto print failed', error);
+    }
+  }, 150);
+};
 </script>
 
 </body>
 </html>
 `;
+}
 
+function isEmbeddedBrowser() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes("vscode") || ua.includes("electron") || ua.includes("webview");
+}
+
+function openInlinePrintPreview(html: string) {
+  if (typeof document === "undefined") return;
+
+  const existing = document.getElementById("ordonnance-inline-preview-root");
+  existing?.remove();
+
+  const root = document.createElement("div");
+  root.id = "ordonnance-inline-preview-root";
+  root.style.position = "fixed";
+  root.style.inset = "0";
+  root.style.zIndex = "9999";
+  root.style.background = "rgba(15, 23, 42, 0.58)";
+  root.style.display = "flex";
+  root.style.alignItems = "center";
+  root.style.justifyContent = "center";
+  root.style.padding = "20px";
+
+  const panel = document.createElement("div");
+  panel.style.width = "min(1120px, 100%)";
+  panel.style.height = "min(92vh, 100%)";
+  panel.style.background = "#f8fafc";
+  panel.style.borderRadius = "18px";
+  panel.style.boxShadow = "0 24px 64px rgba(15, 23, 42, 0.24)";
+  panel.style.overflow = "hidden";
+  panel.style.display = "flex";
+  panel.style.flexDirection = "column";
+
+  const toolbar = document.createElement("div");
+  toolbar.style.display = "flex";
+  toolbar.style.alignItems = "center";
+  toolbar.style.justifyContent = "space-between";
+  toolbar.style.gap = "12px";
+  toolbar.style.padding = "14px 18px";
+  toolbar.style.borderBottom = "1px solid #dbe3ea";
+  toolbar.style.background = "#ffffff";
+
+  const label = document.createElement("div");
+  label.textContent = "Apercu ordonnance";
+  label.style.fontFamily = "Arial, Helvetica, sans-serif";
+  label.style.fontWeight = "700";
+  label.style.color = "#10233b";
+
+  const actions = document.createElement("div");
+  actions.style.display = "flex";
+  actions.style.alignItems = "center";
+  actions.style.gap = "10px";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "Fermer";
+  closeBtn.style.border = "1px solid #c7d4df";
+  closeBtn.style.background = "#fff";
+  closeBtn.style.color = "#10233b";
+  closeBtn.style.padding = "10px 14px";
+  closeBtn.style.borderRadius = "10px";
+  closeBtn.style.fontWeight = "700";
+  closeBtn.style.cursor = "pointer";
+
+  const printBtn = document.createElement("button");
+  printBtn.type = "button";
+  printBtn.textContent = "Imprimer";
+  printBtn.style.border = "none";
+  printBtn.style.background = "#0097a9";
+  printBtn.style.color = "#fff";
+  printBtn.style.padding = "10px 14px";
+  printBtn.style.borderRadius = "10px";
+  printBtn.style.fontWeight = "700";
+  printBtn.style.cursor = "pointer";
+
+  const frame = document.createElement("iframe");
+  frame.style.flex = "1";
+  frame.style.width = "100%";
+  frame.style.border = "0";
+  frame.srcdoc = html;
+
+  closeBtn.onclick = () => root.remove();
+  root.onclick = (event) => {
+    if (event.target === root) root.remove();
+  };
+  printBtn.onclick = () => {
+    try {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+    } catch {}
+  };
+
+  actions.append(closeBtn, printBtn);
+  toolbar.append(label, actions);
+  panel.append(toolbar, frame);
+  root.append(panel);
+  document.body.append(root);
+}
+
+export function printOrdonnanceA4(payload: PrintOrdonnancePayload) {
+  if (Platform.OS !== "web") return;
+
+  const html = buildOrdonnanceHtml(payload);
+
+  if (isEmbeddedBrowser()) {
+    openInlinePrintPreview(html);
+    return;
+  }
+
+  const w = window.open("", "_blank", "noopener,noreferrer");
+  if (!w) {
+    openInlinePrintPreview(html);
+    return;
+  }
+
+  w.document.open();
   w.document.write(html);
   w.document.close();
+  try {
+    w.focus();
+  } catch {}
 }

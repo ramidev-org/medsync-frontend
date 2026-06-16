@@ -1,5 +1,13 @@
-import React, { ReactNode, useMemo, useState } from "react";
+import { TopBar } from "@/components/top_bar";
+import { useAuth } from "@/contexts/auth_context";
+import { callRpc } from "@/services/backend";
+import { createLabOrder, getLabOrders, saveLabResults } from "@/services/lab.services";
+import type { LabOrderRow, LabPriority, LabResultItemRow, LabSourceType } from "@/services/backend.types";
+import { useTheme } from "@/theme/theme_provider";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -11,27 +19,39 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { TopBar } from "@/components/top_bar";
-import { useTheme } from "@/theme/theme_provider";
 
 type BadgeType = "gray" | "green" | "blue" | "orange" | "red" | "purple";
-type LabStatus = "En attente" | "Prélèvement fait" | "Résultat prêt";
-type LabPriority = "Urgent" | "Normal";
-type LabSourceType = "Interne" | "Externe";
+type UiStatus = "En attente" | "Prelevement fait" | "Resultat pret";
+type UiPriority = "Urgent" | "Normal";
+type UiSourceType = "Interne" | "Externe";
 type ModalType = "request" | "manual" | "details" | "history" | "report" | null;
-type RequestFilter = "all" | LabStatus;
+type RequestFilter = "all" | UiStatus;
+
+type PatientOption = {
+  id: string;
+  label: string;
+  age: number;
+};
 
 type LabRequest = {
   id: string;
+  patientId: string;
   patient: string;
   age: number;
   doctor: string;
   tests: string;
-  status: LabStatus;
-  priority: LabPriority;
+  status: UiStatus;
+  priority: UiPriority;
   date: string;
-  type: LabSourceType;
+  type: UiSourceType;
+  paymentStatus: string;
+  clinicalContext: string;
+  labComments: string;
+  estimatedTotal: number;
+  resultSummary: string;
+  doctorNote: string;
+  rows: ResultRow[];
+  raw: LabOrderRow;
 };
 
 type ResultRow = {
@@ -39,96 +59,231 @@ type ResultRow = {
   value: string;
   unit: string;
   normal: string;
-  note: "Élevé" | "Normal";
+  note: "Eleve" | "Normal" | "";
 };
 
-type HistoryItem = {
-  date: string;
-  title: string;
-  source: string;
-  summary: string;
+type RequestFormState = {
+  patientId: string;
+  patientQuery: string;
+  priority: LabPriority;
+  sourceType: LabSourceType;
+  paymentStatus: "pending" | "paid";
+  clinicalContext: string;
+  labComments: string;
+  selectedTests: string[];
 };
 
-const labRequests: LabRequest[] = [
-  {
-    id: "LAB-001",
-    patient: "Amina Bensalem",
-    age: 34,
-    doctor: "Dr. Karim Haddad",
-    tests: "FNS, Glycémie, CRP",
-    status: "En attente",
-    priority: "Urgent",
-    date: "Aujourd’hui 09:15",
-    type: "Interne",
-  },
-  {
-    id: "LAB-002",
-    patient: "Yacine Merabet",
-    age: 52,
-    doctor: "Dr. Lina Rahmani",
-    tests: "HbA1c, Cholestérol",
-    status: "Prélèvement fait",
-    priority: "Normal",
-    date: "Aujourd’hui 10:05",
-    type: "Interne",
-  },
-  {
-    id: "LAB-003",
-    patient: "Nour Ali",
-    age: 27,
-    doctor: "Dr. Sami Mekki",
-    tests: "Analyse urinaire, Test grossesse",
-    status: "Résultat prêt",
-    priority: "Normal",
-    date: "Aujourd’hui 11:30",
-    type: "Externe",
-  },
-];
+type ResultDraftState = {
+  rows: ResultRow[];
+  conclusion: string;
+  doctorNote: string;
+};
 
-const resultPreview: ResultRow[] = [
-  { name: "Glycémie", value: "1.18", unit: "g/L", normal: "0.70 - 1.10", note: "Élevé" },
-  { name: "CRP", value: "7.5", unit: "mg/L", normal: "< 5", note: "Élevé" },
-  { name: "Hémoglobine", value: "13.8", unit: "g/dL", normal: "12 - 16", note: "Normal" },
-];
+type RpcPatientRow = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  age: number;
+};
 
-const historyItems: HistoryItem[] = [
-  {
-    date: "26 Mai 2026",
-    title: "FNS, Glycémie, CRP",
-    source: "Clinique",
-    summary: "CRP élevée, glycémie légèrement élevée.",
-  },
-  {
-    date: "12 Avril 2026",
-    title: "Glycémie à jeun",
-    source: "Labo externe",
-    summary: "Glycémie normale: 0.96 g/L.",
-  },
-  {
-    date: "02 Mars 2026",
-    title: "Bilan lipidique",
-    source: "Labo externe",
-    summary: "Cholestérol LDL à surveiller.",
-  },
-];
+type RpcGetPatientsResponse = {
+  patients: RpcPatientRow[];
+  total: number;
+};
 
 const commonTests = [
   "FNS",
-  "Glycémie",
+  "Glycemie",
   "CRP",
   "HbA1c",
-  "Cholestérol",
-  "Créatinine",
-  "Urée",
+  "Cholesterol",
+  "Creatinine",
+  "Uree",
   "Analyse urinaire",
   "TSH",
   "Vitamine D",
 ];
 
-function statusType(status: LabStatus): BadgeType {
-  if (status === "Résultat prêt") return "green";
-  if (status === "Prélèvement fait") return "blue";
+const TEST_META: Record<string, { unit: string; normal: string }> = {
+  FNS: { unit: "g/dL", normal: "12 - 16" },
+  Glycemie: { unit: "g/L", normal: "0.70 - 1.10" },
+  CRP: { unit: "mg/L", normal: "< 5" },
+  HbA1c: { unit: "%", normal: "4.0 - 5.6" },
+  Cholesterol: { unit: "g/L", normal: "1.4 - 2.0" },
+  Creatinine: { unit: "mg/L", normal: "6 - 12" },
+  Uree: { unit: "g/L", normal: "0.15 - 0.45" },
+  "Analyse urinaire": { unit: "", normal: "Selon lecture" },
+  TSH: { unit: "mIU/L", normal: "0.4 - 4.0" },
+  "Vitamine D": { unit: "ng/mL", normal: "30 - 100" },
+};
+
+const emptyRequestForm = (): RequestFormState => ({
+  patientId: "",
+  patientQuery: "",
+  priority: "routine",
+  sourceType: "internal",
+  paymentStatus: "pending",
+  clinicalContext: "",
+  labComments: "",
+  selectedTests: ["FNS", "Glycemie", "CRP"],
+});
+
+function normalizeTests(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map((item) => String(item)).filter(Boolean);
+  return [];
+}
+
+function normalizeResultRows(raw: unknown, tests: string[]): ResultRow[] {
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw.map((item: any) => ({
+      name: String(item?.name ?? ""),
+      value: String(item?.value ?? ""),
+      unit: String(item?.unit ?? ""),
+      normal: String(item?.normal ?? ""),
+      note: normalizeNote(item?.note, item?.value, item?.normal),
+    }));
+  }
+  return tests.map((test) => ({
+    name: test,
+    value: "",
+    unit: TEST_META[test]?.unit ?? "",
+    normal: TEST_META[test]?.normal ?? "",
+    note: "",
+  }));
+}
+
+function normalizeNote(rawNote: unknown, value: unknown, normal: unknown): "Eleve" | "Normal" | "" {
+  const normalized = String(rawNote ?? "").trim().toLowerCase();
+  if (normalized.includes("elev")) return "Eleve";
+  if (normalized === "normal") return "Normal";
+  return deriveNote(String(value ?? ""), String(normal ?? ""));
+}
+
+function deriveNote(value: string, normal: string): "Eleve" | "Normal" | "" {
+  const numericValue = Number(String(value).replace(",", "."));
+  if (!Number.isFinite(numericValue)) return "";
+
+  const rangeMatch = normal.match(/(-?\d+(?:[.,]\d+)?)\s*-\s*(-?\d+(?:[.,]\d+)?)/);
+  if (rangeMatch) {
+    const low = Number(rangeMatch[1].replace(",", "."));
+    const high = Number(rangeMatch[2].replace(",", "."));
+    if (Number.isFinite(low) && Number.isFinite(high)) {
+      return numericValue >= low && numericValue <= high ? "Normal" : "Eleve";
+    }
+  }
+
+  const ltMatch = normal.match(/<\s*(-?\d+(?:[.,]\d+)?)/);
+  if (ltMatch) {
+    const limit = Number(ltMatch[1].replace(",", "."));
+    if (Number.isFinite(limit)) return numericValue < limit ? "Normal" : "Eleve";
+  }
+
+  return "";
+}
+
+function formatRequestDate(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function statusType(status: UiStatus): BadgeType {
+  if (status === "Resultat pret") return "green";
+  if (status === "Prelevement fait") return "blue";
   return "orange";
+}
+
+function toUiStatus(status: string): UiStatus {
+  if (status === "completed") return "Resultat pret";
+  if (status === "collected" || status === "partial") return "Prelevement fait";
+  return "En attente";
+}
+
+function toUiPriority(priority: string): UiPriority {
+  return priority === "urgent" || priority === "stat" ? "Urgent" : "Normal";
+}
+
+function toUiSourceType(sourceType: string): UiSourceType {
+  return sourceType === "external" ? "Externe" : "Interne";
+}
+
+function mapOrder(row: LabOrderRow): LabRequest {
+  const tests = normalizeTests((row as any).requested_tests);
+  const patientFirstName = String((row as any).patient_first_name ?? "").trim();
+  const patientLastName = String((row as any).patient_last_name ?? "").trim();
+  const doctorName = String((row as any).doctor_name ?? "").trim() || "Medecin";
+  const patientName = `${patientFirstName} ${patientLastName}`.trim() || "Patient";
+  const rows = normalizeResultRows((row as any).result_items, tests);
+
+  return {
+    id: String(row.id),
+    patientId: String(row.patient_id),
+    patient: patientName,
+    age: Number((row as any).patient_age ?? 0),
+    doctor: doctorName,
+    tests: tests.join(", "),
+    status: toUiStatus(String(row.status ?? "")),
+    priority: toUiPriority(String(row.priority ?? "")),
+    date: formatRequestDate((row as any).requested_at ?? row.created_at),
+    type: toUiSourceType(String((row as any).source_type ?? "")),
+    paymentStatus: String((row as any).payment_status ?? "pending"),
+    clinicalContext: String((row as any).clinical_context ?? ""),
+    labComments: String((row as any).lab_comments ?? ""),
+    estimatedTotal: Number((row as any).estimated_total ?? 0),
+    resultSummary: String((row as any).result_summary ?? ""),
+    doctorNote: String((row as any).doctor_note ?? ""),
+    rows,
+    raw: row,
+  };
+}
+
+function paymentLabel(status: string) {
+  if (status === "paid") return "Paye";
+  if (status === "partial") return "Partiel";
+  if (status === "cancelled") return "Annule";
+  return "En attente";
+}
+
+function paymentSuccess(status: string) {
+  return status === "paid";
+}
+
+function buildTimeline(request: LabRequest) {
+  const steps: Array<{ label: string; time: string; done: boolean }> = [
+    {
+      label: "Demande creee",
+      time: formatRequestDate(request.raw.requested_at),
+      done: true,
+    },
+    {
+      label: `Paiement ${paymentLabel(request.paymentStatus).toLowerCase()}`,
+      time: formatRequestDate(request.raw.created_at),
+      done: request.paymentStatus === "paid" || request.paymentStatus === "partial",
+    },
+    {
+      label: "Prelevement sanguin fait",
+      time: formatRequestDate(request.raw.sampled_at),
+      done: !!request.raw.sampled_at,
+    },
+    {
+      label: "Resultat rempli",
+      time: formatRequestDate(request.raw.resulted_at),
+      done: !!request.raw.resulted_at,
+    },
+    {
+      label: "Validation medecin",
+      time: formatRequestDate(request.raw.validated_at),
+      done: !!request.raw.validated_at || request.raw.status === "completed",
+    },
+  ];
+  return steps;
 }
 
 function Badge({ children, type = "gray" }: { children: ReactNode; type?: BadgeType }) {
@@ -154,12 +309,14 @@ function ActionButton({
   variant = "primary",
   onPress,
   containerStyle,
+  disabled,
 }: {
   title: string;
   icon?: keyof typeof Ionicons.glyphMap;
   variant?: "primary" | "dark" | "light" | "blueLight";
   onPress?: () => void;
   containerStyle?: object;
+  disabled?: boolean;
 }) {
   const buttonStyle =
     variant === "primary"
@@ -178,7 +335,16 @@ function ActionButton({
       : styles.buttonTextDark;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.buttonBase, buttonStyle, containerStyle, pressed && styles.pressed]}>
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      style={({ pressed }) => [
+        styles.buttonBase,
+        buttonStyle,
+        containerStyle,
+        pressed && !disabled && styles.pressed,
+        disabled && { opacity: 0.6 },
+      ]}
+    >
       {icon ? <Ionicons name={icon} size={18} color={textStyle.color as string} /> : null}
       <Text style={textStyle}>{title}</Text>
     </Pressable>
@@ -204,34 +370,48 @@ function IconBox({
 function InputField({
   label,
   value,
+  onChangeText,
   placeholder,
   multiline,
+  editable = true,
 }: {
   label: string;
   value?: string;
+  onChangeText?: (value: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  editable?: boolean;
 }) {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
-        defaultValue={value}
+        value={value}
+        onChangeText={onChangeText}
+        editable={editable}
         placeholder={placeholder}
         placeholderTextColor="#94A3B8"
         multiline={multiline}
         textAlignVertical={multiline ? "top" : "center"}
-        style={[styles.input, multiline && styles.textArea]}
+        style={[styles.input, multiline && styles.textArea, !editable && styles.inputDisabled]}
       />
     </View>
   );
 }
 
-function SelectBox({ label, value }: { label: string; value: string }) {
+function SelectBox({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  onPress?: () => void;
+}) {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <Pressable style={styles.selectBox}>
+      <Pressable style={styles.selectBox} onPress={onPress}>
         <Text style={styles.selectText}>{value}</Text>
         <Ionicons name="chevron-down" size={18} color="#64748B" />
       </Pressable>
@@ -282,29 +462,63 @@ function LabModal({
 
 export default function LabWorkspaceScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1100;
   const isWideDesktop = width >= 1280;
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<RequestFilter>("all");
   const [modal, setModal] = useState<ModalType>(null);
-  const [selectedTests, setSelectedTests] = useState<string[]>(["FNS", "Glycémie", "CRP"]);
-  const pendingCount = useMemo(
-    () => labRequests.filter((item) => statusType(item.status) === "orange").length,
-    []
-  );
-  const sampledCount = useMemo(
-    () => labRequests.filter((item) => statusType(item.status) === "blue").length,
-    []
-  );
-  const readyCount = useMemo(
-    () => labRequests.filter((item) => statusType(item.status) === "green").length,
-    []
-  );
+  const [requests, setRequests] = useState<LabRequest[]>([]);
+  const [patients, setPatients] = useState<PatientOption[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [requestForm, setRequestForm] = useState<RequestFormState>(emptyRequestForm);
+  const [resultDraft, setResultDraft] = useState<ResultDraftState>({ rows: [], conclusion: "", doctorNote: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const doctorName = String((user as any)?.fullname || "Medecin");
+
+  const loadData = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    setError("");
+    try {
+      const [labOrders, patientRes] = await Promise.all([
+        getLabOrders({ requesterId: user.id, limit: 100 }),
+        callRpc<RpcGetPatientsResponse, Record<string, unknown>>("rpc_get_patients", {
+          p_requester_id: user.id,
+          p_page: 1,
+          p_items_per_page: 100,
+        }).catch(() => ({ patients: [], total: 0 })),
+      ]);
+
+      const mappedRequests = (labOrders ?? []).map(mapOrder);
+      const patientOptions = (patientRes?.patients ?? []).map((patient) => ({
+        id: String(patient.id),
+        label: `${patient.first_name} ${patient.last_name}`.trim(),
+        age: Number(patient.age ?? 0),
+      }));
+
+      setRequests(mappedRequests);
+      setPatients(patientOptions);
+      setSelectedOrderId((current) => current ?? mappedRequests[0]?.id ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de charger les analyses.");
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user?.id]);
 
   const filteredRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return labRequests.filter((item) => {
+    return requests.filter((item) => {
       const matchesFilter = statusFilter === "all" ? true : item.status === statusFilter;
       const matchesQuery = !normalizedQuery
         ? true
@@ -313,199 +527,402 @@ export default function LabWorkspaceScreen() {
             .includes(normalizedQuery);
       return matchesFilter && matchesQuery;
     });
-  }, [query, statusFilter]);
+  }, [query, requests, statusFilter]);
+
+  const selectedRequest =
+    filteredRequests.find((item) => item.id === selectedOrderId) ||
+    requests.find((item) => item.id === selectedOrderId) ||
+    filteredRequests[0] ||
+    requests[0] ||
+    null;
+
+  useEffect(() => {
+    if (!selectedRequest) {
+      setResultDraft({ rows: [], conclusion: "", doctorNote: "" });
+      return;
+    }
+    setResultDraft({
+      rows: selectedRequest.rows.map((row) => ({ ...row })),
+      conclusion: selectedRequest.resultSummary,
+      doctorNote: selectedRequest.doctorNote,
+    });
+  }, [selectedRequest?.id]);
+
+  const pendingCount = useMemo(
+    () => requests.filter((item) => statusType(item.status) === "orange").length,
+    [requests],
+  );
+  const sampledCount = useMemo(
+    () => requests.filter((item) => statusType(item.status) === "blue").length,
+    [requests],
+  );
+  const readyCount = useMemo(
+    () => requests.filter((item) => statusType(item.status) === "green").length,
+    [requests],
+  );
 
   const toggleTest = (test: string) => {
-    setSelectedTests((current) =>
-      current.includes(test) ? current.filter((item) => item !== test) : [...current, test]
-    );
+    setRequestForm((current) => ({
+      ...current,
+      selectedTests: current.selectedTests.includes(test)
+        ? current.selectedTests.filter((item) => item !== test)
+        : [...current.selectedTests, test],
+    }));
   };
+
+  const patientSuggestions = useMemo(() => {
+    const normalized = requestForm.patientQuery.trim().toLowerCase();
+    if (!normalized) return patients.slice(0, 6);
+    return patients
+      .filter((patient) => patient.label.toLowerCase().includes(normalized))
+      .slice(0, 6);
+  }, [patients, requestForm.patientQuery]);
+
+  const selectedPatient = patients.find((patient) => patient.id === requestForm.patientId) || null;
+
+  const openRequestModal = () => {
+    setRequestForm(emptyRequestForm());
+    setModal("request");
+  };
+
+  const openDetails = (requestId: string) => {
+    setSelectedOrderId(requestId);
+    setModal("details");
+  };
+
+  const estimatedTotal = requestForm.selectedTests.length * 800;
+
+  const cyclePriority = () => {
+    setRequestForm((current) => ({
+      ...current,
+      priority:
+        current.priority === "routine"
+          ? "urgent"
+          : current.priority === "urgent"
+          ? "stat"
+          : "routine",
+    }));
+  };
+
+  const cyclePaymentStatus = () => {
+    setRequestForm((current) => ({
+      ...current,
+      paymentStatus: current.paymentStatus === "pending" ? "paid" : "pending",
+    }));
+  };
+
+  const cycleSourceType = () => {
+    setRequestForm((current) => ({
+      ...current,
+      sourceType: current.sourceType === "internal" ? "external" : "internal",
+    }));
+  };
+
+  const handleCreateOrder = async () => {
+    if (!user?.id) return;
+    if (!requestForm.patientId) {
+      Alert.alert("Analyses", "Choisissez un patient.");
+      return;
+    }
+    if (!requestForm.selectedTests.length) {
+      Alert.alert("Analyses", "Choisissez au moins une analyse.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const createdId = await createLabOrder({
+        requesterId: user.id,
+        patientId: requestForm.patientId,
+        sourceType: requestForm.sourceType,
+        priority: requestForm.priority,
+        requestedTests: requestForm.selectedTests,
+        clinicalContext: requestForm.clinicalContext,
+        labComments: requestForm.labComments,
+        paymentStatus: requestForm.paymentStatus,
+        paymentNote: requestForm.paymentStatus === "paid" ? "Paye" : "A payer a la reception",
+        estimatedTotal,
+      });
+      await loadData();
+      setSelectedOrderId(createdId);
+      setModal(null);
+      Alert.alert("Succes", "Demande d'analyse creee.");
+    } catch (err) {
+      Alert.alert("Erreur", err instanceof Error ? err.message : "Impossible de creer la demande.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateDraftRow = (index: number, patch: Partial<ResultRow>) => {
+    setResultDraft((current) => {
+      const nextRows = current.rows.map((row, rowIndex) => {
+        if (rowIndex !== index) return row;
+        const updated = { ...row, ...patch };
+        return {
+          ...updated,
+          note: normalizeNote(updated.note, updated.value, updated.normal),
+        };
+      });
+      return { ...current, rows: nextRows };
+    });
+  };
+
+  const persistResults = async (status: "collected" | "completed") => {
+    if (!user?.id || !selectedRequest) return;
+    setSaving(true);
+    try {
+      const rows: LabResultItemRow[] = resultDraft.rows.map((row) => ({
+        name: row.name,
+        value: row.value || null,
+        unit: row.unit || null,
+        normal: row.normal || null,
+        note: row.note || null,
+      }));
+      await saveLabResults({
+        requesterId: user.id,
+        labOrderId: selectedRequest.id,
+        status,
+        resultItems: rows,
+        resultSummary: resultDraft.conclusion,
+        doctorNote: resultDraft.doctorNote,
+      });
+      await loadData();
+      setModal(null);
+      Alert.alert("Succes", status === "completed" ? "Resultat valide." : "Brouillon sauvegarde.");
+    } catch (err) {
+      Alert.alert("Erreur", err instanceof Error ? err.message : "Impossible de sauvegarder le resultat.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const historyItems = useMemo(() => {
+    if (!selectedRequest) return [];
+    return requests.filter((item) => item.patientId === selectedRequest.patientId);
+  }, [requests, selectedRequest]);
 
   return (
     <View style={styles.screenRoot}>
       <TopBar theme={theme} />
       <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={[styles.page, isDesktop && styles.pageDesktop]} showsVerticalScrollIndicator={false}>
-        <Card style={[styles.heroCard, isWideDesktop && styles.heroCardDesktop]}>
-          <View style={styles.brandPill}>
-            <MaterialCommunityIcons name="flask-outline" size={16} color="#1D4ED8" />
-            <Text style={styles.brandText}>MedSync</Text>
-          </View>
-
-          <Text style={styles.title}>Analyses médicales</Text>
-          <Text style={styles.description}>
-            Two simple workflows: request tests inside the clinic, or import external lab results for doctor review.
-          </Text>
-
-          <View style={[styles.heroButtons, isDesktop && styles.heroButtonsDesktop, isWideDesktop && styles.heroButtonsWideDesktop]}>
-            <ActionButton
-              title="Demander analyse"
-              icon="add"
-              variant="primary"
-              onPress={() => setModal("request")}
-              containerStyle={isWideDesktop ? styles.heroActionButtonInline : styles.heroActionButton}
-            />
-            <ActionButton
-              title="Remplir les résultats"
-              icon="flask-outline"
-              variant="dark"
-              onPress={() => setModal("manual")}
-              containerStyle={isWideDesktop ? styles.heroActionButtonInline : styles.heroActionButton}
-            />
-          </View>
-        </Card>
-
-        <View style={[styles.statsGrid, isWideDesktop && styles.statsGridDesktop]}>
-          <Pressable onPress={() => setModal("request")} style={({ pressed }) => [styles.statCard, isWideDesktop && styles.statCardDesktop, pressed && styles.pressed]}>
-            <View style={styles.statHeader}>
-              <IconBox icon="time-outline" color="#C2410C" backgroundColor="#FFF7ED" />
-              <Badge type="orange">À faire</Badge>
-            </View>
-            <Text style={styles.statNumber}>{pendingCount}</Text>
-            <Text style={styles.statLabel}>Demandes en attente</Text>
-          </Pressable>
-
-          <Pressable onPress={() => setModal("manual")} style={({ pressed }) => [styles.statCard, isWideDesktop && styles.statCardDesktop, pressed && styles.pressed]}>
-            <View style={styles.statHeader}>
-              <IconBox icon="flask-outline" color="#1D4ED8" backgroundColor="#EFF6FF" />
-              <Badge type="blue">Saisie</Badge>
-            </View>
-            <Text style={styles.statNumber}>{sampledCount}</Text>
-            <Text style={styles.statLabel}>Résultats à remplir</Text>
-          </Pressable>
-
-          <Pressable onPress={() => setModal("report")} style={({ pressed }) => [styles.statCard, isWideDesktop && styles.statCardDesktop, pressed && styles.pressed]}>
-            <View style={styles.statHeader}>
-              <IconBox icon="checkmark-circle-outline" color="#047857" backgroundColor="#ECFDF5" />
-              <Badge type="green">Prêt</Badge>
-            </View>
-            <Text style={styles.statNumber}>{readyCount}</Text>
-            <Text style={styles.statLabel}>Résultats prêts</Text>
-          </Pressable>
-        </View>
-
-        <View style={[styles.mainGrid, isWideDesktop && styles.mainGridDesktop]}>
-          <Card style={[styles.requestsCard, isWideDesktop && styles.requestsCardDesktop]}>
-            <View style={[styles.cardHeader, isWideDesktop && styles.cardHeaderDesktop]}>
-              <SectionTitle title="Demandes et résultats" subtitle="Internal requests and external imported results in one list." />
-              <View style={styles.searchWrap}>
-                <Ionicons name="search" size={18} color="#94A3B8" />
-                <TextInput
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Rechercher patient ou analyse..."
-                  placeholderTextColor="#94A3B8"
-                  style={[styles.searchInput, isWideDesktop && styles.searchInputDesktop]}
-                />
+        <ScrollView contentContainerStyle={[styles.page, isDesktop && styles.pageDesktop]} showsVerticalScrollIndicator={false}>
+          <Card style={[styles.heroCard, isWideDesktop && styles.heroCardDesktop]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.brandPill}>
+                <MaterialCommunityIcons name="flask-outline" size={16} color="#1D4ED8" />
+                <Text style={styles.brandText}>MedSync</Text>
               </View>
-            </View>
-            <View style={styles.filtersRow}>
-              <Pressable onPress={() => setStatusFilter("all")} style={[styles.filterChip, statusFilter === "all" && styles.filterChipActive]}>
-                <Text style={[styles.filterChipText, statusFilter === "all" && styles.filterChipTextActive]}>Tous</Text>
-              </Pressable>
-              <Pressable onPress={() => setStatusFilter("En attente")} style={[styles.filterChip, statusFilter === "En attente" && styles.filterChipActive]}>
-                <Text style={[styles.filterChipText, statusFilter === "En attente" && styles.filterChipTextActive]}>En attente</Text>
-              </Pressable>
-              <Pressable onPress={() => setStatusFilter("Prélèvement fait")} style={[styles.filterChip, statusFilter === "Prélèvement fait" && styles.filterChipActive]}>
-                <Text style={[styles.filterChipText, statusFilter === "Prélèvement fait" && styles.filterChipTextActive]}>Prélèvement fait</Text>
-              </Pressable>
-              <Pressable onPress={() => setStatusFilter("Résultat prêt")} style={[styles.filterChip, statusFilter === "Résultat prêt" && styles.filterChipActive]}>
-                <Text style={[styles.filterChipText, statusFilter === "Résultat prêt" && styles.filterChipTextActive]}>Résultat prêt</Text>
-              </Pressable>
+
+              <Text style={styles.title}>Analyses medicales</Text>
+              <Text style={styles.description}>
+                Two simple workflows: request tests inside the clinic, or import external lab results for doctor review.
+              </Text>
             </View>
 
-            <View style={styles.requestList}>
-              {filteredRequests.length === 0 ? (
-                <View style={styles.emptyStateWrap}>
-                  <Ionicons name="search-outline" size={20} color="#94A3B8" />
-                  <Text style={styles.emptyStateTitle}>Aucun résultat</Text>
-                  <Text style={styles.emptyStateText}>Ajustez la recherche ou le filtre de statut.</Text>
-                </View>
-              ) : null}
-              {filteredRequests.map((request) => (
-                <View key={request.id} style={[styles.requestItem, isWideDesktop && styles.requestItemDesktop]}>
-                  <View style={styles.requestLeft}>
-                    <View style={styles.avatarBox}>
-                      <Ionicons name="person-outline" size={22} color="#475569" />
-                    </View>
-                    <View style={styles.requestInfo}>
-                      <View style={styles.requestTitleRow}>
-                        <Text style={styles.requestName}>{request.patient}</Text>
-                        <Text style={styles.requestAge}>{request.age} ans</Text>
-                      </View>
-
-                      <View style={styles.badgeRow}>
-                        <Badge type={request.type === "Externe" ? "purple" : "blue"}>{request.type}</Badge>
-                        {request.priority === "Urgent" ? <Badge type="red">Urgent</Badge> : null}
-                      </View>
-
-                      <Text style={styles.requestTests}>{request.tests}</Text>
-                      <Text style={styles.requestMeta}>{request.doctor} • {request.date}</Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.requestActions, isWideDesktop && styles.requestActionsDesktop]}>
-                    <Badge type={statusType(request.status)}>{request.status}</Badge>
-                    <Pressable onPress={() => setModal("details")} style={styles.openButton}>
-                      <Text style={styles.openButtonText}>Ouvrir</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
+            <View style={[styles.heroButtons, isDesktop && styles.heroButtonsDesktop, isWideDesktop && styles.heroButtonsWideDesktop]}>
+              <ActionButton
+                title="Demander analyse"
+                icon="add"
+                variant="primary"
+                onPress={openRequestModal}
+                containerStyle={isWideDesktop ? styles.heroActionButtonInline : styles.heroActionButton}
+              />
+              <ActionButton
+                title="Remplir les resultats"
+                icon="flask-outline"
+                variant="dark"
+                onPress={() => setModal("manual")}
+                disabled={!selectedRequest}
+                containerStyle={isWideDesktop ? styles.heroActionButtonInline : styles.heroActionButton}
+              />
             </View>
           </Card>
 
-          <View style={[styles.sideColumn, isWideDesktop && styles.sideColumnDesktop]}>
+          {!!error ? (
             <Card>
-              <View style={styles.summaryHeader}>
-                <SectionTitle title="Résumé médecin" subtitle="Amina Bensalem • LAB-001" />
-                <Badge type="green">Prêt</Badge>
-              </View>
+              <Text style={styles.alertTitle}>Erreur backend</Text>
+              <Text style={styles.alertText}>{error}</Text>
+            </Card>
+          ) : null}
 
-              <View style={styles.alertBox}>
-                <View style={styles.alertTitleRow}>
-                  <Ionicons name="warning-outline" size={17} color="#92400E" />
-                  <Text style={styles.alertTitle}>Points importants</Text>
+          <View style={[styles.statsGrid, isWideDesktop && styles.statsGridDesktop]}>
+            <Pressable onPress={openRequestModal} style={({ pressed }) => [styles.statCard, isWideDesktop && styles.statCardDesktop, pressed && styles.pressed]}>
+              <View style={styles.statHeader}>
+                <IconBox icon="time-outline" color="#C2410C" backgroundColor="#FFF7ED" />
+                <Badge type="orange">A faire</Badge>
+              </View>
+              <Text style={styles.statNumber}>{pendingCount}</Text>
+              <Text style={styles.statLabel}>Demandes en attente</Text>
+            </Pressable>
+
+            <Pressable onPress={() => setModal("manual")} style={({ pressed }) => [styles.statCard, isWideDesktop && styles.statCardDesktop, pressed && styles.pressed]}>
+              <View style={styles.statHeader}>
+                <IconBox icon="flask-outline" color="#1D4ED8" backgroundColor="#EFF6FF" />
+                <Badge type="blue">Saisie</Badge>
+              </View>
+              <Text style={styles.statNumber}>{sampledCount}</Text>
+              <Text style={styles.statLabel}>Resultats a remplir</Text>
+            </Pressable>
+
+            <Pressable onPress={() => setModal("report")} style={({ pressed }) => [styles.statCard, isWideDesktop && styles.statCardDesktop, pressed && styles.pressed]}>
+              <View style={styles.statHeader}>
+                <IconBox icon="checkmark-circle-outline" color="#047857" backgroundColor="#ECFDF5" />
+                <Badge type="green">Pret</Badge>
+              </View>
+              <Text style={styles.statNumber}>{readyCount}</Text>
+              <Text style={styles.statLabel}>Resultats prets</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.mainGrid, isWideDesktop && styles.mainGridDesktop]}>
+            <Card style={[styles.requestsCard, isWideDesktop && styles.requestsCardDesktop]}>
+              <View style={[styles.cardHeader, isWideDesktop && styles.cardHeaderDesktop]}>
+                <SectionTitle title="Demandes et resultats" subtitle="Internal requests and external imported results in one list." />
+                <View style={styles.searchWrap}>
+                  <Ionicons name="search" size={18} color="#94A3B8" />
+                  <TextInput
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder="Rechercher patient ou analyse..."
+                    placeholderTextColor="#94A3B8"
+                    style={[styles.searchInput, isWideDesktop && styles.searchInputDesktop]}
+                  />
                 </View>
-                <Text style={styles.alertText}>
-                  CRP élevée et glycémie légèrement élevée. Comparer avec l’ancien bilan si disponible.
-                </Text>
+              </View>
+              <View style={styles.filtersRow}>
+                {(["all", "En attente", "Prelevement fait", "Resultat pret"] as const).map((item) => (
+                  <Pressable key={item} onPress={() => setStatusFilter(item)} style={[styles.filterChip, statusFilter === item && styles.filterChipActive]}>
+                    <Text style={[styles.filterChipText, statusFilter === item && styles.filterChipTextActive]}>{item === "all" ? "Tous" : item}</Text>
+                  </Pressable>
+                ))}
+                <Pressable onPress={loadData} style={styles.filterChip}>
+                  <Text style={styles.filterChipText}>{loading ? "Chargement..." : "Actualiser"}</Text>
+                </Pressable>
               </View>
 
-              <View style={styles.resultList}>
-                {resultPreview.map((item) => (
-                  <View key={item.name} style={styles.resultItem}>
-                    <View>
-                      <Text style={styles.resultName}>{item.name}</Text>
-                      <Text style={styles.resultNormal}>Normal: {item.normal}</Text>
+              <View style={styles.requestList}>
+                {!loading && filteredRequests.length === 0 ? (
+                  <View style={styles.emptyStateWrap}>
+                    <Ionicons name="search-outline" size={20} color="#94A3B8" />
+                    <Text style={styles.emptyStateTitle}>Aucun resultat</Text>
+                    <Text style={styles.emptyStateText}>Ajustez la recherche ou creez une nouvelle demande.</Text>
+                  </View>
+                ) : null}
+                {filteredRequests.map((request) => (
+                  <View key={request.id} style={[styles.requestItem, isWideDesktop && styles.requestItemDesktop]}>
+                    <View style={styles.requestLeft}>
+                      <View style={styles.avatarBox}>
+                        <Ionicons name="person-outline" size={22} color="#475569" />
+                      </View>
+                      <View style={styles.requestInfo}>
+                        <View style={styles.requestTitleRow}>
+                          <Text style={styles.requestName}>{request.patient}</Text>
+                          <Text style={styles.requestAge}>{request.age} ans</Text>
+                        </View>
+
+                        <View style={styles.badgeRow}>
+                          <Badge type={request.type === "Externe" ? "purple" : "blue"}>{request.type}</Badge>
+                          {request.priority === "Urgent" ? <Badge type="red">Urgent</Badge> : null}
+                        </View>
+
+                        <Text style={styles.requestTests}>{request.tests || "Aucune analyse"}</Text>
+                        <Text style={styles.requestMeta}>{request.doctor} • {request.date}</Text>
+                      </View>
                     </View>
-                    <View style={styles.resultRight}>
-                      <Text style={styles.resultValue}>{item.value} {item.unit}</Text>
-                      <Text style={item.note === "Normal" ? styles.resultNoteNormal : styles.resultNoteHigh}>{item.note}</Text>
+
+                    <View style={[styles.requestActions, isWideDesktop && styles.requestActionsDesktop]}>
+                      <Badge type={statusType(request.status)}>{request.status}</Badge>
+                      <Pressable onPress={() => openDetails(request.id)} style={styles.openButton}>
+                        <Text style={styles.openButtonText}>Ouvrir</Text>
+                      </Pressable>
                     </View>
                   </View>
                 ))}
               </View>
-
-              <View style={styles.twoButtons}>
-                <ActionButton title="Rapport" icon="print-outline" variant="dark" onPress={() => setModal("report")} />
-                <ActionButton title="Historique" icon="time-outline" variant="blueLight" onPress={() => setModal("history")} />
-              </View>
             </Card>
-          </View>
-        </View>
-      </ScrollView>
 
-      <RequestModal
-        visible={modal === "request"}
-        selectedTests={selectedTests}
-        toggleTest={toggleTest}
-        onClose={() => setModal(null)}
-      />
-      <ManualModal visible={modal === "manual"} onClose={() => setModal(null)} />
-      <DetailsModal visible={modal === "details"} onClose={() => setModal(null)} setModal={setModal} />
-      <HistoryModal visible={modal === "history"} onClose={() => setModal(null)} />
-      <ReportModal visible={modal === "report"} onClose={() => setModal(null)} />
+            <View style={[styles.sideColumn, isWideDesktop && styles.sideColumnDesktop]}>
+              <Card>
+                <View style={styles.summaryHeader}>
+                  <SectionTitle
+                    title="Resume medecin"
+                    subtitle={
+                      selectedRequest
+                        ? `${selectedRequest.patient} • ${selectedRequest.id.slice(0, 8).toUpperCase()}`
+                        : "Aucune demande selectionnee"
+                    }
+                  />
+                  <Badge type={selectedRequest ? statusType(selectedRequest.status) : "gray"}>
+                    {selectedRequest ? selectedRequest.status : "Vide"}
+                  </Badge>
+                </View>
+
+                <View style={styles.alertBox}>
+                  <View style={styles.alertTitleRow}>
+                    <Ionicons name="warning-outline" size={17} color="#92400E" />
+                    <Text style={styles.alertTitle}>Points importants</Text>
+                  </View>
+                  <Text style={styles.alertText}>
+                    {selectedRequest?.resultSummary || selectedRequest?.clinicalContext || "Selectionnez une demande pour voir le resume clinique et les resultats."}
+                  </Text>
+                </View>
+
+                <View style={styles.resultList}>
+                  {(selectedRequest?.rows ?? []).slice(0, 4).map((item) => (
+                    <View key={item.name} style={styles.resultItem}>
+                      <View>
+                        <Text style={styles.resultName}>{item.name}</Text>
+                        <Text style={styles.resultNormal}>Normal: {item.normal || "-"}</Text>
+                      </View>
+                      <View style={styles.resultRight}>
+                        <Text style={styles.resultValue}>{item.value || "-"} {item.unit}</Text>
+                        <Text style={item.note === "Normal" ? styles.resultNoteNormal : styles.resultNoteHigh}>
+                          {item.note || " "}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.twoButtons}>
+                  <ActionButton title="Rapport" icon="print-outline" variant="dark" onPress={() => setModal("report")} disabled={!selectedRequest} />
+                  <ActionButton title="Historique" icon="time-outline" variant="blueLight" onPress={() => setModal("history")} disabled={!selectedRequest} />
+                </View>
+              </Card>
+            </View>
+          </View>
+        </ScrollView>
+
+        <RequestModal
+          visible={modal === "request"}
+          form={requestForm}
+          setForm={setRequestForm}
+          selectedPatient={selectedPatient}
+          patientSuggestions={patientSuggestions}
+          doctorName={doctorName}
+          estimatedTotal={estimatedTotal}
+          saving={saving}
+          onToggleTest={toggleTest}
+          onCyclePriority={cyclePriority}
+          onCyclePaymentStatus={cyclePaymentStatus}
+          onCycleSourceType={cycleSourceType}
+          onCreate={handleCreateOrder}
+          onClose={() => setModal(null)}
+        />
+        <ManualModal
+          visible={modal === "manual"}
+          request={selectedRequest}
+          draft={resultDraft}
+          setDraft={setResultDraft}
+          saving={saving}
+          onSaveDraft={() => persistResults("collected")}
+          onValidate={() => persistResults("completed")}
+          onClose={() => setModal(null)}
+        />
+        <DetailsModal visible={modal === "details"} request={selectedRequest} onClose={() => setModal(null)} setModal={setModal} />
+        <HistoryModal visible={modal === "history"} request={selectedRequest} historyItems={historyItems} onOpen={openDetails} onClose={() => setModal(null)} />
+        <ReportModal visible={modal === "report"} request={selectedRequest} onClose={() => setModal(null)} />
       </SafeAreaView>
     </View>
   );
@@ -513,39 +930,104 @@ export default function LabWorkspaceScreen() {
 
 function RequestModal({
   visible,
-  selectedTests,
-  toggleTest,
+  form,
+  setForm,
+  selectedPatient,
+  patientSuggestions,
+  doctorName,
+  estimatedTotal,
+  saving,
+  onToggleTest,
+  onCyclePriority,
+  onCyclePaymentStatus,
+  onCycleSourceType,
+  onCreate,
   onClose,
 }: {
   visible: boolean;
-  selectedTests: string[];
-  toggleTest: (test: string) => void;
+  form: RequestFormState;
+  setForm: React.Dispatch<React.SetStateAction<RequestFormState>>;
+  selectedPatient: PatientOption | null;
+  patientSuggestions: PatientOption[];
+  doctorName: string;
+  estimatedTotal: number;
+  saving: boolean;
+  onToggleTest: (test: string) => void;
+  onCyclePriority: () => void;
+  onCyclePaymentStatus: () => void;
+  onCycleSourceType: () => void;
+  onCreate: () => void;
   onClose: () => void;
 }) {
   return (
     <LabModal
       visible={visible}
-      title="Nouvelle demande d’analyse"
+      title="Nouvelle demande d'analyse"
       subtitle="For tests done inside the clinic: doctor request → payment → sample → result."
       icon="add"
       onClose={onClose}
     >
       <View style={styles.formGrid}>
-        <InputField label="Patient" value="Amina Bensalem" />
-        <InputField label="Médecin" value="Dr. Karim Haddad" />
-        <SelectBox label="Priorité" value="Normal" />
-        <SelectBox label="Paiement" value="À payer à la réception" />
+        <InputField
+          label="Patient"
+          value={form.patientQuery}
+          onChangeText={(value) => setForm((current) => ({ ...current, patientQuery: value, patientId: "" }))}
+          placeholder="Rechercher un patient..."
+        />
+        {patientSuggestions.length ? (
+          <View style={styles.suggestionsBox}>
+            {patientSuggestions.map((patient) => (
+              <Pressable
+                key={patient.id}
+                onPress={() =>
+                  setForm((current) => ({
+                    ...current,
+                    patientId: patient.id,
+                    patientQuery: patient.label,
+                  }))
+                }
+                style={styles.suggestionRow}
+              >
+                <Text style={styles.suggestionText}>{patient.label}</Text>
+                <Text style={styles.suggestionMeta}>{patient.age} ans</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
+        <InputField label="Medecin" value={doctorName} editable={false} />
+        <View style={styles.formGridRow}>
+          <SelectBox
+            label="Priorite"
+            value={form.priority === "urgent" ? "Urgent" : form.priority === "stat" ? "Stat" : "Normal"}
+            onPress={onCyclePriority}
+          />
+          <SelectBox
+            label="Paiement"
+            value={form.paymentStatus === "paid" ? "Paye" : "A payer a la reception"}
+            onPress={onCyclePaymentStatus}
+          />
+        </View>
+        <SelectBox
+          label="Type"
+          value={form.sourceType === "external" ? "Externe" : "Interne"}
+          onPress={onCycleSourceType}
+        />
       </View>
+
+      {selectedPatient ? (
+        <Text style={styles.helperText}>Patient choisi: {selectedPatient.label}</Text>
+      ) : null}
 
       <View style={styles.modalSection}>
         <Text style={styles.fieldLabel}>Choisir les analyses</Text>
         <View style={styles.chipsWrap}>
           {commonTests.map((test) => {
-            const selected = selectedTests.includes(test);
+            const selected = form.selectedTests.includes(test);
             return (
               <Pressable
                 key={test}
-                onPress={() => toggleTest(test)}
+                onPress={() => onToggleTest(test)}
                 style={({ pressed }) => [styles.chip, selected && styles.chipSelected, pressed && styles.pressed]}
               >
                 <Text style={selected ? styles.chipTextSelected : styles.chipText}>{test}</Text>
@@ -555,117 +1037,214 @@ function RequestModal({
         </View>
       </View>
 
-      <InputField label="Note pour laboratoire" value="Patient à jeun. Vérifier CRP rapidement." multiline />
+      <InputField
+        label="Contexte clinique"
+        value={form.clinicalContext}
+        onChangeText={(value) => setForm((current) => ({ ...current, clinicalContext: value }))}
+        multiline
+      />
+      <InputField
+        label="Note pour laboratoire"
+        value={form.labComments}
+        onChangeText={(value) => setForm((current) => ({ ...current, labComments: value }))}
+        multiline
+      />
 
       <View style={styles.paymentSummary}>
-        <Text style={styles.paymentTitle}>Résumé paiement</Text>
+        <Text style={styles.paymentTitle}>Resume paiement</Text>
         <View style={styles.paymentRow}>
-          <Text style={styles.paymentLabel}>Analyses sélectionnées</Text>
-          <Text style={styles.paymentValue}>{selectedTests.length}</Text>
+          <Text style={styles.paymentLabel}>Analyses selectionnees</Text>
+          <Text style={styles.paymentValue}>{form.selectedTests.length}</Text>
         </View>
         <View style={styles.paymentRow}>
-          <Text style={styles.paymentLabel}>Total estimé</Text>
-          <Text style={styles.paymentValue}>3,200 DZD</Text>
+          <Text style={styles.paymentLabel}>Total estime</Text>
+          <Text style={styles.paymentValue}>{estimatedTotal.toLocaleString("fr-FR")} DZD</Text>
         </View>
       </View>
       <View style={styles.modalFooter}>
-        <ActionButton title="Créer la demande" variant="primary" containerStyle={styles.modalFooterButton} />
+        <ActionButton title={saving ? "Creation..." : "Creer la demande"} variant="primary" onPress={onCreate} containerStyle={styles.modalFooterButton} disabled={saving} />
         <ActionButton title="Annuler" variant="light" onPress={onClose} containerStyle={styles.modalFooterButton} />
       </View>
     </LabModal>
   );
 }
 
-function ManualModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function ManualModal({
+  visible,
+  request,
+  draft,
+  setDraft,
+  saving,
+  onSaveDraft,
+  onValidate,
+  onClose,
+}: {
+  visible: boolean;
+  request: LabRequest | null;
+  draft: ResultDraftState;
+  setDraft: React.Dispatch<React.SetStateAction<ResultDraftState>>;
+  saving: boolean;
+  onSaveDraft: () => void;
+  onValidate: () => void;
+  onClose: () => void;
+}) {
   return (
     <LabModal
       visible={visible}
-      title="Remplir les résultats"
+      title="Remplir les resultats"
       subtitle="Simple manual entry when the clinic enters lab values itself."
       icon="flask-outline"
       onClose={onClose}
     >
-      <View style={styles.formGrid}>
-        <InputField label="Patient" value="Amina Bensalem" />
-        <InputField label="Demande" value="LAB-001 - FNS, Glycémie, CRP" />
-      </View>
-
-      <View style={styles.resultEditBox}>
-        {resultPreview.map((row) => (
-          <View key={row.name} style={styles.resultEditRow}>
-            <Text style={styles.resultEditName}>{row.name}</Text>
-            <View style={styles.resultEditInputs}>
-              <TextInput defaultValue={row.value} style={[styles.smallInput, styles.valueInput]} />
-              <TextInput defaultValue={row.unit} style={[styles.smallInput, styles.unitInput]} />
-              <TextInput defaultValue={row.normal} style={[styles.smallInput, styles.normalInput]} />
-            </View>
-            <Badge type={row.note === "Normal" ? "green" : "red"}>{row.note}</Badge>
+      {!request ? (
+        <Text style={styles.emptyStateText}>Selectionnez d'abord une demande d'analyse.</Text>
+      ) : (
+        <>
+          <View style={styles.formGrid}>
+            <InputField label="Patient" value={request.patient} editable={false} />
+            <InputField label="Demande" value={`${request.id.slice(0, 8).toUpperCase()} - ${request.tests}`} editable={false} />
           </View>
-        ))}
-      </View>
 
-      <InputField label="Conclusion / commentaire" value="CRP élevée. Glycémie légèrement supérieure à la norme." multiline />
-      <View style={styles.modalFooter}>
-        <ActionButton title="Sauvegarder brouillon" variant="light" onPress={onClose} containerStyle={styles.modalFooterButton} />
-        <ActionButton title="Valider résultat" variant="primary" containerStyle={styles.modalFooterButton} />
-      </View>
+          <View style={styles.resultEditBox}>
+            {draft.rows.map((row, index) => (
+              <View key={`${row.name}-${index}`} style={styles.resultEditRow}>
+                <Text style={styles.resultEditName}>{row.name}</Text>
+                <View style={styles.resultEditInputs}>
+                  <TextInput
+                    value={row.value}
+                    onChangeText={(value) => {
+                      const note = deriveNote(value, row.normal);
+                      setDraft((current) => ({
+                        ...current,
+                        rows: current.rows.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, value, note } : item,
+                        ),
+                      }));
+                    }}
+                    style={[styles.smallInput, styles.valueInput]}
+                  />
+                  <TextInput
+                    value={row.unit}
+                    onChangeText={(unit) =>
+                      setDraft((current) => ({
+                        ...current,
+                        rows: current.rows.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, unit } : item,
+                        ),
+                      }))
+                    }
+                    style={[styles.smallInput, styles.unitInput]}
+                  />
+                  <TextInput
+                    value={row.normal}
+                    onChangeText={(normal) => {
+                      const note = deriveNote(row.value, normal);
+                      setDraft((current) => ({
+                        ...current,
+                        rows: current.rows.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, normal, note } : item,
+                        ),
+                      }));
+                    }}
+                    style={[styles.smallInput, styles.normalInput]}
+                  />
+                </View>
+                <Badge type={row.note === "Normal" ? "green" : row.note === "Eleve" ? "red" : "gray"}>
+                  {row.note || "A verifier"}
+                </Badge>
+              </View>
+            ))}
+          </View>
+
+          <InputField
+            label="Conclusion / commentaire"
+            value={draft.conclusion}
+            onChangeText={(value) => setDraft((current) => ({ ...current, conclusion: value }))}
+            multiline
+          />
+          <InputField
+            label="Note medecin"
+            value={draft.doctorNote}
+            onChangeText={(value) => setDraft((current) => ({ ...current, doctorNote: value }))}
+            multiline
+          />
+          <View style={styles.modalFooter}>
+            <ActionButton title={saving ? "Sauvegarde..." : "Sauvegarder brouillon"} variant="light" onPress={onSaveDraft} containerStyle={styles.modalFooterButton} disabled={saving} />
+            <ActionButton title="Valider resultat" variant="primary" onPress={onValidate} containerStyle={styles.modalFooterButton} disabled={saving} />
+          </View>
+        </>
+      )}
     </LabModal>
   );
 }
 
 function DetailsModal({
   visible,
+  request,
   onClose,
   setModal,
 }: {
   visible: boolean;
+  request: LabRequest | null;
   onClose: () => void;
   setModal: (modal: ModalType) => void;
 }) {
-  const steps = [
-    "Demande créée par Dr. Karim",
-    "Patient payé à la réception",
-    "Prélèvement sanguin fait",
-    "Résultat rempli",
-    "En attente validation médecin",
-  ];
+  const steps = request ? buildTimeline(request) : [];
 
   return (
     <LabModal
       visible={visible}
-      title="Détails analyse"
+      title="Details analyse"
       subtitle="One clean page to review request, payment, result, and actions."
       icon="eye-outline"
       onClose={onClose}
     >
-      <View style={styles.infoGrid}>
-        <InfoBox label="Patient" value="Amina Bensalem" />
-        <InfoBox label="Type" value="Interne" />
-        <InfoBox label="Paiement" value="Payé" success />
-      </View>
-
-      <View style={styles.timelineBox}>
-        <Text style={styles.timelineTitle}>Timeline</Text>
-        {steps.map((step, index) => (
-          <View key={step} style={styles.timelineRow}>
-            <View style={[styles.timelineDot, index < 4 ? styles.timelineDotDone : styles.timelineDotPending]} />
-            <View>
-              <Text style={styles.timelineStep}>{step}</Text>
-              <Text style={styles.timelineTime}>Aujourd’hui • {9 + index}:15</Text>
-            </View>
+      {!request ? (
+        <Text style={styles.emptyStateText}>Aucune demande selectionnee.</Text>
+      ) : (
+        <>
+          <View style={styles.infoGrid}>
+            <InfoBox label="Patient" value={request.patient} />
+            <InfoBox label="Type" value={request.type} />
+            <InfoBox label="Paiement" value={paymentLabel(request.paymentStatus)} success={paymentSuccess(request.paymentStatus)} />
           </View>
-        ))}
-      </View>
-      <View style={styles.modalFooterThree}>
-        <ActionButton title="Remplir résultat" variant="primary" onPress={() => setModal("manual")} containerStyle={styles.modalFooterThirdButton} />
-        <ActionButton title="Voir rapport" variant="dark" onPress={() => setModal("report")} containerStyle={styles.modalFooterThirdButton} />
-        <ActionButton title="Historique" variant="light" onPress={() => setModal("history")} containerStyle={styles.modalFooterThirdButton} />
-      </View>
+
+          <View style={styles.timelineBox}>
+            <Text style={styles.timelineTitle}>Timeline</Text>
+            {steps.map((step) => (
+              <View key={step.label} style={styles.timelineRow}>
+                <View style={[styles.timelineDot, step.done ? styles.timelineDotDone : styles.timelineDotPending]} />
+                <View>
+                  <Text style={styles.timelineStep}>{step.label}</Text>
+                  <Text style={styles.timelineTime}>{step.time}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          <View style={styles.modalFooterThree}>
+            <ActionButton title="Remplir resultat" variant="primary" onPress={() => setModal("manual")} containerStyle={styles.modalFooterThirdButton} />
+            <ActionButton title="Voir rapport" variant="dark" onPress={() => setModal("report")} containerStyle={styles.modalFooterThirdButton} />
+            <ActionButton title="Historique" variant="light" onPress={() => setModal("history")} containerStyle={styles.modalFooterThirdButton} />
+          </View>
+        </>
+      )}
     </LabModal>
   );
 }
 
-function HistoryModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function HistoryModal({
+  visible,
+  request,
+  historyItems,
+  onOpen,
+  onClose,
+}: {
+  visible: boolean;
+  request: LabRequest | null;
+  historyItems: LabRequest[];
+  onOpen: (requestId: string) => void;
+  onClose: () => void;
+}) {
   return (
     <LabModal
       visible={visible}
@@ -674,84 +1253,104 @@ function HistoryModal({ visible, onClose }: { visible: boolean; onClose: () => v
       icon="time-outline"
       onClose={onClose}
     >
-      <View style={styles.blueInfoBox}>
-        <Text style={styles.blueInfoText}>
-          <Text style={styles.bold}>Amina Bensalem</Text> has 3 lab records. This helps the doctor compare current and old results quickly.
-        </Text>
-      </View>
-
-      <View style={styles.historyList}>
-        {historyItems.map((item) => (
-          <View key={item.date} style={styles.historyItem}>
-            <View style={styles.historyTopRow}>
-              <View style={styles.historyTextWrap}>
-                <Text style={styles.historyTitle}>{item.title}</Text>
-                <Text style={styles.historyMeta}>{item.date} • {item.source}</Text>
-              </View>
-              <Pressable style={styles.openButton}>
-                <Text style={styles.openButtonText}>Ouvrir</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.historySummary}>{item.summary}</Text>
+      {!request ? (
+        <Text style={styles.emptyStateText}>Aucune demande selectionnee.</Text>
+      ) : (
+        <>
+          <View style={styles.blueInfoBox}>
+            <Text style={styles.blueInfoText}>
+              <Text style={styles.bold}>{request.patient}</Text> has {historyItems.length} lab records. This helps the doctor compare current and old results quickly.
+            </Text>
           </View>
-        ))}
-      </View>
+
+          <View style={styles.historyList}>
+            {historyItems.map((item) => (
+              <View key={item.id} style={styles.historyItem}>
+                <View style={styles.historyTopRow}>
+                  <View style={styles.historyTextWrap}>
+                    <Text style={styles.historyTitle}>{item.tests || "Analyses"}</Text>
+                    <Text style={styles.historyMeta}>{item.date} • {item.type}</Text>
+                  </View>
+                  <Pressable style={styles.openButton} onPress={() => onOpen(item.id)}>
+                    <Text style={styles.openButtonText}>Ouvrir</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.historySummary}>{item.resultSummary || item.clinicalContext || "Aucun resume disponible."}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
     </LabModal>
   );
 }
 
-function ReportModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function ReportModal({
+  visible,
+  request,
+  onClose,
+}: {
+  visible: boolean;
+  request: LabRequest | null;
+  onClose: () => void;
+}) {
   return (
     <LabModal
       visible={visible}
-      title="Rapport / résumé médecin"
+      title="Rapport / resume medecin"
       subtitle="A printable report with values, abnormal flags, and doctor summary."
       icon="document-text-outline"
       onClose={onClose}
     >
-      <View style={styles.reportBox}>
-        <View style={styles.reportHeader}>
-          <View>
-            <Text style={styles.reportClinic}>MedSync Clinic</Text>
-            <Text style={styles.reportSubtitle}>Rapport d’analyses médicales</Text>
-          </View>
-          <MaterialCommunityIcons name="flask-outline" size={32} color="#2563EB" />
-        </View>
-
-        <View style={styles.reportInfoGrid}>
-          <ReportInfo label="Patient" value="Amina Bensalem" />
-          <ReportInfo label="Médecin" value="Dr. Karim Haddad" />
-          <ReportInfo label="Date" value="26 Mai 2026" />
-        </View>
-
-        <View style={styles.reportResultsBox}>
-          {resultPreview.map((row) => (
-            <View key={row.name} style={styles.reportResultRow}>
-              <Text style={styles.reportResultName}>{row.name}</Text>
-              <Text style={styles.reportResultValue}>{row.value} {row.unit}</Text>
-              <Text style={styles.reportResultNormal}>{row.normal}</Text>
-              <Text style={row.note === "Normal" ? styles.resultNoteNormal : styles.resultNoteHigh}>{row.note}</Text>
+      {!request ? (
+        <Text style={styles.emptyStateText}>Aucune demande selectionnee.</Text>
+      ) : (
+        <>
+          <View style={styles.reportBox}>
+            <View style={styles.reportHeader}>
+              <View>
+                <Text style={styles.reportClinic}>MedSync Clinic</Text>
+                <Text style={styles.reportSubtitle}>Rapport d'analyses medicales</Text>
+              </View>
+              <MaterialCommunityIcons name="flask-outline" size={32} color="#2563EB" />
             </View>
-          ))}
-        </View>
 
-        <View style={styles.alertBox}>
-          <Text style={styles.alertTitle}>Résumé automatique proposé</Text>
-          <Text style={styles.alertText}>
-            CRP élevée et glycémie légèrement élevée. Résultat à interpréter selon les symptômes du patient et l’historique médical.
-          </Text>
-        </View>
+            <View style={styles.reportInfoGrid}>
+              <ReportInfo label="Patient" value={request.patient} />
+              <ReportInfo label="Medecin" value={request.doctor} />
+              <ReportInfo label="Date" value={request.date} />
+            </View>
 
-        <View style={styles.noteBox}>
-          <Text style={styles.noteTitle}>Note médecin</Text>
-          <Text style={styles.noteText}>Contrôle recommandé si symptômes inflammatoires persistent. Conseiller suivi glycémie.</Text>
-        </View>
-      </View>
-      <View style={styles.modalFooterThree}>
-        <ActionButton title="Imprimer" icon="print-outline" variant="dark" containerStyle={styles.modalFooterThirdButton} />
-        <ActionButton title="PDF" icon="download-outline" variant="light" containerStyle={styles.modalFooterThirdButton} />
-        <ActionButton title="Envoyer" icon="send-outline" variant="blueLight" containerStyle={styles.modalFooterThirdButton} />
-      </View>
+            <View style={styles.reportResultsBox}>
+              {request.rows.map((row) => (
+                <View key={row.name} style={styles.reportResultRow}>
+                  <Text style={styles.reportResultName}>{row.name}</Text>
+                  <Text style={styles.reportResultValue}>{row.value || "-"} {row.unit}</Text>
+                  <Text style={styles.reportResultNormal}>{row.normal || "-"}</Text>
+                  <Text style={row.note === "Normal" ? styles.resultNoteNormal : styles.resultNoteHigh}>{row.note || " "}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.alertBox}>
+              <Text style={styles.alertTitle}>Resume automatique propose</Text>
+              <Text style={styles.alertText}>
+                {request.resultSummary || request.doctorNote || "Resultat a interpreter selon les symptomes du patient et l'historique medical."}
+              </Text>
+            </View>
+
+            <View style={styles.noteBox}>
+              <Text style={styles.noteTitle}>Note medecin</Text>
+              <Text style={styles.noteText}>{request.doctorNote || "Aucune note medecin."}</Text>
+            </View>
+          </View>
+          <View style={styles.modalFooterThree}>
+            <ActionButton title="Imprimer" icon="print-outline" variant="dark" containerStyle={styles.modalFooterThirdButton} />
+            <ActionButton title="PDF" icon="download-outline" variant="light" containerStyle={styles.modalFooterThirdButton} />
+            <ActionButton title="Envoyer" icon="send-outline" variant="blueLight" containerStyle={styles.modalFooterThirdButton} />
+          </View>
+        </>
+      )}
     </LabModal>
   );
 }
@@ -869,6 +1468,7 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     lineHeight: 22,
     fontSize: 14,
+    marginTop: 6,
   },
   heroButtons: {
     marginTop: 8,
@@ -1246,32 +1846,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     gap: 10,
   },
-  actionsHeader: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-    marginBottom: 14,
-  },
-  simpleActionsList: {
-    gap: 10,
-  },
-  simpleAction: {
-    minHeight: 54,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  simpleActionText: {
-    flex: 1,
-    color: COLORS.text,
-    fontWeight: "800",
-    fontSize: 14,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.48)",
@@ -1334,6 +1908,11 @@ const styles = StyleSheet.create({
   formGrid: {
     gap: 14,
   },
+  formGridRow: {
+    flexDirection: "row",
+    gap: 12,
+    flexWrap: "wrap",
+  },
   fieldWrap: {
     gap: 7,
   },
@@ -1352,6 +1931,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 14,
   },
+  inputDisabled: {
+    opacity: 0.8,
+  },
   textArea: {
     minHeight: 86,
     paddingTop: 10,
@@ -1366,11 +1948,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    minWidth: 220,
+    flex: 1,
   },
   selectText: {
     color: COLORS.text,
     fontSize: 14,
     fontWeight: "600",
+  },
+  helperText: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginTop: -4,
+  },
+  suggestionsBox: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+  },
+  suggestionRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.softBorder,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  suggestionText: {
+    color: COLORS.text,
+    fontWeight: "700",
+  },
+  suggestionMeta: {
+    color: COLORS.muted,
+    fontSize: 12,
   },
   modalSection: {
     gap: 10,
@@ -1439,39 +2052,6 @@ const styles = StyleSheet.create({
   },
   modalFooterThirdButton: {
     flex: 1,
-  },
-  uploadBox: {
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "#CBD5E1",
-    backgroundColor: COLORS.page,
-    borderRadius: 24,
-    padding: 24,
-    alignItems: "center",
-    gap: 8,
-  },
-  uploadTitle: {
-    color: COLORS.text,
-    fontWeight: "900",
-    fontSize: 15,
-  },
-  uploadText: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
-  chooseFileButton: {
-    marginTop: 6,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  chooseFileText: {
-    color: "#334155",
-    fontWeight: "800",
-    fontSize: 13,
   },
   resultEditBox: {
     borderRadius: 18,
@@ -1696,11 +2276,3 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
-
-
-
-
-
-
-
-

@@ -4,7 +4,13 @@ export type MaritalStatus = "single" | "married" | "divorced";
 export type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
 export type Priority = "low" | "normal" | "routine" | "urgent" | "high";
 export type AppointmentType = "consultation" | "follow_up" | "emergency" | "procedure";
-export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
+export type AppointmentStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "no_show"
+  | "in_consultation";
 export type ConsultationStatus = "open" | "closed" | "cancelled";
 export type PrescriptionStatus = "draft" | "signed" | "cancelled";
 export type InvoiceStatus = "draft" | "issued" | "paid" | "partial" | "void" | "cancelled";
@@ -14,6 +20,7 @@ export type LabPriority = "routine" | "urgent" | "stat";
 export type LabOrderStatus = "draft" | "ordered" | "collected" | "partial" | "completed" | "cancelled";
 export type LabResultStatus = "pending" | "collected" | "resulted" | "validated" | "cancelled";
 export type TreatmentCaseStatus = "open" | "active" | "closed" | "archived" | "cancelled";
+export type LabSourceType = "internal" | "external";
 
 export type UsersMetadataRow = {
   id: string;
@@ -196,31 +203,6 @@ export type ConsultationDiagnosisRow = {
   created_at: string;
 };
 
-export type ConsultationDocumentRow = {
-  id: string;
-  clinic_id: string;
-  consultation_id: string;
-  patient_id: string;
-  uploader_id: string | null;
-  kind: string;
-  name: string;
-  mime_type: string | null;
-  url: string | null;
-  size_bytes: number | null;
-  sha256: string | null;
-  study_instance_uid: string | null;
-  series_instance_uid: string | null;
-  sop_instance_uid: string | null;
-  accession_number: string | null;
-  metadata: any | null;
-  created_at: string;
-  updated_at: string;
-  treatment_case_id: string | null;
-  document_type: string | null;
-  title: string | null;
-  notes: string | null;
-};
-
 export type ClinicTaskPriority = "high" | "medium" | "low";
 export type ClinicTaskStatus = "todo" | "in_progress" | "done";
 
@@ -297,8 +279,47 @@ export type ConsultationSession = {
   vitals: ConsultationVitalsRow | null;
   parameters: ConsultationParametersRow | null;
   diagnoses: ConsultationDiagnosisRow[];
-  documents: ConsultationDocumentRow[];
   events?: ConsultationEventRow[];
+};
+
+export type LabResultItemRow = {
+  name: string;
+  value: string | null;
+  unit: string | null;
+  normal: string | null;
+  note: string | null;
+};
+
+export type LabOrderRow = {
+  id: string;
+  clinic_id: string;
+  consultation_id: string | null;
+  patient_id: string;
+  doctor_id: string | null;
+  source_type: LabSourceType | string;
+  priority: LabPriority | string;
+  status: LabOrderStatus | string;
+  payment_status: PaymentStatus | string;
+  requested_tests: string[];
+  clinical_context: string | null;
+  lab_comments: string | null;
+  payment_note: string | null;
+  estimated_total: number | null;
+  result_items: LabResultItemRow[];
+  result_summary: string | null;
+  doctor_note: string | null;
+  external_lab_name: string | null;
+  requested_at: string;
+  sampled_at: string | null;
+  resulted_at: string | null;
+  validated_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  patient_first_name?: string | null;
+  patient_last_name?: string | null;
+  patient_age?: number | null;
+  doctor_name?: string | null;
 };
 
 export type ClinicSpecialityToolRow = {

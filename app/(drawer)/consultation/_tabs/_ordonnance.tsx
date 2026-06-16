@@ -90,6 +90,7 @@ export default function OrdonnancesTab({
   consultationId,
   patientId,
   signedBy,
+  readOnly,
   onPrint,
   onOverflow,
   onSelectedPrescriptionChange,
@@ -99,6 +100,7 @@ export default function OrdonnancesTab({
   consultationId?: string;
   patientId?: string;
   signedBy?: string;
+  readOnly?: boolean;
   onPrint?: (rx?: Prescription) => void;
   onOverflow?: (rx?: Prescription) => void;
   onSelectedPrescriptionChange?: (rx?: Prescription) => void;
@@ -268,6 +270,7 @@ export default function OrdonnancesTab({
   };
 
   const addDrugFromCatalog = async (drug: DrugSuggestion) => {
+    if (readOnly) return;
     let active: Prescription | null = selectedRx ?? null;
     if (!active) {
       active = await addPrescription();
@@ -300,6 +303,7 @@ export default function OrdonnancesTab({
   };
 
   const toggleValidated = async (drugId: string) => {
+    if (readOnly) return;
     await patchSelectedPrescription((current) => ({
       ...current,
       drugs: current.drugs.map((drug) =>
@@ -309,6 +313,7 @@ export default function OrdonnancesTab({
   };
 
   const deleteDrug = async (drugId: string) => {
+    if (readOnly) return;
     await patchSelectedPrescription((current) => ({
       ...current,
       drugs: current.drugs.filter((drug) => drug.id !== drugId),
@@ -317,6 +322,7 @@ export default function OrdonnancesTab({
   };
 
   const updateDrug = (drugId: string, patch: Partial<Drug>) => {
+    if (readOnly) return;
     if (!selectedRx) return;
     setPrescriptions((prev) =>
       prev.map((row) => {
@@ -332,12 +338,14 @@ export default function OrdonnancesTab({
   };
 
   const saveExpandedDrug = async () => {
+    if (readOnly) return;
     if (!selectedRx) return;
     await persistPrescription(selectedRx);
     setExpandedDrugId(null);
   };
 
   const reusePrescription = async (row: Prescription) => {
+    if (readOnly) return;
     if (!requesterId || !consultationId || !patientId) return;
     setSaving(true);
     setError(null);
@@ -412,6 +420,7 @@ export default function OrdonnancesTab({
                     key={item.id}
                     style={styles.typeRow}
                     onPress={() => addDrugFromCatalog(item)}
+                    disabled={readOnly}
                   >
                     <Text style={styles.typeText} numberOfLines={1}>
                       {item.label}
@@ -431,7 +440,7 @@ export default function OrdonnancesTab({
             <View style={{ marginTop: 10, gap: 10 }}>
               {previousPrescriptions.length ? (
                 previousPrescriptions.map((row) => (
-                  <TouchableOpacity key={row.id} style={styles.typeRow} onPress={() => reusePrescription(row)}>
+                  <TouchableOpacity key={row.id} style={styles.typeRow} onPress={() => reusePrescription(row)} disabled={readOnly}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.typeText}>{row.title || "Prescription précédente"}</Text>
                       <Text style={styles.mutedText}>
@@ -459,9 +468,9 @@ export default function OrdonnancesTab({
           <View style={styles.rightHeaderRow}>
             <Text style={styles.panelTitle}>Ordonnances</Text>
 
-            <TouchableOpacity style={[styles.greenBtn, saving && { opacity: 0.7 }]} onPress={addPrescription} disabled={saving}>
+            <TouchableOpacity style={[styles.greenBtn, (saving || readOnly) && { opacity: 0.7 }]} onPress={addPrescription} disabled={saving || readOnly}>
               <Ionicons name="add" size={16} color={theme.colors.textOnPrimary} />
-              <Text style={styles.greenBtnText}>{saving ? "EN COURS..." : "AJOUTER ORDONNANCE"}</Text>
+              <Text style={styles.greenBtnText}>{readOnly ? "LECTURE SEULE" : saving ? "EN COURS..." : "AJOUTER ORDONNANCE"}</Text>
             </TouchableOpacity>
           </View>
 
@@ -531,7 +540,7 @@ export default function OrdonnancesTab({
                         )}
                       </View>
 
-                      <TouchableOpacity onPress={() => toggleValidated(d.id)} style={styles.rowIconBtn}>
+                      <TouchableOpacity onPress={() => toggleValidated(d.id)} style={styles.rowIconBtn} disabled={readOnly}>
                         <Ionicons
                           name={d.validated ? "checkmark-circle" : "checkmark-circle-outline"}
                           size={20}
@@ -539,7 +548,7 @@ export default function OrdonnancesTab({
                         />
                       </TouchableOpacity>
 
-                      <TouchableOpacity onPress={() => deleteDrug(d.id)} style={styles.rowIconBtn}>
+                      <TouchableOpacity onPress={() => deleteDrug(d.id)} style={styles.rowIconBtn} disabled={readOnly}>
                         <Ionicons name="trash" size={18} color={theme.colors.error} />
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -554,6 +563,7 @@ export default function OrdonnancesTab({
                               onChangeText={(v) => updateDrug(d.id, { qty: v })}
                               placeholder=""
                               style={[styles.editorInput, { backgroundColor: theme.colors.surface }]}
+                              editable={!readOnly}
                             />
                           </View>
 
@@ -564,6 +574,7 @@ export default function OrdonnancesTab({
                               onChangeText={(v) => updateDrug(d.id, { dose: v })}
                               placeholder=""
                               style={[styles.editorInput, { backgroundColor: theme.colors.surface }]}
+                              editable={!readOnly}
                             />
                           </View>
                         </View>
@@ -576,6 +587,7 @@ export default function OrdonnancesTab({
                               onChangeText={(v) => updateDrug(d.id, { frequency: v })}
                               placeholder=""
                               style={[styles.editorInput, { backgroundColor: theme.colors.surface }]}
+                              editable={!readOnly}
                             />
                           </View>
 
@@ -586,6 +598,7 @@ export default function OrdonnancesTab({
                               onChangeText={(v) => updateDrug(d.id, { duration: v })}
                               placeholder=""
                               style={[styles.editorInput, { backgroundColor: theme.colors.surface }]}
+                              editable={!readOnly}
                             />
                           </View>
                         </View>
@@ -597,11 +610,12 @@ export default function OrdonnancesTab({
                           multiline
                           placeholder=""
                           style={[styles.editorTextarea, { backgroundColor: theme.colors.surface }]}
+                          editable={!readOnly}
                         />
 
-                        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]} onPress={saveExpandedDrug}>
+                        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.colors.primary }, readOnly && { opacity: 0.7 }]} onPress={saveExpandedDrug} disabled={readOnly}>
                           <Ionicons name="save-outline" size={16} color={theme.colors.textOnPrimary} />
-                          <Text style={styles.saveBtnText}>ENREGISTRER</Text>
+                          <Text style={styles.saveBtnText}>{readOnly ? "LECTURE SEULE" : "ENREGISTRER"}</Text>
                         </TouchableOpacity>
                       </View>
                     )}

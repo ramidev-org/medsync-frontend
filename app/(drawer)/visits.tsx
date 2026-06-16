@@ -355,8 +355,10 @@ export default function VisitsPage() {
         if (updateError) throw updateError;
       }
       await fetchAppointments();
+      return true;
     } catch (e: any) {
       Alert.alert("Erreur", e?.message || "Impossible de mettre a jour le statut");
+      return false;
     }
   };
 
@@ -383,7 +385,8 @@ export default function VisitsPage() {
   };
 
   const startConsultation = async (a: Appointment) => {
-    await updateStatus(a.id, "confirmed");
+    const updated = await updateStatus(a.id, "confirmed");
+    if (!updated) return;
     router.push(`/consultation?id=${a.id}`);
   };
 
@@ -701,7 +704,7 @@ export default function VisitsPage() {
                   <Dropdown
                     label="Statut"
                     value={appointmentStatus}
-                    options={["pending", "confirmed", "completed", "cancelled", "no_show"]}
+                    options={["pending", "confirmed", "completed", "cancelled", "no_show", "in_consultation"]}
                     onChange={(v) => setAppointmentStatus(v as AppointmentStatus)}
                   />
                 </View>

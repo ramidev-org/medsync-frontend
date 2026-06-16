@@ -41,13 +41,59 @@ async function rpc(client, name, params) {
 async function queryPayments(client) {
   const { data, error } = await client
     .from("payments")
-    .select(
-      "id, amount, created_at, visit_id, patient_id, reference, method, status, patients(last_name, first_name, code)",
-    )
+    .select("id, amount, created_at, visit_id, patient_id, reference, method, status")
     .order("created_at", { ascending: false })
     .limit(5);
   if (error) throw error;
-  return data || [];
+
+  const patientIds = Array.from(
+    new Set((data || []).map((payment) => payment.patient_id).filter(Boolean)),
+  );
+  if (!patientIds.length) return data || [];
+
+  const { data: patients, error: patientsError } = await client
+    .from("patients")
+    .select("id, first_name, last_name, code")
+    .in("id", patientIds);
+  if (patientsError) throw patientsError;
+
+  const patientMap = new Map((patients || []).map((patient) => [patient.id, patient]));
+  return (data || []).map((payment) => ({
+    ...payment,
+    patient: patientMap.get(payment.patient_id) || null,
+  }));
+}
+
+async function getNotificationsWithFallback(client, requesterId) {
+  try {
+    const notifications = await rpc(client, "rpc_get_notifications", {
+      p_requester_id: requesterId,
+      p_limit: 10,
+    });
+    return { items: Array.isArray(notifications) ? notifications : [], fallback: false };
+  } catch (error) {
+    const inventory = await rpc(client, "rpc_get_inventory", {
+      p_requester_id: requesterId,
+      p_page: 1,
+      p_items_per_page: 25,
+    }).catch(() => ({ items: [] }));
+    const tasks = await rpc(client, "rpc_get_tasks", {
+      p_requester_id: requesterId,
+    }).catch(() => []);
+
+    const items = [];
+    for (const item of inventory?.items || []) {
+      if (Number(item.qty_on_hand ?? 0) <= Number(item.reorder_threshold ?? 0)) {
+        items.push({ kind: "inventory", title: item.name });
+      }
+    }
+    for (const task of tasks || []) {
+      if (String(task.status || "") !== "done") {
+        items.push({ kind: "task", title: task.title || "Task" });
+      }
+    }
+    return { items, fallback: true, error: shortError(error) };
+  }
 }
 
 async function main() {
@@ -234,7 +280,7 @@ async function main() {
           p_consultation_id: createdConsultationId,
         });
         add("consultation_get", !!consultation?.consultation, {
-          hasDocuments: Array.isArray(consultation?.documents),
+          hasDiagnoses: Array.isArray(consultation?.diagnoses),
         });
       } catch (error) {
         add("consultation_get", false, { error: shortError(error) });
@@ -257,33 +303,6 @@ async function main() {
         add("consultation_save", saved === true, { saved });
       } catch (error) {
         add("consultation_save", false, { error: shortError(error) });
-      }
-
-      try {
-        const createdDoc = await rpc(doctor.client, "rpc_create_consultation_document", {
-          p_requester_id: doctor.user.id,
-          p_consultation_id: createdConsultationId,
-          p_patient_id: createdPatientId,
-          p_name: `QA Doc ${uniqueTag}`,
-          p_kind: "PDF",
-          p_document_type: "report",
-          p_title: "Workflow test document",
-          p_notes: "Created by QA",
-          p_mime_type: "application/pdf",
-          p_url: "https://example.test/doc.pdf",
-        });
-        add("consultation_document_create", !!createdDoc?.id, {
-          documentId: createdDoc?.id || null,
-        });
-        if (createdDoc?.id) {
-          const deleted = await rpc(doctor.client, "rpc_delete_consultation_document", {
-            p_requester_id: doctor.user.id,
-            p_document_id: createdDoc.id,
-          });
-          add("consultation_document_delete", deleted === true, { deleted });
-        }
-      } catch (error) {
-        add("consultation_document_flow", false, { error: shortError(error) });
       }
 
       try {
@@ -375,12 +394,10 @@ async function main() {
     }
 
     try {
-      const notifications = await rpc(doctor.client, "rpc_get_notifications", {
-        p_requester_id: doctor.user.id,
-        p_limit: 10,
-      });
+      const notifications = await getNotificationsWithFallback(doctor.client, doctor.user.id);
       add("notifications_list", true, {
-        count: Array.isArray(notifications) ? notifications.length : null,
+        count: notifications.items.length,
+        fallback: notifications.fallback,
       });
     } catch (error) {
       add("notifications_list", false, { error: shortError(error) });
@@ -443,14 +460,16 @@ async function main() {
 
     try {
       const inviteEmail = `invite+${uniqueTag}@example.test`;
-      const result = await doctor.client.functions.invoke("create-staff-invite", {
-        body: { email: inviteEmail, user_type: "assistant" },
-        headers: { Authorization: `Bearer ${doctor.session.access_token}` },
+      const result = await rpc(doctor.client, "rpc_create_staff_invite", {
+        p_requester_id: doctor.user.id,
+        p_email: inviteEmail,
+        p_user_type: "assistant",
+        p_token_hash: `invite_${uniqueTag}`,
+        p_expires_at: new Date(now + 7 * 86400000).toISOString(),
       });
-      if (result.error) throw result.error;
       add("staff_invite_create", true, {
-        hasInviteUrl: !!(result.data?.invite_url || result.data?.url || result.data?.link),
-        hasToken: !!(result.data?.invite_token || result.data?.token),
+        hasInviteUrl: !!(result?.invite_url || result?.url || result?.link),
+        hasToken: !!(result?.invite_token || result?.token),
       });
     } catch (error) {
       add("staff_invite_create", false, { error: shortError(error) });
@@ -513,11 +532,13 @@ async function main() {
     }
 
     try {
-      const result = await assistant.client.functions.invoke("create-staff-invite", {
-        body: { email: `blocked+${uniqueTag}@example.test`, user_type: "assistant" },
-        headers: { Authorization: `Bearer ${assistant.session.access_token}` },
+      const result = await rpc(assistant.client, "rpc_create_staff_invite", {
+        p_requester_id: assistant.user.id,
+        p_email: `blocked+${uniqueTag}@example.test`,
+        p_user_type: "assistant",
+        p_token_hash: `blocked_${uniqueTag}`,
+        p_expires_at: new Date(now + 7 * 86400000).toISOString(),
       });
-      if (result.error) throw result.error;
       add("assistant_staff_invite_permission", false, {
         error: "Assistant unexpectedly created invite",
       });

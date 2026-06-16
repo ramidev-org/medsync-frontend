@@ -16,9 +16,16 @@ type DashboardAppointmentsResponse = {
 type InventoryRow = {
   id: string;
   name?: string | null;
-  quantity?: number | null;
-  threshold?: number | null;
+  qty_on_hand?: number | null;
+  reorder_threshold?: number | null;
   updated_at?: string | null;
+};
+
+type InventoryListResponse = {
+  items: InventoryRow[];
+  total: number;
+  page: number;
+  itemsPerPage: number;
 };
 
 type TaskRow = {
@@ -41,8 +48,10 @@ async function getDerivedNotifications(requesterId: string, limit: number): Prom
     callRpc<TaskRow[], Record<string, unknown>>("rpc_get_tasks", {
       p_requester_id: requesterId,
     }),
-    callRpc<InventoryRow[], Record<string, unknown>>("rpc_get_inventory", {
+    callRpc<InventoryListResponse, Record<string, unknown>>("rpc_get_inventory", {
       p_requester_id: requesterId,
+      p_page: 1,
+      p_items_per_page: 50,
     }),
     db
       .from("users_metadata")
@@ -105,9 +114,9 @@ async function getDerivedNotifications(requesterId: string, limit: number): Prom
   }
 
   if (inventoryResult.status === "fulfilled") {
-    for (const item of inventoryResult.value ?? []) {
-      const quantity = Number(item.quantity ?? 0);
-      const threshold = Number(item.threshold ?? 0);
+    for (const item of inventoryResult.value?.items ?? []) {
+      const quantity = Number(item.qty_on_hand ?? 0);
+      const threshold = Number(item.reorder_threshold ?? 0);
       if (threshold > 0 && quantity <= threshold) {
         items.push({
           id: item.id,
