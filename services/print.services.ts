@@ -1,4 +1,5 @@
-﻿import { Platform } from "react-native";
+import * as Print from "expo-print";
+import { Alert, Platform } from "react-native";
 
 type DrugLine = {
   name: string;
@@ -332,6 +333,8 @@ window.onload = () => {
 </body>
 </html>
 `;
+
+  return html;
 }
 
 function isEmbeddedBrowser() {
@@ -342,6 +345,10 @@ function isEmbeddedBrowser() {
 
 function openInlinePrintPreview(html: string) {
   if (typeof document === "undefined") return;
+  if (!html || typeof html !== "string") {
+    Alert.alert("Impression", "Le document d'ordonnance est vide.");
+    return;
+  }
 
   const existing = document.getElementById("ordonnance-inline-preview-root");
   existing?.remove();
@@ -414,6 +421,9 @@ function openInlinePrintPreview(html: string) {
   frame.style.width = "100%";
   frame.style.border = "0";
   frame.srcdoc = html;
+  if (frame.srcdoc !== html) {
+    frame.src = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  }
 
   closeBtn.onclick = () => root.remove();
   root.onclick = (event) => {
@@ -433,10 +443,22 @@ function openInlinePrintPreview(html: string) {
   document.body.append(root);
 }
 
-export function printOrdonnanceA4(payload: PrintOrdonnancePayload) {
-  if (Platform.OS !== "web") return;
-
+export async function printOrdonnanceA4(payload: PrintOrdonnancePayload) {
   const html = buildOrdonnanceHtml(payload);
+  if (!html || typeof html !== "string") {
+    Alert.alert("Impression", "Impossible de generer l'ordonnance.");
+    return;
+  }
+
+  if (Platform.OS !== "web") {
+    try {
+      await Print.printAsync({ html });
+    } catch (error) {
+      console.error("Failed to print ordonnance:", error);
+      Alert.alert("Impression", "Impossible d'imprimer cette ordonnance pour le moment.");
+    }
+    return;
+  }
 
   if (isEmbeddedBrowser()) {
     openInlinePrintPreview(html);

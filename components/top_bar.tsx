@@ -279,7 +279,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                   chatRows.map((row) => {
                     const others = row.members?.filter((m) => m.id !== user?.id) ?? [];
                     const title = row.kind === "group" ? row.title || "Group chat" : others.map((m) => m.full_name || "Unknown").join(", ") || "Direct chat";
-                    const subtitle = row.last_message?.body || "No messages yet";
+                    const subtitle = formatChatPreview(row.last_message?.body);
                     return (
                       <Pressable
                         key={row.id}
@@ -360,6 +360,14 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
       <PatientForm visible={patientFormVisible} onClose={() => setPatientFormVisible(false)} />
     </>
   );
+};
+
+const formatChatPreview = (body?: string | null) => {
+  if (!body) return "No messages yet";
+  if (body.startsWith("[medsync-call]")) {
+    return body.includes('"mode":"video"') ? "Started a video call" : "Started an audio call";
+  }
+  return body;
 };
 
 const createStyles = (theme: any) =>

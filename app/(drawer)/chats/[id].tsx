@@ -5,8 +5,11 @@ import type { ChatMessageRow, ConversationRow } from "@/services/backend.types";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import "peerjs/dist/peerjs.js";
+import type { MediaConnection } from "peerjs";
 import React from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +29,26 @@ type MessageGroup = {
   items: ChatMessageRow[];
 };
 
+type CallMode = "audio" | "video";
+
+type ActiveCallState = "idle" | "connecting" | "ringing" | "in-call";
+
+type RemoteStreamState = {
+  peerId: string;
+  stream: MediaStream;
+  label: string;
+};
+
+declare global {
+  interface Window {
+    Peer: new (id?: string, options?: Record<string, unknown>) => {
+      on: (event: string, callback: (...args: any[]) => void) => void;
+      call: (peerId: string, stream: MediaStream, options?: Record<string, unknown>) => MediaConnection | undefined;
+      destroy: () => void;
+    };
+  }
+}
+
 export default function ChatConversationPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -38,6 +61,12 @@ export default function ChatConversationPage() {
   const messagesRef = React.useRef<ScrollView | null>(null);
   const groupOffsetsRef = React.useRef<Record<string, number>>({});
   const floatingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldStickToBottomRef = React.useRef(true);
+  const conversationRef = React.useRef<ConversationRow | null>(null);
+  const peerRef = React.useRef<InstanceType<typeof window.Peer> | null>(null);
+  const activeConnectionsRef = React.useRef<Map<string, MediaConnection>>(new Map());
+  const pendingIncomingCallRef = React.useRef<MediaConnection | null>(null);
+  const localStreamRef = React.useRef<MediaStream | null>(null);
 
   const [loading, setLoading] = React.useState(true);
   const [rows, setRows] = React.useState<ChatMessageRow[]>([]);
@@ -49,10 +78,16 @@ export default function ChatConversationPage() {
   const [floatingDate, setFloatingDate] = React.useState("Today");
   const [showFloatingDate, setShowFloatingDate] = React.useState(false);
   const [activeMessageId, setActiveMessageId] = React.useState<string | null>(null);
+  const [callState, setCallState] = React.useState<ActiveCallState>("idle");
+  const [callMode, setCallMode] = React.useState<CallMode | null>(null);
+  const [peerReady, setPeerReady] = React.useState(false);
+  const [incomingCaller, setIncomingCaller] = React.useState<string | null>(null);
+  const [localStream, setLocalStream] = React.useState<MediaStream | null>(null);
+  const [remoteStreams, setRemoteStreams] = React.useState<RemoteStreamState[]>([]);
 
-  const refresh = React.useCallback(async () => {
+  const refresh = React.useCallback(async (options?: { silent?: boolean }) => {
     if (!user?.id || !conversationId) return;
-    setLoading(true);
+    if (!options?.silent) setLoading(true);
     try {
       const [msgs, listResult] = await Promise.all([
         getMessages({ requesterId: user.id, conversationId, limit: 100 }),
@@ -63,18 +98,30 @@ export default function ChatConversationPage() {
       setAllConversations(conversations);
       setConversation(conversations.find((item) => item.id === conversationId) ?? null);
     } catch (e: any) {
-      Alert.alert("Error", e?.message || "Failed to load messages");
+      if (!options?.silent) {
+        Alert.alert("Error", e?.message || "Failed to load messages");
+      }
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [conversationId, user?.id]);
 
   React.useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   React.useEffect(() => {
-    messagesRef.current?.scrollToEnd({ animated: true });
+    if (!user?.id || !conversationId) return;
+    const intervalId = setInterval(() => {
+      void refresh({ silent: true });
+    }, 7000);
+    return () => clearInterval(intervalId);
+  }, [conversationId, refresh, user?.id]);
+
+  React.useEffect(() => {
+    if (shouldStickToBottomRef.current) {
+      messagesRef.current?.scrollToEnd({ animated: true });
+    }
   }, [rows.length, conversationId]);
 
   const title = React.useMemo(() => {
@@ -115,10 +162,156 @@ export default function ChatConversationPage() {
   const groupedMessages = React.useMemo(() => groupMessagesByDay(rows), [rows]);
 
   React.useEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
+
+  const stopCurrentStream = React.useCallback(() => {
+    const stream = localStreamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    localStreamRef.current = null;
+    setLocalStream(null);
+  }, []);
+
+  const resetCallUi = React.useCallback(() => {
+    pendingIncomingCallRef.current = null;
+    setIncomingCaller(null);
+    setRemoteStreams([]);
+    setCallMode(null);
+    setCallState("idle");
+  }, []);
+
+  const endCurrentCall = React.useCallback(() => {
+    activeConnectionsRef.current.forEach((connection) => {
+      try {
+        connection.close();
+      } catch {}
+    });
+    activeConnectionsRef.current.clear();
+    stopCurrentStream();
+    resetCallUi();
+  }, [resetCallUi, stopCurrentStream]);
+
+  const ensureLocalStream = React.useCallback(
+    async (mode: CallMode) => {
+      if (Platform.OS !== "web" || typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error("PeerJS calling is currently available on web browsers only.");
+      }
+
+      const current = localStreamRef.current;
+      const currentHasVideo = !!current?.getVideoTracks().length;
+      if (current && ((mode === "video" && currentHasVideo) || (mode === "audio" && !currentHasVideo))) {
+        return current;
+      }
+
+      stopCurrentStream();
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: mode === "video",
+      });
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      return stream;
+    },
+    [stopCurrentStream],
+  );
+
+  const bindMediaConnection = React.useCallback(
+    (connection: MediaConnection, mode: CallMode) => {
+      activeConnectionsRef.current.set(connection.peer, connection);
+      setCallMode(mode);
+
+      connection.on("stream", (stream) => {
+        const peerUserId = parsePeerUserId(connection.peer);
+        const label =
+          conversationRef.current?.members.find((member) => member.id === peerUserId)?.full_name ||
+          connection.metadata?.senderName ||
+          "Team member";
+
+        setRemoteStreams((current) => {
+          const next = current.filter((entry) => entry.peerId !== connection.peer);
+          next.push({ peerId: connection.peer, stream, label: String(label) });
+          return next;
+        });
+        setCallState("in-call");
+      });
+
+      const cleanup = () => {
+        activeConnectionsRef.current.delete(connection.peer);
+        setRemoteStreams((current) => current.filter((entry) => entry.peerId !== connection.peer));
+        if (activeConnectionsRef.current.size === 0) {
+          stopCurrentStream();
+          resetCallUi();
+        }
+      };
+
+      connection.on("close", cleanup);
+      connection.on("error", () => cleanup());
+    },
+    [resetCallUi, stopCurrentStream],
+  );
+
+  React.useEffect(() => {
     if (groupedMessages.length > 0) {
       setFloatingDate(groupedMessages[groupedMessages.length - 1].label);
     }
   }, [groupedMessages]);
+
+  React.useEffect(() => {
+    if (Platform.OS !== "web" || !user?.id || !conversationId) {
+      setPeerReady(false);
+      return;
+    }
+
+    const peerId = buildPeerId(conversationId, user.id);
+    const PeerCtor = typeof window !== "undefined" ? window.Peer : null;
+    if (!PeerCtor) {
+      setPeerReady(false);
+      return;
+    }
+
+    const peer = new PeerCtor(peerId);
+    peerRef.current = peer;
+    setPeerReady(false);
+
+    peer.on("open", () => {
+      setPeerReady(true);
+    });
+
+    peer.on("call", (incomingCall) => {
+      if (activeConnectionsRef.current.size > 0 || pendingIncomingCallRef.current) {
+        incomingCall.close();
+        return;
+      }
+
+      pendingIncomingCallRef.current = incomingCall;
+      const nextMode = normalizeCallMode(incomingCall.metadata?.mode);
+      const senderUserId = parsePeerUserId(incomingCall.peer);
+      const senderName =
+        conversationRef.current?.members.find((member) => member.id === senderUserId)?.full_name ||
+        incomingCall.metadata?.senderName ||
+        "Team member";
+
+      setIncomingCaller(String(senderName));
+      setCallMode(nextMode);
+      setCallState("ringing");
+    });
+
+    peer.on("error", (error) => {
+      console.error("PeerJS error:", error);
+      setPeerReady(false);
+    });
+
+    return () => {
+      try {
+        peer.destroy();
+      } catch {}
+      peerRef.current = null;
+      setPeerReady(false);
+      endCurrentCall();
+    };
+  }, [conversationId, endCurrentCall, user?.id]);
 
   React.useEffect(() => {
     return () => {
@@ -131,6 +324,9 @@ export default function ChatConversationPage() {
   const onMessagesScroll = React.useCallback(
     (event: any) => {
       const offsetY = event.nativeEvent.contentOffset.y;
+      const layoutHeight = event.nativeEvent.layoutMeasurement?.height ?? 0;
+      const contentHeight = event.nativeEvent.contentSize?.height ?? 0;
+      shouldStickToBottomRef.current = offsetY + layoutHeight >= contentHeight - 120;
       const sorted = Object.entries(groupOffsetsRef.current).sort((a, b) => a[1] - b[1]);
       let currentLabel = groupedMessages[0]?.label;
 
@@ -160,21 +356,95 @@ export default function ChatConversationPage() {
         id: `optimistic_${Date.now()}`,
         conversation_id: conversationId,
         sender_id: user.id,
-        sender_name: "You",
+        sender_name: user.fullname || user.email || "You",
         body,
         created_at: new Date().toISOString(),
         edited_at: null,
       };
+      shouldStickToBottomRef.current = true;
       setRows((prev) => [...prev, optimistic]);
       await sendMessage({ requesterId: user.id, conversationId, body });
-      await refresh();
+      await refresh({ silent: true });
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to send");
-      await refresh();
+      await refresh({ silent: true });
     } finally {
       setSending(false);
     }
   };
+
+  const startCall = React.useCallback(
+    async (mode: CallMode) => {
+      if (!user?.id || !conversationId || !conversation) return;
+      if (Platform.OS !== "web") {
+        Alert.alert("Call", "PeerJS calling is currently available on web only.");
+        return;
+      }
+      if (!peerRef.current || !peerReady) {
+        Alert.alert("Call", "Call service is still connecting. Please try again.");
+        return;
+      }
+
+      try {
+        endCurrentCall();
+        const stream = await ensureLocalStream(mode);
+        setCallMode(mode);
+        setCallState("connecting");
+
+        const otherMembers = conversation.members.filter((member) => member.id !== user.id);
+        if (!otherMembers.length) {
+          throw new Error("No teammate is available in this conversation.");
+        }
+
+        otherMembers.forEach((member) => {
+          const targetPeerId = buildPeerId(conversationId, member.id);
+          const connection = peerRef.current?.call(targetPeerId, stream, {
+            metadata: {
+              mode,
+              senderId: user.id,
+              senderName: user.fullname || user.email || "Team member",
+            },
+          });
+          if (connection) {
+            bindMediaConnection(connection, mode);
+          }
+        });
+      } catch (error: any) {
+        Alert.alert("Call", error?.message || "Unable to start the call.");
+        endCurrentCall();
+      }
+    },
+    [bindMediaConnection, conversation, conversationId, endCurrentCall, ensureLocalStream, peerReady, user?.email, user?.fullname, user?.id],
+  );
+
+  const acceptIncomingCall = React.useCallback(async () => {
+    const incomingCall = pendingIncomingCallRef.current;
+    if (!incomingCall) return;
+
+    try {
+      const nextMode = normalizeCallMode(incomingCall.metadata?.mode);
+      const stream = await ensureLocalStream(nextMode);
+      setCallMode(nextMode);
+      setCallState("connecting");
+      incomingCall.answer(stream);
+      bindMediaConnection(incomingCall, nextMode);
+      pendingIncomingCallRef.current = null;
+      setIncomingCaller(null);
+    } catch (error: any) {
+      Alert.alert("Call", error?.message || "Unable to answer the call.");
+      endCurrentCall();
+    }
+  }, [bindMediaConnection, endCurrentCall, ensureLocalStream]);
+
+  const declineIncomingCall = React.useCallback(() => {
+    try {
+      pendingIncomingCallRef.current?.close();
+    } catch {}
+    pendingIncomingCallRef.current = null;
+    setIncomingCaller(null);
+    setCallMode(null);
+    setCallState("idle");
+  }, []);
 
   return (
     <PageShell scrollable={false} contentStyle={{ flex: 1, paddingBottom: 10, paddingTop: 14 }}>
@@ -214,7 +484,7 @@ export default function ChatConversationPage() {
                           .filter((member) => member.id !== user?.id)
                           .map((member) => member.full_name || "Unknown")
                           .join(", ") || "Direct chat";
-                  const rowSub = row.last_message?.body || "No messages yet";
+                  const rowSub = formatConversationPreview(row.last_message?.body);
                   const unread = row.last_message?.sender_id && row.last_message.sender_id !== user?.id && !active ? 1 : 0;
                   const avatarTone = getAvatarTone(index);
                   return (
@@ -270,10 +540,95 @@ export default function ChatConversationPage() {
                 </View>
 
                 <View style={styles.headerActions}>
-                  <HeaderIconButton icon="search-outline" />
-                  <HeaderIconButton icon="call-outline" />
-                  <HeaderIconButton icon="ellipsis-horizontal" />
+                  <HeaderIconButton
+                    icon="refresh-outline"
+                    onPress={() => void refresh({ silent: true })}
+                    disabled={loading}
+                  />
+                  <HeaderIconButton
+                    icon="call-outline"
+                    onPress={() => void startCall("audio")}
+                    active={callMode === "audio" && callState !== "idle"}
+                    disabled={!peerReady}
+                  />
+                  <HeaderIconButton
+                    icon="videocam-outline"
+                    onPress={() => void startCall("video")}
+                    active={callMode === "video" && callState !== "idle"}
+                    disabled={!peerReady}
+                  />
                 </View>
+              </View>
+            )}
+
+            {(callState !== "idle" || incomingCaller) && (
+              <View style={styles.callStrip}>
+                <View style={styles.callStripCopy}>
+                  <View style={styles.callStripBadge}>
+                    <Ionicons
+                      name={callMode === "video" ? "videocam-outline" : "call-outline"}
+                      size={15}
+                      color="#2563EB"
+                    />
+                    <Text style={styles.callStripBadgeText}>
+                      {callState === "ringing" ? "Incoming call" : callState === "in-call" ? "Live call" : "Connecting"}
+                    </Text>
+                  </View>
+                  <Text style={styles.callStripTitle}>
+                    {callState === "ringing"
+                      ? `${incomingCaller || "Team member"} is calling you`
+                      : callState === "in-call"
+                        ? `Connected with ${remoteStreams.map((entry) => entry.label).join(", ") || talkingWith}`
+                        : `Starting ${callMode === "video" ? "video" : "audio"} call...`}
+                  </Text>
+                </View>
+
+                <View style={styles.callStripActions}>
+                  {callState === "ringing" ? (
+                    <>
+                      <TouchableOpacity style={styles.callAcceptBtn} onPress={() => void acceptIncomingCall()}>
+                        <Ionicons name="call" size={16} color="#fff" />
+                        <Text style={styles.callActionText}>Answer</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.callDeclineBtn} onPress={declineIncomingCall}>
+                        <Ionicons name="close" size={16} color="#fff" />
+                        <Text style={styles.callActionText}>Decline</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity style={styles.callDeclineBtn} onPress={endCurrentCall}>
+                      <Ionicons name="call" size={16} color="#fff" />
+                      <Text style={styles.callActionText}>End call</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {Platform.OS === "web" && (localStream || remoteStreams.length > 0) && (
+              <View style={styles.callStage}>
+                {callMode === "video" ? (
+                  <View style={styles.videoGrid}>
+                    {localStream ? (
+                      <WebVideoTile stream={localStream} label="You" muted styles={styles} />
+                    ) : null}
+                    {remoteStreams.map((entry) => (
+                      <WebVideoTile key={entry.peerId} stream={entry.stream} label={entry.label} styles={styles} />
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.audioGrid}>
+                    <AudioParticipantCard label="You" accent="blue" styles={styles} />
+                    {remoteStreams.map((entry, index) => (
+                      <AudioParticipantCard
+                        key={entry.peerId}
+                        label={entry.label}
+                        accent={index % 2 === 0 ? "green" : "orange"}
+                        styles={styles}
+                      />
+                    ))}
+                  </View>
+                )}
               </View>
             )}
 
@@ -364,14 +719,10 @@ export default function ChatConversationPage() {
                   </View>
                 )}
 
-                {!loading && !!conversation && (
+                {!!conversation && sending && (
                   <View style={styles.typingRow}>
-                    <View style={styles.typingDots}>
-                      <View style={styles.typingDot} />
-                      <View style={styles.typingDot} />
-                      <View style={styles.typingDot} />
-                    </View>
-                    <Text style={styles.typingText}>{talkingWith} channel is ready</Text>
+                    <ActivityIndicator size="small" color="#64748B" />
+                    <Text style={styles.typingText}>Sending message...</Text>
                   </View>
                 )}
               </ScrollView>
@@ -397,7 +748,7 @@ export default function ChatConversationPage() {
                   <Ionicons name="send" size={18} color="#fff" />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity style={styles.composerIcon}>
+                <TouchableOpacity style={styles.composerIcon} onPress={() => void startCall("audio")}>
                   <Ionicons name="mic-outline" size={18} color="#59708F" />
                 </TouchableOpacity>
               )}
@@ -409,11 +760,86 @@ export default function ChatConversationPage() {
   );
 }
 
-function HeaderIconButton({ icon }: { icon: React.ComponentProps<typeof Ionicons>["name"] }) {
+function HeaderIconButton({
+  icon,
+  onPress,
+  active = false,
+  disabled = false,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  onPress?: () => void;
+  active?: boolean;
+  disabled?: boolean;
+}) {
   return (
-    <TouchableOpacity style={headerButtonStyles.button}>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      style={[headerButtonStyles.button, active ? headerButtonStyles.buttonActive : null, disabled ? headerButtonStyles.buttonDisabled : null]}
+    >
       <Ionicons name={icon} size={18} color="#405B82" />
     </TouchableOpacity>
+  );
+}
+
+function WebVideoTile({
+  stream,
+  label,
+  muted = false,
+  styles,
+}: {
+  stream: MediaStream;
+  label: string;
+  muted?: boolean;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const ref = React.useRef<HTMLVideoElement | null>(null);
+
+  React.useEffect(() => {
+    if (!ref.current) return;
+    ref.current.srcObject = stream;
+  }, [stream]);
+
+  return (
+    <View style={styles.videoTile}>
+      <video
+        ref={ref}
+        autoPlay
+        playsInline
+        muted={muted}
+        style={{ width: "100%", height: 180, objectFit: "cover", backgroundColor: "#0f172a" }}
+      />
+      <View style={styles.videoTileLabel}>
+        <Text style={styles.videoTileLabelText}>{label}</Text>
+      </View>
+    </View>
+  );
+}
+
+function AudioParticipantCard({
+  label,
+  accent,
+  styles,
+}: {
+  label: string;
+  accent: "blue" | "green" | "orange";
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const palette =
+    accent === "green"
+      ? { bg: "#EAFBF4", border: "#BCEBD6", color: "#047857" }
+      : accent === "orange"
+        ? { bg: "#FFF7ED", border: "#FED7AA", color: "#EA580C" }
+        : { bg: "#EDF5FF", border: "#CCDBF1", color: "#1D4ED8" };
+
+  return (
+    <View style={[styles.audioCard, { backgroundColor: palette.bg, borderColor: palette.border }]}>
+      <View style={[styles.audioCardIcon, { backgroundColor: "#FFFFFF" }]}>
+        <Ionicons name="mic-outline" size={18} color={palette.color} />
+      </View>
+      <Text style={[styles.audioCardLabel, { color: palette.color }]}>{label}</Text>
+      <Text style={styles.audioCardText}>Voice connected</Text>
+    </View>
   );
 }
 
@@ -427,6 +853,13 @@ const headerButtonStyles = StyleSheet.create({
     backgroundColor: "#F8FBFF",
     alignItems: "center",
     justifyContent: "center",
+  },
+  buttonActive: {
+    borderColor: "#78A9FF",
+    backgroundColor: "#EDF5FF",
+  },
+  buttonDisabled: {
+    opacity: 0.55,
   },
 });
 
@@ -489,6 +922,25 @@ function formatConversationTime(iso?: string | null) {
   } catch {
     return "";
   }
+}
+
+function formatConversationPreview(body?: string | null) {
+  return body || "No messages yet";
+}
+
+function buildPeerId(conversationId: string, userId: string) {
+  const safeConversationId = conversationId.replace(/[^a-zA-Z0-9_-]/g, "") || "team";
+  const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, "") || "user";
+  return `medsync__${safeConversationId}__${safeUserId}`;
+}
+
+function parsePeerUserId(peerId: string) {
+  const parts = peerId.split("__");
+  return parts[2] || peerId;
+}
+
+function normalizeCallMode(value: unknown): CallMode {
+  return value === "video" ? "video" : "audio";
 }
 
 function getAvatarTone(index: number) {
@@ -771,6 +1223,141 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 7,
+    },
+    callStrip: {
+      marginHorizontal: 14,
+      marginTop: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "#DCE7F5",
+      backgroundColor: "#F8FBFF",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    callStripCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 6,
+    },
+    callStripBadge: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: "#EDF5FF",
+    },
+    callStripBadgeText: {
+      color: "#2563EB",
+      fontSize: 11,
+      fontWeight: "900",
+    },
+    callStripTitle: {
+      color: theme.colors.text,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    callStripActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    callAcceptBtn: {
+      minHeight: 38,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      backgroundColor: "#16A34A",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    callDeclineBtn: {
+      minHeight: 38,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+      backgroundColor: "#DC2626",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    callActionText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "900",
+    },
+    callStage: {
+      marginHorizontal: 14,
+      marginTop: 12,
+      padding: 12,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: "#DCE7F5",
+      backgroundColor: "#FFFFFF",
+      gap: 12,
+    },
+    videoGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 12,
+    },
+    videoTile: {
+      flex: 1,
+      minWidth: 220,
+      borderRadius: 18,
+      overflow: "hidden",
+      backgroundColor: "#0F172A",
+      borderWidth: 1,
+      borderColor: "#DCE7F5",
+    },
+    videoTileLabel: {
+      position: "absolute",
+      left: 10,
+      bottom: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+      backgroundColor: "rgba(15,23,42,0.72)",
+    },
+    videoTileLabelText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "900",
+    },
+    audioGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 12,
+    },
+    audioCard: {
+      flex: 1,
+      minWidth: 180,
+      borderRadius: 18,
+      borderWidth: 1,
+      padding: 16,
+      alignItems: "center",
+      gap: 10,
+    },
+    audioCardIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    audioCardLabel: {
+      fontSize: 14,
+      fontWeight: "900",
+    },
+    audioCardText: {
+      color: "#64748B",
+      fontSize: 12,
+      fontWeight: "800",
     },
     messagesWrap: {
       flex: 1,
