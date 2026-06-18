@@ -8,6 +8,8 @@ export default ({ config }: any) => {
   const clinicAdmin = process.env.EXPO_PUBLIC_CLINIC_ADMIN;
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  const livekitUrl = process.env.EXPO_PUBLIC_LIVEKIT_URL;
+  const livekitTokenEndpoint = process.env.EXPO_PUBLIC_LIVEKIT_TOKEN_ENDPOINT;
 
   return {
     ...config,
@@ -19,6 +21,8 @@ export default ({ config }: any) => {
       EXPO_PUBLIC_CLINIC_ADMIN: clinicAdmin,
       EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+      EXPO_PUBLIC_LIVEKIT_URL: livekitUrl,
+      EXPO_PUBLIC_LIVEKIT_TOKEN_ENDPOINT: livekitTokenEndpoint,
     },
     plugins: (config.plugins || []).map((p: any) => {
       // remove dark splash override (light-only app)

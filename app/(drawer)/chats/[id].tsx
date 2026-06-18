@@ -4,9 +4,8 @@ import { getConversations, getMessages, sendMessage } from "@/services/chats.ser
 import type { ChatMessageRow, ConversationRow } from "@/services/backend.types";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import "peerjs/dist/peerjs.js";
-import type { MediaConnection } from "peerjs";
 import React from "react";
 import {
   ActivityIndicator,
@@ -33,21 +32,29 @@ type CallMode = "audio" | "video";
 
 type ActiveCallState = "idle" | "connecting" | "ringing" | "in-call";
 
-type RemoteStreamState = {
-  peerId: string;
-  stream: MediaStream;
-  label: string;
+type LiveKitRoomRef = import("livekit-client").Room;
+type LiveKitTrackRef = import("livekit-client").Track;
+type LiveKitParticipantRef = import("livekit-client").Participant;
+
+type CallParticipantState = {
+  id: string;
+  identity: string;
+  name: string;
+  isLocal: boolean;
+  isSpeaking: boolean;
+  microphoneEnabled: boolean;
+  cameraEnabled: boolean;
+  audioTrack: LiveKitTrackRef | null;
+  cameraTrack: LiveKitTrackRef | null;
 };
 
-declare global {
-  interface Window {
-    Peer: new (id?: string, options?: Record<string, unknown>) => {
-      on: (event: string, callback: (...args: any[]) => void) => void;
-      call: (peerId: string, stream: MediaStream, options?: Record<string, unknown>) => MediaConnection | undefined;
-      destroy: () => void;
-    };
-  }
-}
+type CallInvite = {
+  mode: CallMode;
+  room: string;
+  startedBy: string;
+  startedById: string;
+  createdAt: string;
+};
 
 export default function ChatConversationPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,7 +62,7 @@ export default function ChatConversationPage() {
   const conversationId = String(id ?? "");
   const { width } = useWindowDimensions();
   const isWideWeb = Platform.OS === "web" && width >= 1100;
-  const { user } = useAuth();
+  const { session, user } = useAuth();
   const { theme } = useTheme();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
   const messagesRef = React.useRef<ScrollView | null>(null);
@@ -63,10 +70,7 @@ export default function ChatConversationPage() {
   const floatingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldStickToBottomRef = React.useRef(true);
   const conversationRef = React.useRef<ConversationRow | null>(null);
-  const peerRef = React.useRef<InstanceType<typeof window.Peer> | null>(null);
-  const activeConnectionsRef = React.useRef<Map<string, MediaConnection>>(new Map());
-  const pendingIncomingCallRef = React.useRef<MediaConnection | null>(null);
-  const localStreamRef = React.useRef<MediaStream | null>(null);
+  const roomRef = React.useRef<LiveKitRoomRef | null>(null);
 
   const [loading, setLoading] = React.useState(true);
   const [rows, setRows] = React.useState<ChatMessageRow[]>([]);
@@ -80,10 +84,8 @@ export default function ChatConversationPage() {
   const [activeMessageId, setActiveMessageId] = React.useState<string | null>(null);
   const [callState, setCallState] = React.useState<ActiveCallState>("idle");
   const [callMode, setCallMode] = React.useState<CallMode | null>(null);
-  const [peerReady, setPeerReady] = React.useState(false);
-  const [incomingCaller, setIncomingCaller] = React.useState<string | null>(null);
-  const [localStream, setLocalStream] = React.useState<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = React.useState<RemoteStreamState[]>([]);
+  const [activeCallInvite, setActiveCallInvite] = React.useState<CallInvite | null>(null);
+  const [callParticipants, setCallParticipants] = React.useState<CallParticipantState[]>([]);
 
   const refresh = React.useCallback(async (options?: { silent?: boolean }) => {
     if (!user?.id || !conversationId) return;
@@ -165,92 +167,20 @@ export default function ChatConversationPage() {
     conversationRef.current = conversation;
   }, [conversation]);
 
-  const stopCurrentStream = React.useCallback(() => {
-    const stream = localStreamRef.current;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
-    localStreamRef.current = null;
-    setLocalStream(null);
-  }, []);
-
   const resetCallUi = React.useCallback(() => {
-    pendingIncomingCallRef.current = null;
-    setIncomingCaller(null);
-    setRemoteStreams([]);
+    setCallParticipants([]);
     setCallMode(null);
     setCallState("idle");
   }, []);
 
   const endCurrentCall = React.useCallback(() => {
-    activeConnectionsRef.current.forEach((connection) => {
-      try {
-        connection.close();
-      } catch {}
-    });
-    activeConnectionsRef.current.clear();
-    stopCurrentStream();
+    try {
+      roomRef.current?.disconnect(true);
+    } catch {}
+    roomRef.current = null;
+    setActiveCallInvite(null);
     resetCallUi();
-  }, [resetCallUi, stopCurrentStream]);
-
-  const ensureLocalStream = React.useCallback(
-    async (mode: CallMode) => {
-      if (Platform.OS !== "web" || typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        throw new Error("PeerJS calling is currently available on web browsers only.");
-      }
-
-      const current = localStreamRef.current;
-      const currentHasVideo = !!current?.getVideoTracks().length;
-      if (current && ((mode === "video" && currentHasVideo) || (mode === "audio" && !currentHasVideo))) {
-        return current;
-      }
-
-      stopCurrentStream();
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: mode === "video",
-      });
-      localStreamRef.current = stream;
-      setLocalStream(stream);
-      return stream;
-    },
-    [stopCurrentStream],
-  );
-
-  const bindMediaConnection = React.useCallback(
-    (connection: MediaConnection, mode: CallMode) => {
-      activeConnectionsRef.current.set(connection.peer, connection);
-      setCallMode(mode);
-
-      connection.on("stream", (stream) => {
-        const peerUserId = parsePeerUserId(connection.peer);
-        const label =
-          conversationRef.current?.members.find((member) => member.id === peerUserId)?.full_name ||
-          connection.metadata?.senderName ||
-          "Team member";
-
-        setRemoteStreams((current) => {
-          const next = current.filter((entry) => entry.peerId !== connection.peer);
-          next.push({ peerId: connection.peer, stream, label: String(label) });
-          return next;
-        });
-        setCallState("in-call");
-      });
-
-      const cleanup = () => {
-        activeConnectionsRef.current.delete(connection.peer);
-        setRemoteStreams((current) => current.filter((entry) => entry.peerId !== connection.peer));
-        if (activeConnectionsRef.current.size === 0) {
-          stopCurrentStream();
-          resetCallUi();
-        }
-      };
-
-      connection.on("close", cleanup);
-      connection.on("error", () => cleanup());
-    },
-    [resetCallUi, stopCurrentStream],
-  );
+  }, [resetCallUi]);
 
   React.useEffect(() => {
     if (groupedMessages.length > 0) {
@@ -259,59 +189,100 @@ export default function ChatConversationPage() {
   }, [groupedMessages]);
 
   React.useEffect(() => {
-    if (Platform.OS !== "web" || !user?.id || !conversationId) {
-      setPeerReady(false);
-      return;
-    }
+    if (Platform.OS !== "web" || !activeCallInvite || !session?.access_token || !user?.id) return;
 
-    const peerId = buildPeerId(conversationId, user.id);
-    const PeerCtor = typeof window !== "undefined" ? window.Peer : null;
-    if (!PeerCtor) {
-      setPeerReady(false);
-      return;
-    }
+    let cancelled = false;
+    let room: LiveKitRoomRef | null = null;
+    let syncParticipants = () => {};
 
-    const peer = new PeerCtor(peerId);
-    peerRef.current = peer;
-    setPeerReady(false);
+    const setupRoom = async () => {
+      try {
+        const livekit = await import("livekit-client");
+        if (cancelled) return;
 
-    peer.on("open", () => {
-      setPeerReady(true);
-    });
+        const credentials = await fetchLiveKitCredentials({
+          accessToken: session.access_token,
+          invite: activeCallInvite,
+        });
 
-    peer.on("call", (incomingCall) => {
-      if (activeConnectionsRef.current.size > 0 || pendingIncomingCallRef.current) {
-        incomingCall.close();
-        return;
+        if (cancelled) return;
+
+        room = new livekit.Room({
+          adaptiveStream: true,
+          dynacast: true,
+          stopLocalTrackOnUnpublish: true,
+        });
+        roomRef.current = room;
+
+        syncParticipants = () => {
+          if (!room || cancelled) return;
+          setCallParticipants(snapshotCallParticipants(room));
+        };
+
+        room.on(livekit.RoomEvent.Connected, () => {
+          setCallState("in-call");
+          syncParticipants();
+        });
+        room.on(livekit.RoomEvent.ConnectionStateChanged, (state) => {
+          setCallState(mapLiveKitConnectionState(state));
+          syncParticipants();
+        });
+        room.on(livekit.RoomEvent.ParticipantConnected, syncParticipants);
+        room.on(livekit.RoomEvent.ParticipantDisconnected, syncParticipants);
+        room.on(livekit.RoomEvent.LocalTrackPublished, syncParticipants);
+        room.on(livekit.RoomEvent.LocalTrackUnpublished, syncParticipants);
+        room.on(livekit.RoomEvent.TrackSubscribed, syncParticipants);
+        room.on(livekit.RoomEvent.TrackUnsubscribed, syncParticipants);
+        room.on(livekit.RoomEvent.TrackMuted, syncParticipants);
+        room.on(livekit.RoomEvent.TrackUnmuted, syncParticipants);
+        room.on(livekit.RoomEvent.ParticipantNameChanged, syncParticipants);
+        room.on(livekit.RoomEvent.ActiveSpeakersChanged, syncParticipants);
+        room.on(livekit.RoomEvent.Disconnected, () => {
+          if (cancelled) return;
+          roomRef.current = null;
+          setActiveCallInvite(null);
+          resetCallUi();
+        });
+
+        await room.prepareConnection(credentials.serverUrl, credentials.participantToken);
+        if (cancelled) return;
+
+        await room.connect(credentials.serverUrl, credentials.participantToken);
+        if (cancelled) return;
+
+        await room.startAudio();
+        if (activeCallInvite.mode === "video") {
+          await room.localParticipant.enableCameraAndMicrophone();
+        } else {
+          await room.localParticipant.setMicrophoneEnabled(true);
+          await room.localParticipant.setCameraEnabled(false);
+        }
+
+        syncParticipants();
+      } catch (error: any) {
+        console.error("Failed to start LiveKit call:", error);
+        showCallAlert("Call", error?.message || "Unable to start the call.");
+        if (!cancelled) {
+          roomRef.current = null;
+          setActiveCallInvite(null);
+          resetCallUi();
+        }
       }
+    };
 
-      pendingIncomingCallRef.current = incomingCall;
-      const nextMode = normalizeCallMode(incomingCall.metadata?.mode);
-      const senderUserId = parsePeerUserId(incomingCall.peer);
-      const senderName =
-        conversationRef.current?.members.find((member) => member.id === senderUserId)?.full_name ||
-        incomingCall.metadata?.senderName ||
-        "Team member";
-
-      setIncomingCaller(String(senderName));
-      setCallMode(nextMode);
-      setCallState("ringing");
-    });
-
-    peer.on("error", (error) => {
-      console.error("PeerJS error:", error);
-      setPeerReady(false);
-    });
+    void setupRoom();
 
     return () => {
+      cancelled = true;
+      setCallParticipants([]);
       try {
-        peer.destroy();
+        room?.disconnect(true);
       } catch {}
-      peerRef.current = null;
-      setPeerReady(false);
-      endCurrentCall();
+      if (roomRef.current === room) {
+        roomRef.current = null;
+      }
     };
-  }, [conversationId, endCurrentCall, user?.id]);
+  }, [activeCallInvite, resetCallUi, session?.access_token, user?.id]);
 
   React.useEffect(() => {
     return () => {
@@ -377,74 +348,90 @@ export default function ChatConversationPage() {
     async (mode: CallMode) => {
       if (!user?.id || !conversationId || !conversation) return;
       if (Platform.OS !== "web") {
-        Alert.alert("Call", "PeerJS calling is currently available on web only.");
+        showCallAlert("Call", "LiveKit calling is currently available on web only.");
         return;
       }
-      if (!peerRef.current || !peerReady) {
-        Alert.alert("Call", "Call service is still connecting. Please try again.");
+      if (!session?.access_token) {
+        showCallAlert("Call", "Please sign in again before starting a call.");
         return;
       }
 
       try {
-        endCurrentCall();
-        const stream = await ensureLocalStream(mode);
+        const invite = buildCallInvite({
+          mode,
+          conversationId,
+          startedBy: user.fullname || user.email || "Team member",
+          startedById: user.id,
+        });
         setCallMode(mode);
         setCallState("connecting");
-
-        const otherMembers = conversation.members.filter((member) => member.id !== user.id);
-        if (!otherMembers.length) {
-          throw new Error("No teammate is available in this conversation.");
-        }
-
-        otherMembers.forEach((member) => {
-          const targetPeerId = buildPeerId(conversationId, member.id);
-          const connection = peerRef.current?.call(targetPeerId, stream, {
-            metadata: {
-              mode,
-              senderId: user.id,
-              senderName: user.fullname || user.email || "Team member",
-            },
-          });
-          if (connection) {
-            bindMediaConnection(connection, mode);
-          }
+        setActiveCallInvite(invite);
+        shouldStickToBottomRef.current = true;
+        setRows((prev) => {
+          const optimistic: ChatMessageRow = {
+            id: `optimistic_call_${Date.now()}`,
+            conversation_id: conversationId,
+            sender_id: user.id,
+            sender_name: user.fullname || user.email || "You",
+            body: serializeCallInvite(invite),
+            created_at: invite.createdAt,
+            edited_at: null,
+          };
+          return [...prev, optimistic];
         });
+        await sendMessage({
+          requesterId: user.id,
+          conversationId,
+          body: serializeCallInvite(invite),
+        });
+        await refresh({ silent: true });
       } catch (error: any) {
-        Alert.alert("Call", error?.message || "Unable to start the call.");
-        endCurrentCall();
+        showCallAlert("Call", error?.message || "Unable to start the call.");
+        setActiveCallInvite(null);
+        resetCallUi();
       }
     },
-    [bindMediaConnection, conversation, conversationId, endCurrentCall, ensureLocalStream, peerReady, user?.email, user?.fullname, user?.id],
+    [conversation, conversationId, refresh, resetCallUi, session?.access_token, user?.email, user?.fullname, user?.id],
   );
 
-  const acceptIncomingCall = React.useCallback(async () => {
-    const incomingCall = pendingIncomingCallRef.current;
-    if (!incomingCall) return;
-
-    try {
-      const nextMode = normalizeCallMode(incomingCall.metadata?.mode);
-      const stream = await ensureLocalStream(nextMode);
-      setCallMode(nextMode);
-      setCallState("connecting");
-      incomingCall.answer(stream);
-      bindMediaConnection(incomingCall, nextMode);
-      pendingIncomingCallRef.current = null;
-      setIncomingCaller(null);
-    } catch (error: any) {
-      Alert.alert("Call", error?.message || "Unable to answer the call.");
-      endCurrentCall();
+  const joinCall = React.useCallback((invite: CallInvite) => {
+    if (Platform.OS !== "web") {
+      showCallAlert("Call", "LiveKit calling is currently available on web only.");
+      return;
     }
-  }, [bindMediaConnection, endCurrentCall, ensureLocalStream]);
+    if (!session?.access_token) {
+      showCallAlert("Call", "Please sign in again before joining a call.");
+      return;
+    }
+    setActiveCallInvite(invite);
+    setCallMode(invite.mode);
+    setCallState("connecting");
+  }, [session?.access_token]);
 
-  const declineIncomingCall = React.useCallback(() => {
+  const localCallParticipant = React.useMemo(
+    () => callParticipants.find((participant) => participant.isLocal) ?? null,
+    [callParticipants],
+  );
+
+  const toggleMicrophone = React.useCallback(async () => {
+    if (!roomRef.current || !localCallParticipant) return;
     try {
-      pendingIncomingCallRef.current?.close();
-    } catch {}
-    pendingIncomingCallRef.current = null;
-    setIncomingCaller(null);
-    setCallMode(null);
-    setCallState("idle");
-  }, []);
+      await roomRef.current.localParticipant.setMicrophoneEnabled(!localCallParticipant.microphoneEnabled);
+      setCallParticipants(snapshotCallParticipants(roomRef.current));
+    } catch (error: any) {
+      showCallAlert("Call", error?.message || "Unable to switch microphone state.");
+    }
+  }, [localCallParticipant]);
+
+  const toggleCamera = React.useCallback(async () => {
+    if (!roomRef.current || !localCallParticipant) return;
+    try {
+      await roomRef.current.localParticipant.setCameraEnabled(!localCallParticipant.cameraEnabled);
+      setCallParticipants(snapshotCallParticipants(roomRef.current));
+    } catch (error: any) {
+      showCallAlert("Call", error?.message || "Unable to switch camera state.");
+    }
+  }, [localCallParticipant]);
 
   return (
     <PageShell scrollable={false} contentStyle={{ flex: 1, paddingBottom: 10, paddingTop: 14 }}>
@@ -549,86 +536,13 @@ export default function ChatConversationPage() {
                     icon="call-outline"
                     onPress={() => void startCall("audio")}
                     active={callMode === "audio" && callState !== "idle"}
-                    disabled={!peerReady}
                   />
                   <HeaderIconButton
                     icon="videocam-outline"
                     onPress={() => void startCall("video")}
                     active={callMode === "video" && callState !== "idle"}
-                    disabled={!peerReady}
                   />
                 </View>
-              </View>
-            )}
-
-            {(callState !== "idle" || incomingCaller) && (
-              <View style={styles.callStrip}>
-                <View style={styles.callStripCopy}>
-                  <View style={styles.callStripBadge}>
-                    <Ionicons
-                      name={callMode === "video" ? "videocam-outline" : "call-outline"}
-                      size={15}
-                      color="#2563EB"
-                    />
-                    <Text style={styles.callStripBadgeText}>
-                      {callState === "ringing" ? "Incoming call" : callState === "in-call" ? "Live call" : "Connecting"}
-                    </Text>
-                  </View>
-                  <Text style={styles.callStripTitle}>
-                    {callState === "ringing"
-                      ? `${incomingCaller || "Team member"} is calling you`
-                      : callState === "in-call"
-                        ? `Connected with ${remoteStreams.map((entry) => entry.label).join(", ") || talkingWith}`
-                        : `Starting ${callMode === "video" ? "video" : "audio"} call...`}
-                  </Text>
-                </View>
-
-                <View style={styles.callStripActions}>
-                  {callState === "ringing" ? (
-                    <>
-                      <TouchableOpacity style={styles.callAcceptBtn} onPress={() => void acceptIncomingCall()}>
-                        <Ionicons name="call" size={16} color="#fff" />
-                        <Text style={styles.callActionText}>Answer</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.callDeclineBtn} onPress={declineIncomingCall}>
-                        <Ionicons name="close" size={16} color="#fff" />
-                        <Text style={styles.callActionText}>Decline</Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <TouchableOpacity style={styles.callDeclineBtn} onPress={endCurrentCall}>
-                      <Ionicons name="call" size={16} color="#fff" />
-                      <Text style={styles.callActionText}>End call</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {Platform.OS === "web" && (localStream || remoteStreams.length > 0) && (
-              <View style={styles.callStage}>
-                {callMode === "video" ? (
-                  <View style={styles.videoGrid}>
-                    {localStream ? (
-                      <WebVideoTile stream={localStream} label="You" muted styles={styles} />
-                    ) : null}
-                    {remoteStreams.map((entry) => (
-                      <WebVideoTile key={entry.peerId} stream={entry.stream} label={entry.label} styles={styles} />
-                    ))}
-                  </View>
-                ) : (
-                  <View style={styles.audioGrid}>
-                    <AudioParticipantCard label="You" accent="blue" styles={styles} />
-                    {remoteStreams.map((entry, index) => (
-                      <AudioParticipantCard
-                        key={entry.peerId}
-                        label={entry.label}
-                        accent={index % 2 === 0 ? "green" : "orange"}
-                        styles={styles}
-                      />
-                    ))}
-                  </View>
-                )}
               </View>
             )}
 
@@ -681,20 +595,13 @@ export default function ChatConversationPage() {
                               onPress={() => setActiveMessageId((current) => (current === item.id ? null : item.id))}
                               style={styles.messageBubbleWrap}
                             >
-                              <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
-                                <View style={[styles.messageActions, active ? styles.messageActionsVisible : null]}>
-                                  <TouchableOpacity style={styles.messageActionBtn}>
-                                    <Ionicons name="return-up-back-outline" size={13} color="#64748B" />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity style={styles.messageActionBtn}>
-                                    <Ionicons name="heart-outline" size={13} color="#64748B" />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity style={styles.messageActionBtn}>
-                                    <Ionicons name="ellipsis-horizontal" size={13} color="#64748B" />
-                                  </TouchableOpacity>
-                                </View>
-                                <Text style={[styles.messageBody, mine ? styles.messageBodyMine : styles.messageBodyOther]}>{item.body}</Text>
-                              </View>
+                              <MessageBubble
+                                item={item}
+                                mine={mine}
+                                active={active}
+                                styles={styles}
+                                onJoinCall={joinCall}
+                              />
                             </Pressable>
                             <View style={[styles.messageMeta, mine ? styles.messageMetaMine : null]}>
                               <Text style={styles.messageTime}>{formatTime(item.created_at)}</Text>
@@ -753,6 +660,69 @@ export default function ChatConversationPage() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {Platform.OS === "web" && activeCallInvite ? (
+              <View style={styles.callOverlay}>
+                <View style={styles.callShell}>
+                  <View style={styles.callHeader}>
+                    <View style={styles.callHeaderCopy}>
+                      <Text style={styles.callTitle}>
+                        {activeCallInvite.mode === "video" ? "Video call" : "Audio call"}
+                      </Text>
+                      <Text style={styles.callSubtitle} numberOfLines={1}>
+                        Locked to {localCallParticipant?.name || user?.fullname || user?.email || "Team member"}
+                      </Text>
+                    </View>
+                    <View style={styles.callHeaderActions}>
+                      <TouchableOpacity style={styles.callControlBtn} onPress={toggleMicrophone}>
+                        <Ionicons
+                          name={localCallParticipant?.microphoneEnabled ? "mic-outline" : "mic-off-outline"}
+                          size={18}
+                          color="#E2E8F0"
+                        />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.callControlBtn,
+                          activeCallInvite.mode === "audio" ? styles.callControlBtnDisabled : null,
+                        ]}
+                        onPress={() => void toggleCamera()}
+                        disabled={activeCallInvite.mode === "audio"}
+                      >
+                        <Ionicons
+                          name={localCallParticipant?.cameraEnabled ? "videocam-outline" : "videocam-off-outline"}
+                          size={18}
+                          color="#E2E8F0"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity style={styles.callCloseBtn} onPress={endCurrentCall}>
+                      <Ionicons name="close" size={18} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.callStage}>
+                    {callParticipants.length > 0 ? (
+                      callParticipants.map((participant) => (
+                        <CallParticipantTile
+                          key={participant.id}
+                          participant={participant}
+                          mode={activeCallInvite.mode}
+                          styles={styles}
+                        />
+                      ))
+                    ) : (
+                      <View style={styles.callEmptyState}>
+                        <ActivityIndicator size="small" color="#93C5FD" />
+                        <Text style={styles.callEmptyTitle}>Connecting secure call...</Text>
+                        <Text style={styles.callEmptyText}>
+                          We are preparing the LiveKit room for {talkingWith}.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+            ) : null}
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -782,63 +752,144 @@ function HeaderIconButton({
   );
 }
 
-function WebVideoTile({
-  stream,
-  label,
-  muted = false,
+function MessageBubble({
+  item,
+  mine,
+  active,
   styles,
+  onJoinCall,
 }: {
-  stream: MediaStream;
-  label: string;
-  muted?: boolean;
+  item: ChatMessageRow;
+  mine: boolean;
+  active: boolean;
   styles: ReturnType<typeof createStyles>;
+  onJoinCall: (invite: CallInvite) => void;
 }) {
-  const ref = React.useRef<HTMLVideoElement | null>(null);
+  const invite = parseCallInvite(item.body);
 
-  React.useEffect(() => {
-    if (!ref.current) return;
-    ref.current.srcObject = stream;
-  }, [stream]);
+  if (invite) {
+    return (
+      <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
+        <View style={[styles.messageActions, active ? styles.messageActionsVisible : null]}>
+          <TouchableOpacity style={styles.messageActionBtn}>
+            <Ionicons name="return-up-back-outline" size={13} color="#64748B" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.messageActionBtn}>
+            <Ionicons name="ellipsis-horizontal" size={13} color="#64748B" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.callInviteCard}>
+          <View style={styles.callInviteHeader}>
+            <Ionicons
+              name={invite.mode === "video" ? "videocam-outline" : "call-outline"}
+              size={16}
+              color={mine ? "#EFF6FF" : "#2563EB"}
+            />
+            <Text style={[styles.callInviteTitle, mine ? styles.callInviteTitleMine : null]}>
+              {invite.mode === "video" ? "Video call invite" : "Audio call invite"}
+            </Text>
+          </View>
+          <Text style={[styles.callInviteMeta, mine ? styles.callInviteMetaMine : null]}>
+            Started by {invite.startedBy}
+          </Text>
+          <TouchableOpacity
+            style={[styles.callInviteButton, mine ? styles.callInviteButtonMine : null]}
+            onPress={() => onJoinCall(invite)}
+          >
+            <Ionicons name="call-outline" size={15} color={mine ? "#1D4ED8" : "#fff"} />
+            <Text style={[styles.callInviteButtonText, mine ? styles.callInviteButtonTextMine : null]}>Join call</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.videoTile}>
-      <video
-        ref={ref}
-        autoPlay
-        playsInline
-        muted={muted}
-        style={{ width: "100%", height: 180, objectFit: "cover", backgroundColor: "#0f172a" }}
-      />
-      <View style={styles.videoTileLabel}>
-        <Text style={styles.videoTileLabelText}>{label}</Text>
+    <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
+      <View style={[styles.messageActions, active ? styles.messageActionsVisible : null]}>
+        <TouchableOpacity style={styles.messageActionBtn}>
+          <Ionicons name="return-up-back-outline" size={13} color="#64748B" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.messageActionBtn}>
+          <Ionicons name="heart-outline" size={13} color="#64748B" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.messageActionBtn}>
+          <Ionicons name="ellipsis-horizontal" size={13} color="#64748B" />
+        </TouchableOpacity>
       </View>
+      <Text style={[styles.messageBody, mine ? styles.messageBodyMine : styles.messageBodyOther]}>{item.body}</Text>
     </View>
   );
 }
 
-function AudioParticipantCard({
-  label,
-  accent,
+function CallParticipantTile({
+  participant,
+  mode,
   styles,
 }: {
-  label: string;
-  accent: "blue" | "green" | "orange";
+  participant: CallParticipantState;
+  mode: CallMode;
   styles: ReturnType<typeof createStyles>;
 }) {
-  const palette =
-    accent === "green"
-      ? { bg: "#EAFBF4", border: "#BCEBD6", color: "#047857" }
-      : accent === "orange"
-        ? { bg: "#FFF7ED", border: "#FED7AA", color: "#EA580C" }
-        : { bg: "#EDF5FF", border: "#CCDBF1", color: "#1D4ED8" };
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const hasVideo = mode === "video" && !!participant.cameraTrack && participant.cameraEnabled;
+
+  React.useEffect(() => {
+    const element = videoRef.current;
+    const track = participant.cameraTrack;
+    if (!element || !track || !hasVideo) return;
+    track.attach(element);
+    return () => {
+      track.detach(element);
+    };
+  }, [hasVideo, participant.cameraTrack]);
+
+  React.useEffect(() => {
+    const element = audioRef.current;
+    const track = participant.audioTrack;
+    if (!element || !track || participant.isLocal) return;
+    track.attach(element);
+    return () => {
+      track.detach(element);
+    };
+  }, [participant.audioTrack, participant.isLocal]);
+
+  const accent = participant.isSpeaking ? styles.callParticipantSpeaking : null;
 
   return (
-    <View style={[styles.audioCard, { backgroundColor: palette.bg, borderColor: palette.border }]}>
-      <View style={[styles.audioCardIcon, { backgroundColor: "#FFFFFF" }]}>
-        <Ionicons name="mic-outline" size={18} color={palette.color} />
+    <View style={[styles.callParticipantTile, hasVideo ? styles.callParticipantTileVideo : styles.callParticipantTileAudio, accent]}>
+      {!participant.isLocal && participant.audioTrack ? (
+        <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
+      ) : null}
+      {hasVideo ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={participant.isLocal}
+          style={{ width: "100%", height: "100%", objectFit: "cover", backgroundColor: "#020617" }}
+        />
+      ) : (
+        <View style={styles.callAvatarWrap}>
+          <View style={styles.callAvatarBubble}>
+            <Text style={styles.callAvatarText}>{getAvatarInitials(participant.name)}</Text>
+          </View>
+          <Text style={styles.callAvatarName}>{participant.name}</Text>
+          <Text style={styles.callAvatarMeta}>
+            {participant.isLocal ? "You" : participant.microphoneEnabled ? "Microphone on" : "Muted"}
+          </Text>
+        </View>
+      )}
+      <View style={styles.callParticipantMeta}>
+        <Text style={styles.callParticipantName} numberOfLines={1}>
+          {participant.name}
+        </Text>
+        <View style={styles.callParticipantBadges}>
+          {!participant.microphoneEnabled && <Ionicons name="mic-off-outline" size={14} color="#F8FAFC" />}
+          {mode === "video" && !participant.cameraEnabled && <Ionicons name="videocam-off-outline" size={14} color="#F8FAFC" />}
+        </View>
       </View>
-      <Text style={[styles.audioCardLabel, { color: palette.color }]}>{label}</Text>
-      <Text style={styles.audioCardText}>Voice connected</Text>
     </View>
   );
 }
@@ -925,22 +976,178 @@ function formatConversationTime(iso?: string | null) {
 }
 
 function formatConversationPreview(body?: string | null) {
-  return body || "No messages yet";
-}
-
-function buildPeerId(conversationId: string, userId: string) {
-  const safeConversationId = conversationId.replace(/[^a-zA-Z0-9_-]/g, "") || "team";
-  const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, "") || "user";
-  return `medsync__${safeConversationId}__${safeUserId}`;
-}
-
-function parsePeerUserId(peerId: string) {
-  const parts = peerId.split("__");
-  return parts[2] || peerId;
+  if (!body) return "No messages yet";
+  const invite = parseCallInvite(body);
+  if (invite) {
+    return invite.mode === "video" ? "Started a video call" : "Started an audio call";
+  }
+  return body;
 }
 
 function normalizeCallMode(value: unknown): CallMode {
   return value === "video" ? "video" : "audio";
+}
+
+function showCallAlert(title: string, message: string) {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    window.alert(`${title}\n\n${message}`);
+    return;
+  }
+  Alert.alert(title, message);
+}
+
+function buildCallInvite(params: {
+  mode: CallMode;
+  conversationId: string;
+  startedBy: string;
+  startedById: string;
+}): CallInvite {
+  const safeConversationId = sanitizeCallRoomPart(params.conversationId, "conversation");
+  const room = `medsync-${params.mode}-${safeConversationId}`;
+  return {
+    mode: params.mode,
+    room,
+    startedBy: params.startedBy,
+    startedById: params.startedById,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function serializeCallInvite(invite: CallInvite) {
+  return `[medsync-call]${JSON.stringify(invite)}`;
+}
+
+function parseCallInvite(body?: string | null): CallInvite | null {
+  if (!body?.startsWith("[medsync-call]")) return null;
+  try {
+    const parsed = JSON.parse(body.slice("[medsync-call]".length));
+    const mode = normalizeCallMode(parsed?.mode);
+    const room = String(parsed?.room ?? "");
+    if (!room) return null;
+    return {
+      mode,
+      room,
+      startedBy: String(parsed?.startedBy ?? "Team member"),
+      startedById: String(parsed?.startedById ?? ""),
+      createdAt: String(parsed?.createdAt ?? ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeCallRoomPart(value: string, fallback: string) {
+  const normalized = value
+    .trim()
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/[_-]{2,}/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "");
+  return normalized || fallback;
+}
+
+function readPublicEnv(key: string) {
+  const processValue = (process.env as any)?.[key];
+  if (processValue != null && String(processValue).trim()) {
+    return String(processValue).trim();
+  }
+
+  const expoExtra =
+    (Constants.expoConfig as any)?.extra ??
+    (Constants as any).manifest2?.extra ??
+    (Constants as any).manifest?.extra ??
+    {};
+
+  const extraValue =
+    expoExtra?.[key] ??
+    expoExtra?.[key.replace(/^EXPO_PUBLIC_/, "")];
+
+  if (extraValue != null && String(extraValue).trim()) {
+    return String(extraValue).trim();
+  }
+
+  return "";
+}
+
+function getLiveKitTokenEndpoint() {
+  const configured = readPublicEnv("EXPO_PUBLIC_LIVEKIT_TOKEN_ENDPOINT");
+  if (configured) return configured;
+  if (typeof window !== "undefined" && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)) {
+    return "http://127.0.0.1:3001/api/livekit-token";
+  }
+  return "/api/livekit-token";
+}
+
+async function fetchLiveKitCredentials(params: {
+  accessToken: string;
+  invite: CallInvite;
+}) {
+  const response = await fetch(getLiveKitTokenEndpoint(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${params.accessToken}`,
+    },
+    body: JSON.stringify({
+      room_name: params.invite.room,
+      participant_metadata: JSON.stringify({
+        source: "medsync-chat",
+        callMode: params.invite.mode,
+        startedById: params.invite.startedById,
+      }),
+      participant_attributes: {
+        conversationRoom: params.invite.room,
+        callMode: params.invite.mode,
+      },
+    }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Unable to create a LiveKit token.");
+  }
+
+  const serverUrl = String(payload?.server_url ?? "");
+  const participantToken = String(payload?.participant_token ?? "");
+  if (!serverUrl || !participantToken) {
+    throw new Error("LiveKit token response is incomplete.");
+  }
+
+  return { participantToken, serverUrl };
+}
+
+function snapshotCallParticipants(room: LiveKitRoomRef) {
+  return [room.localParticipant, ...Array.from(room.remoteParticipants.values())]
+    .map((participant) => snapshotParticipant(participant))
+    .sort((left, right) => {
+      if (left.isLocal !== right.isLocal) return left.isLocal ? -1 : 1;
+      if (left.isSpeaking !== right.isSpeaking) return left.isSpeaking ? -1 : 1;
+      return left.name.localeCompare(right.name);
+    });
+}
+
+function snapshotParticipant(participant: LiveKitParticipantRef): CallParticipantState {
+  const microphonePublication = participant.getTrackPublication("microphone" as any);
+  const cameraPublication = participant.getTrackPublication("camera" as any);
+
+  return {
+    id: participant.sid || participant.identity,
+    identity: participant.identity,
+    name: participant.name || participant.identity || "Team member",
+    isLocal: participant.isLocal,
+    isSpeaking: participant.isSpeaking,
+    microphoneEnabled: participant.isMicrophoneEnabled,
+    cameraEnabled: participant.isCameraEnabled,
+    audioTrack: microphonePublication?.audioTrack ?? null,
+    cameraTrack: cameraPublication?.videoTrack ?? null,
+  };
+}
+
+function mapLiveKitConnectionState(state: string): ActiveCallState {
+  if (state === "connected") return "in-call";
+  if (state === "connecting" || state === "reconnecting" || state === "signalReconnecting") {
+    return "connecting";
+  }
+  return "idle";
 }
 
 function getAvatarTone(index: number) {
@@ -951,6 +1158,17 @@ function getAvatarTone(index: number) {
 function shouldShowReaction(body: string) {
   const value = body.toLowerCase();
   return value.includes("done") || value.includes("received") || value.includes("ok") || value.includes("thanks");
+}
+
+function getAvatarInitials(name: string) {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "TM"
+  );
 }
 
 function Avatar({
@@ -1224,140 +1442,181 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 7,
     },
-    callStrip: {
-      marginHorizontal: 14,
-      marginTop: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      borderRadius: 20,
+    callOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(15,23,42,0.58)",
+      padding: 24,
+      justifyContent: "center",
+      zIndex: 40,
+    },
+    callShell: {
+      flex: 1,
+      borderRadius: 28,
+      overflow: "hidden",
       borderWidth: 1,
       borderColor: "#DCE7F5",
-      backgroundColor: "#F8FBFF",
+      backgroundColor: "#0F172A",
+    },
+    callHeader: {
+      minHeight: 66,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+      backgroundColor: "rgba(15,23,42,0.92)",
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(220,231,245,0.18)",
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       gap: 12,
     },
-    callStripCopy: {
+    callHeaderCopy: {
       flex: 1,
       minWidth: 0,
-      gap: 6,
     },
-    callStripBadge: {
-      alignSelf: "flex-start",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
-      paddingHorizontal: 10,
-      paddingVertical: 7,
-      borderRadius: 999,
-      backgroundColor: "#EDF5FF",
-    },
-    callStripBadgeText: {
-      color: "#2563EB",
-      fontSize: 11,
+    callTitle: {
+      color: "#FFFFFF",
+      fontSize: 16,
       fontWeight: "900",
     },
-    callStripTitle: {
-      color: theme.colors.text,
-      fontSize: 14,
+    callSubtitle: {
+      color: "rgba(255,255,255,0.72)",
+      fontSize: 12,
+      fontWeight: "700",
+      marginTop: 3,
+    },
+    callHeaderActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    callControlBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: "rgba(226,232,240,0.24)",
+      backgroundColor: "rgba(30,41,59,0.82)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    callControlBtnDisabled: {
+      opacity: 0.45,
+    },
+    callCloseBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 999,
+      backgroundColor: "#DC2626",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    callStage: {
+      flex: 1,
+      backgroundColor: "#0F172A",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 14,
+      padding: 18,
+    },
+    callParticipantTile: {
+      position: "relative",
+      overflow: "hidden",
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: "rgba(148,163,184,0.28)",
+      backgroundColor: "rgba(15,23,42,0.88)",
+    },
+    callParticipantTileVideo: {
+      flex: 1,
+      minWidth: 260,
+      minHeight: 220,
+    },
+    callParticipantTileAudio: {
+      width: "100%",
+      minHeight: 180,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    callParticipantSpeaking: {
+      borderColor: "#60A5FA",
+      shadowColor: "#60A5FA",
+      shadowOpacity: 0.3,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 6 },
+    },
+    callAvatarWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    callAvatarBubble: {
+      width: 108,
+      height: 108,
+      borderRadius: 999,
+      backgroundColor: "#FB7185",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    callAvatarText: {
+      color: "#FFFFFF",
+      fontSize: 42,
+      fontWeight: "900",
+    },
+    callAvatarName: {
+      color: "#F8FAFC",
+      fontSize: 20,
+      fontWeight: "900",
+    },
+    callAvatarMeta: {
+      color: "#CBD5E1",
+      fontSize: 12,
       fontWeight: "800",
     },
-    callStripActions: {
+    callParticipantMeta: {
+      position: "absolute",
+      left: 14,
+      right: 14,
+      bottom: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 16,
+      backgroundColor: "rgba(15,23,42,0.72)",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    callParticipantName: {
+      flex: 1,
+      color: "#F8FAFC",
+      fontSize: 12,
+      fontWeight: "900",
+    },
+    callParticipantBadges: {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
     },
-    callAcceptBtn: {
-      minHeight: 38,
-      paddingHorizontal: 14,
-      borderRadius: 999,
-      backgroundColor: "#16A34A",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
-    },
-    callDeclineBtn: {
-      minHeight: 38,
-      paddingHorizontal: 14,
-      borderRadius: 999,
-      backgroundColor: "#DC2626",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
-    },
-    callActionText: {
-      color: "#FFFFFF",
-      fontSize: 12,
-      fontWeight: "900",
-    },
-    callStage: {
-      marginHorizontal: 14,
-      marginTop: 12,
-      padding: 12,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor: "#DCE7F5",
-      backgroundColor: "#FFFFFF",
-      gap: 12,
-    },
-    videoGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 12,
-    },
-    videoTile: {
+    callEmptyState: {
       flex: 1,
-      minWidth: 220,
-      borderRadius: 18,
-      overflow: "hidden",
-      backgroundColor: "#0F172A",
-      borderWidth: 1,
-      borderColor: "#DCE7F5",
-    },
-    videoTileLabel: {
-      position: "absolute",
-      left: 10,
-      bottom: 10,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      backgroundColor: "rgba(15,23,42,0.72)",
-    },
-    videoTileLabelText: {
-      color: "#FFFFFF",
-      fontSize: 11,
-      fontWeight: "900",
-    },
-    audioGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 12,
-    },
-    audioCard: {
-      flex: 1,
-      minWidth: 180,
-      borderRadius: 18,
-      borderWidth: 1,
-      padding: 16,
-      alignItems: "center",
-      gap: 10,
-    },
-    audioCardIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 16,
       alignItems: "center",
       justifyContent: "center",
+      gap: 10,
     },
-    audioCardLabel: {
-      fontSize: 14,
+    callEmptyTitle: {
+      color: "#F8FAFC",
+      fontSize: 18,
       fontWeight: "900",
     },
-    audioCardText: {
-      color: "#64748B",
-      fontSize: 12,
-      fontWeight: "800",
+    callEmptyText: {
+      maxWidth: 320,
+      color: "#CBD5E1",
+      fontSize: 13,
+      fontWeight: "700",
+      textAlign: "center",
+      lineHeight: 20,
     },
     messagesWrap: {
       flex: 1,
@@ -1466,6 +1725,54 @@ const createStyles = (theme: any) =>
     },
     messageBodyOther: {
       color: "#1F2937",
+    },
+    callInviteCard: {
+      minWidth: 220,
+      gap: 10,
+    },
+    callInviteHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    callInviteTitle: {
+      color: "#1F2937",
+      fontSize: 14,
+      fontWeight: "900",
+    },
+    callInviteTitleMine: {
+      color: "#15315D",
+    },
+    callInviteMeta: {
+      color: "#475569",
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    callInviteMetaMine: {
+      color: "#274472",
+    },
+    callInviteButton: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 12,
+      backgroundColor: "#2563EB",
+    },
+    callInviteButtonMine: {
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#A9CFFF",
+    },
+    callInviteButtonText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "900",
+    },
+    callInviteButtonTextMine: {
+      color: "#1D4ED8",
     },
     messageActions: {
       position: "absolute",

@@ -34,8 +34,25 @@ Real mode (Supabase):
    - `EXPO_PUBLIC_DEMO=false`
    - `EXPO_PUBLIC_SUPABASE_URL=...`
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY=...`
+   - `EXPO_PUBLIC_LIVEKIT_URL=wss://your-livekit-host`
+   - `EXPO_PUBLIC_LIVEKIT_TOKEN_ENDPOINT=http://127.0.0.1:3001/api/livekit-token`
+   - `LIVEKIT_URL=wss://your-livekit-host`
+   - `LIVEKIT_API_KEY=...`
+   - `LIVEKIT_API_SECRET=...`
 2) Run SQL in Supabase:
    - `database/sql/000_all_changes.sql`
+
+LiveKit calls:
+- The chat call buttons now open a custom in-app LiveKit call surface.
+- Participant names are minted by the token server from the signed-in user, so the app does not let callers rename themselves.
+- For local web testing, start the token endpoint in a second terminal:
+
+```bash
+npm run livekit:token-server
+```
+
+- For hosted deployments, the repo includes `api/livekit-token.ts` for a server-side token endpoint.
+- Restart Expo web after changing any `EXPO_PUBLIC_LIVEKIT_*` values.
 
 Onboarding:
 - Clinic activation: `/activate-clinic?token=...`

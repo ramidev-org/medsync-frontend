@@ -17,7 +17,16 @@ import {
     MaterialIcons,
 } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
+
+if (Platform.OS !== "web") {
+  try {
+    const { registerGlobals } = require("@livekit/react-native");
+    registerGlobals();
+  } catch (error) {
+    console.warn("LiveKit globals were not registered:", error);
+  }
+}
 
 function AuthGateWrapper() {
   const { user, loading } = useAuth();
