@@ -135,7 +135,7 @@ export default function PaymentsPage() {
               visibleRows.map((payment, index) => (
                 <View key={`${payment.code}-${index}`} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
                   <View style={tableStyles.cell}>
-                    <Avatar firstName={payment.prenom} lastName={payment.nom} size={44} borderRadius={11} />
+                    <Avatar firstName={payment.prenom} lastName={payment.nom} size={48} borderRadius={12} />
                   </View>
                   <View style={tableStyles.cell}>
                     <Text style={[tableStyles.cellText, { color: theme.colors.primary, fontWeight: "800" }]}>#{payment.code}</Text>

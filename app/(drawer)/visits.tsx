@@ -1,6 +1,5 @@
 ﻿import DatePickerField from "@/components/datepicker";
 import { ThemedCard } from "@/components/default_card";
-import { DateRangePickerField } from "@/components/datepicker";
 import { Dropdown } from "@/components/input_fields";
 import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
@@ -10,8 +9,8 @@ import { callRpc } from "@/services/backend";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Modal,
@@ -149,19 +148,11 @@ function shouldFallbackAppointmentRpc(error: unknown) {
 export default function VisitsPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { open_new } = useLocalSearchParams<{ open_new?: string }>();
+  const didOpenFromQueryRef = useRef(false);
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState(() => {
-    const next = new Date();
-    next.setHours(0, 0, 0, 0);
-    return next;
-  });
-  const [toDate, setToDate] = useState(() => {
-    const next = new Date();
-    next.setHours(23, 59, 0, 0);
-    return next;
-  });
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const [patientOptions, setPatientOptions] = useState<{ id: string; label: string }[]>([]);
@@ -200,8 +191,8 @@ export default function VisitsPage() {
         "rpc_get_appointments",
         {
           p_requester_id: user.id,
-          p_start_date: fromDate.toISOString(),
-          p_end_date: toDate.toISOString(),
+          p_start_date: toDayStart(new Date()).toISOString(),
+          p_end_date: toDayEnd(new Date()).toISOString(),
           p_page: 1,
           p_items_per_page: 300,
         },
@@ -232,7 +223,7 @@ export default function VisitsPage() {
       setAppointments([]);
       Alert.alert("Erreur", e?.message || "Impossible de charger les rendez-vous");
     }
-  }, [fromDate, toDate, user?.id]);
+  }, [user?.id]);
 
   const fetchFormOptions = useCallback(async () => {
     try {
@@ -298,15 +289,6 @@ export default function VisitsPage() {
 
   const progress = appointments.length > 0 ? Math.round((completedCount / appointments.length) * 100) : 0;
 
-  const resetDateRange = useCallback(() => {
-    const nextStart = new Date();
-    nextStart.setHours(0, 0, 0, 0);
-    const nextEnd = new Date();
-    nextEnd.setHours(23, 59, 0, 0);
-    setFromDate(nextStart);
-    setToDate(nextEnd);
-  }, []);
-
   const resetForm = () => {
     setEditingId(null);
     setPatientLabel("");
@@ -323,6 +305,13 @@ export default function VisitsPage() {
     resetForm();
     setIsFormOpen(true);
   };
+
+  useEffect(() => {
+    const shouldOpen = open_new === "1" || open_new === "true";
+    if (!shouldOpen || didOpenFromQueryRef.current) return;
+    didOpenFromQueryRef.current = true;
+    openCreateForm();
+  }, [open_new]);
 
   const openEditForm = (a: Appointment) => {
     setFormMode("edit");
@@ -518,15 +507,6 @@ export default function VisitsPage() {
                 </View>
               </View>
 
-              <DateRangePickerField
-                label="Plage de date"
-                startDate={fromDate}
-                endDate={toDate}
-                setStartDate={setFromDate}
-                setEndDate={setToDate}
-                onClear={resetDateRange}
-              />
-
               <TouchableOpacity style={styles.primaryButton} onPress={openCreateForm}>
                 <Ionicons name="add" size={16} color="#fff" />
                 <Text style={styles.primaryButtonText}>Nouveau RDV</Text>
@@ -567,7 +547,7 @@ export default function VisitsPage() {
                 {filteredAppointments.map((a) => (
                   <View key={a.id} style={styles.tableRow}>
                     <View style={{ flex: 0.6 }}>
-                      <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={46} borderRadius={10} />
+                      <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={48} borderRadius={12} />
                     </View>
 
                     <Text style={[styles.cell, { flex: 1.2 }]}>{a.patient?.first_name} {a.patient?.last_name}</Text>
@@ -624,7 +604,7 @@ export default function VisitsPage() {
               <ScrollView style={{ marginTop: 16 }} contentContainerStyle={{ paddingBottom: 8 }}>
                 {waitingRoomAppointments.map((a) => (
                   <View key={a.id} style={styles.waitingCard}>
-                    <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={56} borderRadius={12} />
+                    <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={60} borderRadius={14} />
                     <View style={{ marginLeft: 12 }}>
                       <Text style={{ fontWeight: "600" }}>{a.patient?.first_name} {a.patient?.last_name}</Text>
                       <Text style={{ fontSize: 12, color: "#6b7280" }}>

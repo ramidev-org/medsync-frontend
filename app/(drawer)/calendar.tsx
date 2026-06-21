@@ -100,6 +100,13 @@ function statusLabel(value: string) {
   return String(value || "pending").replace(/_/g, " ");
 }
 
+function laneIcon(name: string): React.ComponentProps<typeof Ionicons>["name"] {
+  if (name === "Room 1") return "medical-outline";
+  if (name === "Room 2") return "fitness-outline";
+  if (name === "Room 3") return "pulse-outline";
+  return "layers-outline";
+}
+
 function CalendarPickerModal({
   visible,
   selectedDate,
@@ -293,16 +300,6 @@ export default function CalendarPage() {
     return grouped;
   }, [filteredRows]);
 
-  const quickHistoryDates = React.useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, index) => {
-        const date = new Date();
-        date.setDate(date.getDate() - index);
-        return startOfDay(date);
-      }),
-    [],
-  );
-
   const stats = React.useMemo(
     () => ({
       total: rows.length,
@@ -310,6 +307,15 @@ export default function CalendarPage() {
       done: rows.filter((row) => String(row.status) === "completed").length,
     }),
     [rows],
+  );
+
+  const overviewCards = React.useMemo(
+    () => [
+      { key: "scheduled", label: "Scheduled", value: stats.total, icon: "calendar-clear-outline" as const, tint: "#DBEAFE", iconColor: "#2563EB" },
+      { key: "live", label: "In progress", value: stats.live, icon: "pulse-outline" as const, tint: "#DCFCE7", iconColor: "#16A34A" },
+      { key: "done", label: "Completed", value: stats.done, icon: "checkmark-circle-outline" as const, tint: "#FEF3C7", iconColor: "#D97706" },
+    ],
+    [stats.done, stats.live, stats.total],
   );
 
   const shiftDay = (delta: number) => {
@@ -324,7 +330,6 @@ export default function CalendarPage() {
     <>
       <PageShell
         title="Clinic Calendar"
-        subtitle="Slot board ordered by first-come queue."
         actions={
           <View style={styles.toolbar}>
             <TouchableOpacity style={[styles.actionBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]} onPress={() => shiftDay(-1)}>
@@ -334,7 +339,6 @@ export default function CalendarPage() {
               <Ionicons name="calendar-clear-outline" size={16} color={theme.colors.primary} />
               <View>
                 <Text style={[styles.dateHeroTitle, { color: theme.colors.text }]}>{formatToolbarDate(selectedDate)}</Text>
-                <Text style={[styles.dateHeroMeta, { color: theme.colors.textSecondary }]}>Browse visit history</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.todayBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]} onPress={() => setSelectedDate(startOfDay(new Date()))}>
@@ -346,61 +350,34 @@ export default function CalendarPage() {
           </View>
         }
       >
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryCopy}>
-            <Text style={[styles.dateTitle, { color: theme.colors.text }]}>{formatTitleDate(selectedDate)}</Text>
-            <Text style={[styles.dateSubtitle, { color: theme.colors.textSecondary }]}>
-              Use the history strip or calendar picker to revisit earlier clinic queues.
-            </Text>
+        <View style={[styles.summaryCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+          <View style={styles.summaryTopRow}>
+            <View style={styles.summaryCopy}>
+              <Text style={[styles.dateTitle, { color: theme.colors.text }]}>{formatTitleDate(selectedDate)}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.summaryPickerBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceVariant }]}
+              onPress={() => setPickerOpen(true)}
+            >
+              <Ionicons name="calendar-number-outline" size={16} color={theme.colors.primary} />
+              <Text style={[styles.summaryPickerText, { color: theme.colors.primary }]}>Open calendar picker</Text>
+            </TouchableOpacity>
           </View>
+
           <View style={styles.metricRow}>
-            <View style={[styles.metricCard, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.border }]}>
-              <Text style={[styles.metricValue, { color: theme.colors.text }]}>{stats.total}</Text>
-              <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>Scheduled</Text>
-            </View>
-            <View style={[styles.metricCard, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.border }]}>
-              <Text style={[styles.metricValue, { color: theme.colors.text }]}>{stats.live}</Text>
-              <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>Live</Text>
-            </View>
-            <View style={[styles.metricCard, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.border }]}>
-              <Text style={[styles.metricValue, { color: theme.colors.text }]}>{stats.done}</Text>
-              <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>Completed</Text>
-            </View>
+            {overviewCards.map((card) => (
+              <View key={card.key} style={[styles.metricCard, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.border }]}>
+                <View style={styles.metricIconRow}>
+                  <View style={[styles.metricIconWrap, { backgroundColor: card.tint }]}>
+                    <Ionicons name={card.icon} size={16} color={card.iconColor} />
+                  </View>
+                  <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>{card.label}</Text>
+                </View>
+                <Text style={[styles.metricValue, { color: theme.colors.text }]}>{card.value}</Text>
+              </View>
+            ))}
           </View>
         </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.historyStrip}>
-          {quickHistoryDates.map((date) => {
-            const active = sameDay(date, selectedDate);
-            return (
-              <TouchableOpacity
-                key={date.toISOString()}
-                style={[
-                  styles.historyDayChip,
-                  {
-                    borderColor: active ? theme.colors.primary : theme.colors.border,
-                    backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
-                  },
-                ]}
-                onPress={() => setSelectedDate(date)}
-              >
-                <Text style={[styles.historyDayText, { color: active ? theme.colors.primary : theme.colors.text }]}>
-                  {date.toLocaleDateString("en-US", { weekday: "short" })}
-                </Text>
-                <Text style={[styles.historyDateText, { color: active ? theme.colors.primary : theme.colors.textSecondary }]}>
-                  {formatShortDate(date)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity
-            style={[styles.historyMoreChip, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
-            onPress={() => setPickerOpen(true)}
-          >
-            <Ionicons name="calendar-outline" size={15} color={theme.colors.primary} />
-            <Text style={[styles.historyMoreText, { color: theme.colors.primary }]}>More dates</Text>
-          </TouchableOpacity>
-        </ScrollView>
 
         <View style={styles.filterRow}>
           {STATUS_FILTERS.map((key) => {
@@ -441,7 +418,12 @@ export default function CalendarPage() {
             {LANES.map((lane) => (
               <View key={lane} style={[styles.roomCol, { borderRightColor: theme.colors.border }]}>
                 <View style={[styles.roomHead, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.surfaceVariant }]}>
-                  <Text style={[styles.roomTitle, { color: theme.colors.text }]}>{lane}</Text>
+                  <View style={styles.roomHeadInner}>
+                    <View style={styles.roomHeadIcon}>
+                      <Ionicons name={laneIcon(lane)} size={14} color={theme.colors.primary} />
+                    </View>
+                    <Text style={[styles.roomTitle, { color: theme.colors.text }]}>{lane}</Text>
+                  </View>
                 </View>
                 <View style={styles.gridBody}>
                   {Array.from({ length: SLOT_COUNT }).map((_, index) => (
@@ -534,77 +516,30 @@ const createStyles = (theme: any) =>
       fontSize: 13,
       textTransform: "capitalize",
     },
-    dateHeroMeta: {
-      fontWeight: "700",
-      fontSize: 11,
-      marginTop: 1,
-    },
     summaryCard: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 12,
+      borderWidth: 1,
+      borderRadius: 22,
+      padding: 16,
+      gap: 14,
       marginBottom: 12,
-      alignItems: "stretch",
+    },
+    summaryTopRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
+      flexWrap: "wrap",
     },
     summaryCopy: {
-      flex: 1.3,
+      flex: 1,
       minWidth: 280,
     },
     dateTitle: {
       fontWeight: "900",
       fontSize: 22,
     },
-    dateSubtitle: {
-      marginTop: 6,
-      fontWeight: "700",
-      fontSize: 13,
-      lineHeight: 19,
-    },
-    metricRow: {
-      flexDirection: "row",
-      gap: 10,
-      flexWrap: "wrap",
-      marginLeft: "auto",
-    },
-    metricCard: {
-      minWidth: 108,
-      borderRadius: 16,
-      borderWidth: 1,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-    },
-    metricValue: {
-      fontWeight: "900",
-      fontSize: 22,
-    },
-    metricLabel: {
-      marginTop: 2,
-      fontWeight: "700",
-      fontSize: 12,
-    },
-    historyStrip: {
-      gap: 8,
-      paddingBottom: 4,
-      marginBottom: 10,
-    },
-    historyDayChip: {
-      minWidth: 84,
-      borderRadius: 14,
-      borderWidth: 1,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      alignItems: "flex-start",
-    },
-    historyDayText: {
-      fontWeight: "900",
-      fontSize: 12,
-    },
-    historyDateText: {
-      marginTop: 2,
-      fontWeight: "700",
-      fontSize: 11,
-    },
-    historyMoreChip: {
+    summaryPickerBtn: {
+      minHeight: 42,
       borderRadius: 14,
       borderWidth: 1,
       paddingHorizontal: 14,
@@ -613,8 +548,42 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    historyMoreText: {
-      fontWeight: "800",
+    summaryPickerText: {
+      fontWeight: "900",
+      fontSize: 12,
+    },
+    metricRow: {
+      flexDirection: "row",
+      gap: 10,
+      flexWrap: "wrap",
+    },
+    metricCard: {
+      minWidth: 150,
+      flex: 1,
+      borderRadius: 16,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    metricIconRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 8,
+    },
+    metricIconWrap: {
+      width: 30,
+      height: 30,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    metricValue: {
+      fontWeight: "900",
+      fontSize: 22,
+    },
+    metricLabel: {
+      fontWeight: "700",
       fontSize: 12,
     },
     filterRow: {
@@ -680,6 +649,19 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       justifyContent: "center",
       borderBottomWidth: 1,
+    },
+    roomHeadInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    roomHeadIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      backgroundColor: "rgba(37,99,235,0.10)",
+      alignItems: "center",
+      justifyContent: "center",
     },
     roomTitle: {
       fontWeight: "900",

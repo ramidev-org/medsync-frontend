@@ -127,7 +127,7 @@ export default function PatientsPage() {
             {rows.map((patient, index) => (
               <View key={patient.id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
                 <View style={tableStyles.cell}>
-                  <Avatar firstName={patient.first_name} lastName={patient.last_name} size={40} borderRadius={10} />
+                  <Avatar firstName={patient.first_name} lastName={patient.last_name} size={48} borderRadius={12} />
                 </View>
                 <View style={tableStyles.cell}>
                   <Text style={tableStyles.cellText}>{patient.first_name} {patient.last_name}</Text>

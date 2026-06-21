@@ -32,6 +32,23 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
   const router = useRouter();
   const role = (user?.user_type ?? "doctor") as "doctor" | "assistant";
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const primaryAction = useMemo(() => {
+    if (role === "assistant") {
+      return {
+        label: "Nouvelle Visite",
+        onPress: () => router.push("/visits?open_new=1" as any),
+      };
+    }
+
+    if (role === "doctor" && !isClinicAdmin) {
+      return {
+        label: "Nouveau Patient",
+        onPress: () => setPatientFormVisible(true),
+      };
+    }
+
+    return null;
+  }, [isClinicAdmin, role, router]);
 
   useEffect(() => setIsMounted(true), []);
   useEffect(() => {
@@ -159,11 +176,6 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
       .replace(/^./, (char) => char.toUpperCase());
   }, [isMounted]);
 
-  const onPrimaryPress = () => {
-    if (role === "assistant") return router.push("/visits");
-    setPatientFormVisible(true);
-  };
-
   const subscriptionBadge = useMemo(() => {
     const status = subscription?.status ?? "missing";
     const label =
@@ -186,10 +198,12 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
         <View style={styles.inner}>
           <Text style={styles.dateText}>{dateLabel}</Text>
           <View style={styles.rightSection}>
-            <Pressable onPress={onPrimaryPress} style={({ hovered, pressed }) => [styles.primaryBtn, hovered && Platform.OS === "web" ? styles.hover : null, pressed ? styles.pressed : null]}>
-              <Ionicons name="add" size={18} color="#fff" />
-              <Text style={styles.primaryBtnText}>{role === "assistant" ? "Nouvelle Visite" : "Nouveau Patient"}</Text>
-            </Pressable>
+            {primaryAction ? (
+              <Pressable onPress={primaryAction.onPress} style={({ hovered, pressed }) => [styles.primaryBtn, hovered && Platform.OS === "web" ? styles.hover : null, pressed ? styles.pressed : null]}>
+                <Ionicons name="add" size={18} color="#fff" />
+                <Text style={styles.primaryBtnText}>{primaryAction.label}</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => {
                 setNotificationsOpen((v) => !v);

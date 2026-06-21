@@ -19,15 +19,6 @@ import {
 import { useFonts } from "expo-font";
 import { ActivityIndicator, Platform, View } from "react-native";
 
-if (Platform.OS !== "web") {
-  try {
-    const { registerGlobals } = require("@livekit/react-native");
-    registerGlobals();
-  } catch (error) {
-    console.warn("LiveKit globals were not registered:", error);
-  }
-}
-
 function AuthGateWrapper() {
   const { user, loading } = useAuth();
   const segments = useSegments();
@@ -36,7 +27,17 @@ function AuthGateWrapper() {
   useEffect(() => {
     if (loading) return;
 
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const lockedCallUrl = window.sessionStorage.getItem("medsync_call_lock_url") || "";
+      const currentUrl = `${window.location.pathname}${window.location.search}`;
+      if (lockedCallUrl && currentUrl !== lockedCallUrl) {
+        router.replace(lockedCallUrl as any);
+        return;
+      }
+    }
+
     const inDrawerGroup = segments[0] === "(drawer)";
+    const inCallScreen = segments[0] === "call";
     const inAuthScreen =
       segments[0] === "login" ||
       segments[0] === "signup" ||
@@ -44,19 +45,16 @@ function AuthGateWrapper() {
       segments[0] === "accept-invite" ||
       segments[0] === "invite";
 
-    // If not signed in, block protected drawer screens
-    if (!user && inDrawerGroup) {
+    if (!user && (inDrawerGroup || inCallScreen)) {
       router.replace("/login");
       return;
     }
 
-    // If signed in, keep user inside drawer routes
-    if (user && (!inDrawerGroup && !inAuthScreen)) {
+    if (user && (!inDrawerGroup && !inCallScreen && !inAuthScreen)) {
       router.replace("/dashboard");
       return;
     }
 
-    // If signed in and they are on login/signup, send them to dashboard
     if (user && inAuthScreen) {
       router.replace("/dashboard");
       return;
@@ -88,6 +86,7 @@ function AuthGateWrapper() {
       <Stack.Screen name="activate-clinic" />
       <Stack.Screen name="accept-invite" />
       <Stack.Screen name="invite/[token]" />
+      <Stack.Screen name="call/[sessionId]" />
       <Stack.Screen name="(drawer)" />
     </Stack>
   );

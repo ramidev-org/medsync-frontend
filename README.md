@@ -34,25 +34,27 @@ Real mode (Supabase):
    - `EXPO_PUBLIC_DEMO=false`
    - `EXPO_PUBLIC_SUPABASE_URL=...`
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY=...`
-   - `EXPO_PUBLIC_LIVEKIT_URL=wss://your-livekit-host`
-   - `EXPO_PUBLIC_LIVEKIT_TOKEN_ENDPOINT=http://127.0.0.1:3001/api/livekit-token`
-   - `LIVEKIT_URL=wss://your-livekit-host`
-   - `LIVEKIT_API_KEY=...`
-   - `LIVEKIT_API_SECRET=...`
+   - `CALL_STUN_URLS=stun:stun.l.google.com:19302`
+   - Optional TURN fallback:
+   - `CALL_TURN_URL=turn:your-turn-host:3478`
+   - `CALL_TURN_USERNAME=...`
+   - `CALL_TURN_CREDENTIAL=...`
 2) Run SQL in Supabase:
    - `database/sql/000_all_changes.sql`
 
-LiveKit calls:
-- The chat call buttons now open a custom in-app LiveKit call surface.
-- Participant names are minted by the token server from the signed-in user, so the app does not let callers rename themselves.
-- For local web testing, start the token endpoint in a second terminal:
+Supabase WebRTC calls:
+- Presence channel: `clinic:{clinic_id}:presence`
+- Incoming call channel: `clinic:{clinic_id}:user:{receiver_id}`
+- Offer / answer / ICE / end channel: `call:{call_session_id}`
+- WebRTC offer, answer, and ICE candidates are exchanged with Supabase Broadcast.
+- For local web testing, start the call config server in a second terminal:
 
 ```bash
-npm run livekit:token-server
+npm run call:server
 ```
 
-- For hosted deployments, the repo includes `api/livekit-token.ts` for a server-side token endpoint.
-- Restart Expo web after changing any `EXPO_PUBLIC_LIVEKIT_*` values.
+- For hosted deployments, the repo includes `api/call-config.ts` for a server-side call config endpoint.
+- Restart Expo web after changing any `CALL_*` or `EXPO_PUBLIC_CALL_CONFIG_ENDPOINT` values.
 
 Onboarding:
 - Clinic activation: `/activate-clinic?token=...`

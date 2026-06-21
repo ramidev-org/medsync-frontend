@@ -42,7 +42,7 @@ const COLOR_MAP: Record<string, { background: string; text: string }> = {
 
 /* ================= COMPONENT ================= */
 
-export function Avatar({ firstName, lastName, size = 40, borderRadius }: AvatarProps) {
+export function Avatar({ firstName, lastName, size = 48, borderRadius }: AvatarProps) {
   // Get first letter of first name and last name
   const firstInitial = firstName?.charAt(0).toUpperCase() || "";
   const lastInitial = lastName?.charAt(0).toUpperCase() || "";

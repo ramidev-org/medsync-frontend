@@ -12,15 +12,16 @@ type Props = {
   contentStyle?: ViewStyle;
   refreshControl?: ScrollViewProps["refreshControl"];
   scrollable?: boolean;
+  hideTopBar?: boolean;
 };
 
-export function PageShell({ title, subtitle, actions, children, contentStyle, refreshControl, scrollable = true }: Props) {
+export function PageShell({ title, subtitle, actions, children, contentStyle, refreshControl, scrollable = true, hideTopBar = false }: Props) {
   const { theme } = useTheme();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
-      <TopBar theme={theme} />
+      {!hideTopBar ? <TopBar theme={theme} /> : null}
 
       {scrollable ? (
         <ScrollView
