@@ -1,4 +1,5 @@
 import { PageShell } from "@/components/page_shell";
+import { ChatAvatar, getChatAvatarTone } from "@/components/chat_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { getConversations } from "@/services/chats.services";
 import type { ConversationRow } from "@/services/backend.types";
@@ -104,14 +105,14 @@ export default function ChatsEntryPage() {
                           .join(", ") || "Direct chat";
                   const rowSub = formatConversationPreview(row.last_message?.body);
                   const unread = row.last_message?.sender_id && row.last_message.sender_id !== user?.id ? 1 : 0;
-                  const avatarTone = getAvatarTone(index);
+                  const avatarTone = getChatAvatarTone(index);
                   return (
                     <TouchableOpacity
                       key={row.id}
                       style={styles.chatItem}
                       onPress={() => router.replace(`/chats/${row.id}` as any)}
                     >
-                      <Avatar name={rowTitle} theme={theme} size={42} square tone={avatarTone} presence={unread ? "online" : "away"} />
+                      <ChatAvatar name={rowTitle} size={42} square tone={avatarTone} />
                       <View style={styles.chatCopy}>
                         <View style={styles.chatTopline}>
                           <Text style={styles.chatName} numberOfLines={1}>
@@ -172,10 +173,9 @@ export default function ChatsEntryPage() {
                   placeholderTextColor="#71819A"
                   style={styles.input}
                 />
-                <Ionicons name="happy-outline" size={18} color="#71819A" />
               </View>
-              <TouchableOpacity style={styles.composerIcon} disabled>
-                <Ionicons name="mic-outline" size={18} color="#59708F" />
+              <TouchableOpacity style={[styles.composerIcon, styles.sendBtn]} disabled>
+                <Ionicons name="send" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -187,8 +187,32 @@ export default function ChatsEntryPage() {
 
 function formatConversationPreview(body?: string | null) {
   if (!body) return "No messages yet";
+  if (body.startsWith("[medsync-reply]")) {
+    try {
+      const parsed = JSON.parse(body.slice("[medsync-reply]".length));
+      return formatConversationPreview(String(parsed?.body || ""));
+    } catch {
+      return "Reply";
+    }
+  }
   if (body.startsWith("[medsync-call]")) {
     return body.includes('"mode":"video"') ? "Started a video call" : "Started an audio call";
+  }
+  if (body.startsWith("[medsync-doc]")) {
+    try {
+      const parsed = JSON.parse(body.slice("[medsync-doc]".length));
+      return `Document: ${String(parsed?.name || "Attachment")}`;
+    } catch {
+      return "Document attachment";
+    }
+  }
+  if (body.startsWith("[medsync-reaction]")) {
+    try {
+      const parsed = JSON.parse(body.slice("[medsync-reaction]".length));
+      return `${String(parsed?.emoji || "Emoji")} reaction`;
+    } catch {
+      return "Reaction";
+    }
   }
   return body;
 }
@@ -201,78 +225,6 @@ function formatConversationTime(value?: string | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
-}
-
-function getAvatarTone(index: number) {
-  const tones = [
-    { backgroundColor: "#EDF5FF", borderColor: "#CCDBF1", color: "#1D4ED8" },
-    { backgroundColor: "#EAFBF4", borderColor: "#BCEBD6", color: "#047857" },
-    { backgroundColor: "#FFF7ED", borderColor: "#FED7AA", color: "#EA580C" },
-    { backgroundColor: "#F3EDFF", borderColor: "#DED2FF", color: "#7C3AED" },
-  ];
-  return tones[index % tones.length];
-}
-
-function Avatar({
-  name,
-  size,
-  square = false,
-  tone,
-  presence,
-  small = false,
-}: {
-  name: string;
-  theme: any;
-  size: number;
-  square?: boolean;
-  tone?: { backgroundColor: string; borderColor: string; color: string };
-  presence?: "online" | "away";
-  small?: boolean;
-}) {
-  const palette = tone || getAvatarTone(0);
-  const initials =
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "?";
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: square ? Math.max(11, size * 0.36) : size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: palette.borderColor,
-        backgroundColor: small ? "#F8FBFF" : palette.backgroundColor,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <Text style={{ fontWeight: "900", color: palette.color, fontSize: Math.max(9, size * 0.28) }}>
-        {initials || "?"}
-      </Text>
-      {!!presence && (
-        <View
-          style={{
-            position: "absolute",
-            right: 2,
-            bottom: 2,
-            width: Math.max(9, size * 0.26),
-            height: Math.max(9, size * 0.26),
-            borderRadius: 999,
-            borderWidth: 2,
-            borderColor: "#FFFFFF",
-            backgroundColor: presence === "online" ? "#22C55E" : "#F59E0B",
-          }}
-        />
-      )}
-    </View>
-  );
 }
 
 const createStyles = (theme: any) =>
@@ -480,9 +432,7 @@ const createStyles = (theme: any) =>
       borderColor: "#DCE7F5",
       backgroundColor: "#F6F9FD",
       paddingHorizontal: 14,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
+      justifyContent: "center",
     },
     input: {
       flex: 1,
@@ -492,5 +442,8 @@ const createStyles = (theme: any) =>
       fontSize: 14,
       fontWeight: "800",
       paddingVertical: 9,
+    },
+    sendBtn: {
+      backgroundColor: "#2563EB",
     },
   });

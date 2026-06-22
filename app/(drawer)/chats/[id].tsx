@@ -1,4 +1,5 @@
 import { PageShell } from "@/components/page_shell";
+import { ChatAvatar, getChatAvatarTone } from "@/components/chat_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
 import {
@@ -37,6 +38,35 @@ type MessageGroup = {
   items: ChatMessageRow[];
 };
 
+type ChatDocumentPayload = {
+  name: string;
+  mimeType: string;
+  size: number;
+  dataUrl: string;
+};
+
+type ChatReactionPayload = {
+  messageId: string;
+  emoji: string;
+};
+
+type ChatReplyPayload = {
+  messageId: string;
+  senderName: string;
+  snippet: string;
+};
+
+type ChatReplyEnvelope = {
+  replyTo: ChatReplyPayload;
+  body: string;
+};
+
+const DOCUMENT_PREFIX = "[medsync-doc]";
+const REACTION_PREFIX = "[medsync-reaction]";
+const REPLY_PREFIX = "[medsync-reply]";
+const REACTION_OPTIONS = ["\u{1F44D}", "\u2764\uFE0F", "\u{1F602}", "\u{1F60E}", "\u{1F680}"];
+const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
+
 export default function ChatConversationPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -63,6 +93,7 @@ export default function ChatConversationPage() {
   const [floatingDate, setFloatingDate] = React.useState("Today");
   const [showFloatingDate, setShowFloatingDate] = React.useState(false);
   const [activeMessageId, setActiveMessageId] = React.useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = React.useState<ChatReplyPayload | null>(null);
   const [incomingCallInvite, setIncomingCallInvite] = React.useState<CallInvitePayload | null>(null);
   const [onlineUserIds, setOnlineUserIds] = React.useState<string[]>([]);
 
@@ -104,6 +135,11 @@ export default function ChatConversationPage() {
       messagesRef.current?.scrollToEnd({ animated: true });
     }
   }, [rows.length, conversationId]);
+
+  React.useEffect(() => {
+    setReplyingTo(null);
+    setActiveMessageId(null);
+  }, [conversationId]);
 
   const title = React.useMemo(() => {
     if (!conversation) return conversationId ? `Conversation ${conversationId.slice(0, 8)}...` : "Conversation";
@@ -151,7 +187,13 @@ export default function ChatConversationPage() {
     });
   }, [allConversations, searchQuery, user?.id]);
 
-  const groupedMessages = React.useMemo(() => groupMessagesByDay(rows), [rows]);
+  const visibleRows = React.useMemo(() => rows.filter((row) => !parseReactionMessage(row.body)), [rows]);
+  const reactionsByMessage = React.useMemo(() => buildReactionsMap(rows), [rows]);
+  const messageLookup = React.useMemo(
+    () => Object.fromEntries(visibleRows.map((row) => [row.id, row])),
+    [visibleRows],
+  );
+  const groupedMessages = React.useMemo(() => groupMessagesByDay(visibleRows), [visibleRows]);
 
   const resetCallUi = React.useCallback(() => {
     setIncomingCallInvite(null);
@@ -255,26 +297,31 @@ export default function ChatConversationPage() {
     [groupedMessages],
   );
 
-  const onSend = async () => {
+  const sendBody = React.useCallback(async (body: string) => {
     if (!user?.id || !conversationId) return;
-    const body = text.trim();
-    if (!body) return;
+    const payload =
+      replyingTo
+        ? `${REPLY_PREFIX}${JSON.stringify({
+            replyTo: replyingTo,
+            body,
+          } satisfies ChatReplyEnvelope)}`
+        : body;
 
     setSending(true);
     try {
-      setText("");
       const optimistic: ChatMessageRow = {
         id: `optimistic_${Date.now()}`,
         conversation_id: conversationId,
         sender_id: user.id,
         sender_name: user.fullname || user.email || "You",
-        body,
+        body: payload,
         created_at: new Date().toISOString(),
         edited_at: null,
       };
       shouldStickToBottomRef.current = true;
       setRows((prev) => [...prev, optimistic]);
-      await sendMessage({ requesterId: user.id, conversationId, body });
+      await sendMessage({ requesterId: user.id, conversationId, body: payload });
+      setReplyingTo(null);
       await refresh({ silent: true });
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to send");
@@ -282,7 +329,47 @@ export default function ChatConversationPage() {
     } finally {
       setSending(false);
     }
-  };
+  }, [conversationId, refresh, replyingTo, user?.email, user?.fullname, user?.id]);
+
+  const onSend = React.useCallback(async () => {
+    const body = text.trim();
+    if (!body) return;
+    setText("");
+    await sendBody(body);
+  }, [sendBody, text]);
+
+  const onPickDocument = React.useCallback(async () => {
+    if (Platform.OS !== "web") {
+      Alert.alert("Documents", "Document sending is currently available on web.");
+      return;
+    }
+
+    try {
+      const payload = await pickDocumentFromWeb();
+      if (!payload) return;
+      if (payload.size > MAX_DOCUMENT_BYTES) {
+        Alert.alert("Document too large", "Please choose a document smaller than 2 MB.");
+        return;
+      }
+      await sendBody(`${DOCUMENT_PREFIX}${JSON.stringify(payload)}`);
+    } catch (error: any) {
+      Alert.alert("Documents", error?.message || "Unable to attach this document.");
+    }
+  }, [sendBody]);
+
+  const onReactToMessage = React.useCallback(async (messageId: string, emoji: string) => {
+    await sendBody(`${REACTION_PREFIX}${JSON.stringify({ messageId, emoji } satisfies ChatReactionPayload)}`);
+    setActiveMessageId(null);
+  }, [sendBody]);
+
+  const onReplyToMessage = React.useCallback((message: ChatMessageRow) => {
+    setReplyingTo({
+      messageId: message.id,
+      senderName: message.sender_id === user?.id ? "You" : message.sender_name || "Staff",
+      snippet: buildReplySnippet(message.body),
+    });
+    setActiveMessageId(null);
+  }, [user?.id]);
 
   const startCall = React.useCallback(
     async () => {
@@ -465,14 +552,14 @@ export default function ChatConversationPage() {
                           .join(", ") || "Direct chat";
                   const rowSub = formatConversationPreview(row.last_message?.body);
                   const unread = row.last_message?.sender_id && row.last_message.sender_id !== user?.id && !active ? 1 : 0;
-                  const avatarTone = getAvatarTone(index);
+                  const avatarTone = getChatAvatarTone(index);
                   return (
                     <TouchableOpacity
                       key={row.id}
                       style={[styles.chatItem, active ? styles.chatItemActive : null]}
                       onPress={() => router.replace(`/chats/${row.id}` as any)}
                     >
-                      <Avatar name={rowTitle} theme={theme} size={42} square tone={avatarTone} presence={unread ? "online" : "away"} />
+                      <ChatAvatar name={rowTitle} size={42} square tone={avatarTone} />
                       <View style={styles.chatCopy}>
                         <View style={styles.chatTopline}>
                           <Text style={styles.chatName} numberOfLines={1}>
@@ -504,20 +591,17 @@ export default function ChatConversationPage() {
             {!!conversation && (
               <View style={styles.chatHeader}>
                 <View style={styles.personWrap}>
-                  <Avatar
+                  <ChatAvatar
                     name={talkingWith}
-                    theme={theme}
                     size={42}
                     square
-                    tone={getAvatarTone(1)}
-                    presence={conversation?.kind === "direct" && isOtherParticipantOnline ? "online" : "away"}
+                    tone={getChatAvatarTone(1)}
                   />
                   <View style={styles.personCopy}>
                     <Text style={styles.personName} numberOfLines={1}>
                       {title}
                     </Text>
                     <View style={styles.personStatusRow}>
-                      <View style={[styles.statusDot, conversation?.kind === "direct" && !isOtherParticipantOnline ? styles.statusDotAway : null]} />
                       <Text style={styles.personStatus} numberOfLines={1}>
                         {subtitle}
                       </Text>
@@ -526,11 +610,6 @@ export default function ChatConversationPage() {
                 </View>
 
                 <View style={styles.headerActions}>
-                  <HeaderIconButton
-                    icon="refresh-outline"
-                    onPress={() => void refresh({ silent: true })}
-                    disabled={loading}
-                  />
                   <HeaderIconButton
                     icon="call-outline"
                     onPress={() => void startCall()}
@@ -562,27 +641,16 @@ export default function ChatConversationPage() {
                     <View style={styles.datePill}>
                       <Text style={styles.datePillText}>{group.label}</Text>
                     </View>
-                    {group.items.map((item, index) => {
+                    {group.items.map((item) => {
                       const mine = item.sender_id === user?.id;
                       const active = activeMessageId === item.id;
+                      const replyData = parseReplyMessage(item.body);
                       return (
                         <View key={item.id} style={[styles.messageRow, mine ? styles.messageRowMine : styles.messageRowOther]}>
-                          {!mine && (
-                            <Avatar
-                              name={item.sender_name || "Staff"}
-                              theme={theme}
-                              size={28}
-                              square
-                              small
-                              tone={getAvatarTone(index)}
-                            />
-                          )}
                           <View style={[styles.messageStack, mine ? styles.messageStackMine : null]}>
-                            {!mine && (
-                              <Text style={styles.senderLabel} numberOfLines={1}>
-                                {item.sender_name || "Staff"}
-                              </Text>
-                            )}
+                            <Text style={[styles.senderLabel, mine ? styles.senderLabelMine : null]} numberOfLines={1}>
+                              {mine ? "You" : item.sender_name || "Staff"}
+                            </Text>
                             <Pressable
                               onHoverIn={() => setActiveMessageId(item.id)}
                               onHoverOut={() => setActiveMessageId((current) => (current === item.id ? null : current))}
@@ -593,6 +661,11 @@ export default function ChatConversationPage() {
                                 item={item}
                                 mine={mine}
                                 active={active}
+                                replyTo={replyData?.replyTo ?? null}
+                                replySource={replyData?.replyTo ? messageLookup[replyData.replyTo.messageId] ?? null : null}
+                                reactions={reactionsByMessage[item.id] ?? []}
+                                onReact={onReactToMessage}
+                                onReply={onReplyToMessage}
                                 styles={styles}
                               />
                             </Pressable>
@@ -600,11 +673,6 @@ export default function ChatConversationPage() {
                               <Text style={styles.messageTime}>{formatTime(item.created_at)}</Text>
                               {mine && <Ionicons name="checkmark-done-outline" size={12} color="#71819A" />}
                             </View>
-                            {shouldShowReaction(item.body) && (
-                              <View style={styles.reactionPill}>
-                                <Text style={styles.reactionText}>👍</Text>
-                              </View>
-                            )}
                           </View>
                         </View>
                       );
@@ -612,7 +680,7 @@ export default function ChatConversationPage() {
                   </View>
                 ))}
 
-                {!loading && rows.length === 0 && (
+                {!loading && visibleRows.length === 0 && (
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyTitle}>No messages yet</Text>
                     <Text style={styles.emptySub}>Start the conversation and your team updates will appear here.</Text>
@@ -629,29 +697,42 @@ export default function ChatConversationPage() {
             </View>
 
             <View style={styles.composer}>
-              <TouchableOpacity style={styles.composerIcon}>
+              <TouchableOpacity style={styles.composerIcon} onPress={() => void onPickDocument()} disabled={sending}>
                 <Ionicons name="attach-outline" size={18} color="#59708F" />
               </TouchableOpacity>
               <View style={styles.composerField}>
+                {replyingTo ? (
+                  <View style={styles.replyComposerCard}>
+                    <View style={styles.replyComposerStripe} />
+                    <View style={styles.replyComposerCopy}>
+                      <Text style={styles.replyComposerLabel} numberOfLines={1}>
+                        Replying to {replyingTo.senderName}
+                      </Text>
+                      <Text style={styles.replyComposerSnippet} numberOfLines={1}>
+                        {replyingTo.snippet}
+                      </Text>
+                    </View>
+                    <TouchableOpacity style={styles.replyComposerClose} onPress={() => setReplyingTo(null)}>
+                      <Ionicons name="close" size={14} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
                 <TextInput
                   value={text}
                   onChangeText={setText}
-                  placeholder="Write a message..."
+                  placeholder={replyingTo ? "Write your reply..." : "Write a message..."}
                   placeholderTextColor="#71819A"
                   style={styles.input}
                   multiline
                 />
-                <Ionicons name="happy-outline" size={18} color="#71819A" />
               </View>
-              {text.trim().length > 0 ? (
-                <TouchableOpacity onPress={onSend} disabled={sending} style={[styles.composerIcon, styles.sendBtn]}>
-                  <Ionicons name="send" size={18} color="#fff" />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={styles.composerIcon} onPress={() => void startCall()}>
-                  <Ionicons name="mic-outline" size={18} color="#59708F" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                onPress={onSend}
+                disabled={sending || text.trim().length === 0}
+                style={[styles.composerIcon, styles.sendBtn, sending || text.trim().length === 0 ? styles.composerIconDisabled : null]}
+              >
+                <Ionicons name="send" size={18} color="#fff" />
+              </TouchableOpacity>
             </View>
 
             {Platform.OS === "web" && incomingCallInvite ? (
@@ -708,26 +789,73 @@ function MessageBubble({
   item,
   mine,
   active,
+  replyTo,
+  replySource,
+  reactions,
+  onReact,
+  onReply,
   styles,
 }: {
   item: ChatMessageRow;
   mine: boolean;
   active: boolean;
+  replyTo: ChatReplyPayload | null;
+  replySource: ChatMessageRow | null;
+  reactions: Array<{ emoji: string; count: number }>;
+  onReact: (messageId: string, emoji: string) => void | Promise<void>;
+  onReply: (message: ChatMessageRow) => void;
   styles: ReturnType<typeof createStyles>;
 }) {
-  const invite = parseLegacyCallInvite(item.body);
+  const normalizedBody = getMessageBody(item.body);
+  const invite = parseLegacyCallInvite(normalizedBody);
+  const documentPayload = parseDocumentMessage(normalizedBody);
+
+  const renderReactionPicker = () =>
+    active ? (
+      <View style={styles.messageActions}>
+        <TouchableOpacity style={styles.replyActionBtn} onPress={() => onReply(item)}>
+          <Ionicons name="return-up-back-outline" size={14} color="#405B82" />
+        </TouchableOpacity>
+        {REACTION_OPTIONS.map((emoji) => (
+          <TouchableOpacity key={`${item.id}_${emoji}`} style={styles.emojiPickerBtn} onPress={() => void onReact(item.id, emoji)}>
+            <Text style={styles.emojiPickerText}>{emoji}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    ) : null;
+
+  const renderReplyPreview = () =>
+    replyTo ? (
+      <View style={styles.replyPreview}>
+        <View style={styles.replyPreviewStripe} />
+        <View style={styles.replyPreviewCopy}>
+          <Text style={[styles.replyPreviewName, mine ? styles.replyPreviewNameMine : null]} numberOfLines={1}>
+            {replyTo.senderName}
+          </Text>
+          <Text style={[styles.replyPreviewSnippet, mine ? styles.replyPreviewSnippetMine : null]} numberOfLines={2}>
+            {replySource ? buildReplySnippet(replySource.body) : replyTo.snippet}
+          </Text>
+        </View>
+      </View>
+    ) : null;
+
+  const renderReactions = () =>
+    reactions.length > 0 ? (
+      <View style={styles.messageReactions}>
+        {reactions.map((reaction) => (
+          <TouchableOpacity key={`${item.id}_${reaction.emoji}`} style={styles.reactionChip} onPress={() => void onReact(item.id, reaction.emoji)}>
+            <Text style={styles.reactionChipEmoji}>{reaction.emoji}</Text>
+            <Text style={styles.reactionChipCount}>{reaction.count}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    ) : null;
 
   if (invite) {
     return (
       <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
-        <View style={[styles.messageActions, active ? styles.messageActionsVisible : null]}>
-          <TouchableOpacity style={styles.messageActionBtn}>
-            <Ionicons name="return-up-back-outline" size={13} color="#64748B" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.messageActionBtn}>
-            <Ionicons name="ellipsis-horizontal" size={13} color="#64748B" />
-          </TouchableOpacity>
-        </View>
+        {renderReactionPicker()}
+        {renderReplyPreview()}
         <View style={styles.callInviteCard}>
           <View style={styles.callInviteHeader}>
             <Ionicons
@@ -747,24 +875,46 @@ function MessageBubble({
             <Text style={[styles.callInviteButtonText, mine ? styles.callInviteButtonTextMine : null]}>Legacy call log</Text>
           </View>
         </View>
+        {renderReactions()}
+      </View>
+    );
+  }
+
+  if (documentPayload) {
+    return (
+      <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
+        {renderReactionPicker()}
+        {renderReplyPreview()}
+        <View style={styles.documentCard}>
+          <View style={styles.documentHeader}>
+            <View style={[styles.documentIconWrap, mine ? styles.documentIconWrapMine : null]}>
+              <Ionicons name="document-text-outline" size={18} color={mine ? "#1D4ED8" : "#2563EB"} />
+            </View>
+            <View style={styles.documentCopy}>
+              <Text style={[styles.documentName, mine ? styles.documentNameMine : null]} numberOfLines={1}>
+                {documentPayload.name}
+              </Text>
+              <Text style={[styles.documentMeta, mine ? styles.documentMetaMine : null]}>
+                {formatFileSize(documentPayload.size)} • {formatDocumentType(documentPayload.mimeType)}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={[styles.documentButton, mine ? styles.documentButtonMine : null]} onPress={() => void openDocumentPayload(documentPayload)}>
+            <Ionicons name="download-outline" size={15} color={mine ? "#1D4ED8" : "#FFFFFF"} />
+            <Text style={[styles.documentButtonText, mine ? styles.documentButtonTextMine : null]}>Open document</Text>
+          </TouchableOpacity>
+        </View>
+        {renderReactions()}
       </View>
     );
   }
 
   return (
     <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
-      <View style={[styles.messageActions, active ? styles.messageActionsVisible : null]}>
-        <TouchableOpacity style={styles.messageActionBtn}>
-          <Ionicons name="return-up-back-outline" size={13} color="#64748B" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.messageActionBtn}>
-          <Ionicons name="heart-outline" size={13} color="#64748B" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.messageActionBtn}>
-          <Ionicons name="ellipsis-horizontal" size={13} color="#64748B" />
-        </TouchableOpacity>
-      </View>
-      <Text style={[styles.messageBody, mine ? styles.messageBodyMine : styles.messageBodyOther]}>{item.body}</Text>
+      {renderReactionPicker()}
+      {renderReplyPreview()}
+      <Text style={[styles.messageBody, mine ? styles.messageBodyMine : styles.messageBodyOther]}>{formatTextMessage(normalizedBody)}</Text>
+      {renderReactions()}
     </View>
   );
 }
@@ -931,11 +1081,17 @@ function formatConversationTime(iso?: string | null) {
 
 function formatConversationPreview(body?: string | null) {
   if (!body) return "No messages yet";
-  const invite = parseLegacyCallInvite(body);
+  const reply = parseReplyMessage(body);
+  const normalizedBody = reply?.body ?? body;
+  const invite = parseLegacyCallInvite(normalizedBody);
   if (invite) {
     return invite.mode === "video" ? "Legacy video call invite" : "Legacy audio call invite";
   }
-  return body;
+  const reaction = parseReactionMessage(normalizedBody);
+  if (reaction) return `${reaction.emoji} reaction`;
+  const documentPayload = parseDocumentMessage(normalizedBody);
+  if (documentPayload) return `Document: ${documentPayload.name}`;
+  return formatTextMessage(normalizedBody);
 }
 
 function normalizeCallMode(value: unknown): CallMode {
@@ -1023,14 +1179,156 @@ function parseLegacyCallInvite(body?: string | null) {
   }
 }
 
-function getAvatarTone(index: number) {
-  const tones = ["blue", "green", "purple", "orange"] as const;
-  return tones[index % tones.length];
+function parseDocumentMessage(body?: string | null): ChatDocumentPayload | null {
+  if (!body?.startsWith(DOCUMENT_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(body.slice(DOCUMENT_PREFIX.length));
+    if (!parsed?.name || !parsed?.dataUrl) return null;
+    return {
+      name: String(parsed.name),
+      mimeType: String(parsed.mimeType || "application/octet-stream"),
+      size: Number(parsed.size || 0),
+      dataUrl: String(parsed.dataUrl),
+    };
+  } catch {
+    return null;
+  }
 }
 
-function shouldShowReaction(body: string) {
-  const value = body.toLowerCase();
-  return value.includes("done") || value.includes("received") || value.includes("ok") || value.includes("thanks");
+function parseReactionMessage(body?: string | null): ChatReactionPayload | null {
+  if (!body?.startsWith(REACTION_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(body.slice(REACTION_PREFIX.length));
+    if (!parsed?.messageId || !parsed?.emoji) return null;
+    return {
+      messageId: String(parsed.messageId),
+      emoji: String(parsed.emoji),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseReplyMessage(body?: string | null): ChatReplyEnvelope | null {
+  if (!body?.startsWith(REPLY_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(body.slice(REPLY_PREFIX.length));
+    if (!parsed?.replyTo?.messageId || typeof parsed?.body !== "string") return null;
+    return {
+      replyTo: {
+        messageId: String(parsed.replyTo.messageId),
+        senderName: String(parsed.replyTo.senderName || "Staff"),
+        snippet: String(parsed.replyTo.snippet || ""),
+      },
+      body: String(parsed.body),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getMessageBody(body: string) {
+  return parseReplyMessage(body)?.body ?? body;
+}
+
+function buildReactionsMap(rows: ChatMessageRow[]) {
+  const map: Record<string, Record<string, number>> = {};
+  rows.forEach((row) => {
+    const reaction = parseReactionMessage(row.body);
+    if (!reaction) return;
+    if (!map[reaction.messageId]) map[reaction.messageId] = {};
+    map[reaction.messageId][reaction.emoji] = (map[reaction.messageId][reaction.emoji] ?? 0) + 1;
+  });
+
+  return Object.fromEntries(
+    Object.entries(map).map(([messageId, reactions]) => [
+      messageId,
+      Object.entries(reactions).map(([emoji, count]) => ({ emoji, count })),
+    ]),
+  ) as Record<string, Array<{ emoji: string; count: number }>>;
+}
+
+function formatTextMessage(body: string) {
+  const normalizedBody = getMessageBody(body);
+  const documentPayload = parseDocumentMessage(normalizedBody);
+  if (documentPayload) return documentPayload.name;
+  const reaction = parseReactionMessage(normalizedBody);
+  if (reaction) return `${reaction.emoji} reaction`;
+  return normalizedBody;
+}
+
+function buildReplySnippet(body: string) {
+  const normalizedBody = getMessageBody(body);
+  const documentPayload = parseDocumentMessage(normalizedBody);
+  if (documentPayload) return `Document: ${documentPayload.name}`;
+  const invite = parseLegacyCallInvite(normalizedBody);
+  if (invite) return invite.mode === "video" ? "Video call invite" : "Audio call invite";
+  const reaction = parseReactionMessage(normalizedBody);
+  if (reaction) return `${reaction.emoji} reaction`;
+  return normalizedBody.length > 90 ? `${normalizedBody.slice(0, 90).trimEnd()}...` : normalizedBody;
+}
+
+function formatDocumentType(mimeType: string) {
+  if (mimeType.includes("pdf")) return "PDF";
+  if (mimeType.includes("word") || mimeType.includes("document")) return "DOC";
+  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "XLS";
+  if (mimeType.includes("text")) return "TXT";
+  return "Document";
+}
+
+function formatFileSize(size: number) {
+  if (!Number.isFinite(size) || size <= 0) return "Unknown size";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function pickDocumentFromWeb(): Promise<ChatDocumentPayload | null> {
+  return new Promise((resolve, reject) => {
+    if (typeof document === "undefined") {
+      resolve(null);
+      return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.doc,.docx,.txt,.rtf,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain";
+
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) {
+        resolve(null);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Unable to read the selected document."));
+      reader.onload = () =>
+        resolve({
+          name: file.name,
+          mimeType: file.type || "application/octet-stream",
+          size: file.size,
+          dataUrl: String(reader.result || ""),
+        });
+      reader.readAsDataURL(file);
+    };
+
+    input.click();
+  });
+}
+
+async function openDocumentPayload(payload: ChatDocumentPayload) {
+  if (Platform.OS === "web" && typeof document !== "undefined") {
+    const link = document.createElement("a");
+    link.href = payload.dataUrl;
+    link.download = payload.name;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.click();
+    return;
+  }
+
+  Alert.alert("Document", "Opening documents is currently available on web.");
 }
 
 function getAvatarInitials(name: string) {
@@ -1041,75 +1339,6 @@ function getAvatarInitials(name: string) {
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase() ?? "")
       .join("") || "TM"
-  );
-}
-
-function Avatar({
-  name,
-  theme,
-  size = 36,
-  square = false,
-  small = false,
-  tone = "blue",
-  presence,
-}: {
-  name: string;
-  theme: any;
-  size?: number;
-  square?: boolean;
-  small?: boolean;
-  tone?: "blue" | "green" | "purple" | "orange";
-  presence?: "online" | "away";
-}) {
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-
-  const tones = {
-    blue: { backgroundColor: "#EDF5FF", borderColor: "#CCDBF1", color: "#1D4ED8" },
-    green: { backgroundColor: "#EAFBF4", borderColor: "#BCEBD6", color: "#047857" },
-    purple: { backgroundColor: "#F3EDFF", borderColor: "#DED2FF", color: "#7C3AED" },
-    orange: { backgroundColor: "#FFF7ED", borderColor: "#FED7AA", color: "#EA580C" },
-  } as const;
-  const palette = tones[tone];
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: square ? Math.max(11, size * 0.36) : size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: palette.borderColor,
-        backgroundColor: small ? "#F8FBFF" : palette.backgroundColor,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <Text style={{ fontWeight: "900", color: palette.color, fontSize: Math.max(9, size * 0.28) }}>
-        {initials || "?"}
-      </Text>
-      {!!presence && (
-        <View
-          style={{
-            position: "absolute",
-            right: 2,
-            bottom: 2,
-            width: Math.max(9, size * 0.26),
-            height: Math.max(9, size * 0.26),
-            borderRadius: 999,
-            borderWidth: 2,
-            borderColor: "#FFFFFF",
-            backgroundColor: presence === "online" ? "#22C55E" : "#F59E0B",
-          }}
-        />
-      )}
-    </View>
   );
 }
 
@@ -1298,15 +1527,6 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-    },
-    statusDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 999,
-      backgroundColor: "#22C55E",
-    },
-    statusDotAway: {
-      backgroundColor: "#F59E0B",
     },
     personStatus: {
       color: "#64748B",
@@ -1688,9 +1908,7 @@ const createStyles = (theme: any) =>
       fontWeight: "900",
     },
     messageRow: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      gap: 8,
+      alignItems: "stretch",
       marginVertical: 8,
     },
     messageRowMine: {
@@ -1708,11 +1926,14 @@ const createStyles = (theme: any) =>
       marginLeft: "auto",
     },
     senderLabel: {
-      marginBottom: 4,
-      marginLeft: 4,
+      marginBottom: 6,
       color: "#64748B",
       fontSize: 11,
       fontWeight: "900",
+    },
+    senderLabelMine: {
+      marginRight: 4,
+      textAlign: "right",
     },
     messageBubble: {
       borderRadius: 18,
@@ -1795,27 +2016,74 @@ const createStyles = (theme: any) =>
     },
     messageActions: {
       position: "absolute",
-      top: -14,
-      right: 10,
+      top: -18,
+      right: 0,
       flexDirection: "row",
       alignItems: "center",
-      gap: 4,
-      opacity: 0,
-      padding: 3,
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
       borderRadius: 999,
       borderWidth: 1,
       borderColor: "#DCE7F5",
       backgroundColor: "#FFFFFF",
     },
+    replyActionBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 999,
+      backgroundColor: "#EDF5FF",
+      alignItems: "center",
+      justifyContent: "center",
+    },
     messageActionsVisible: {
       opacity: 1,
     },
-    messageActionBtn: {
-      width: 24,
-      height: 24,
+    emojiPickerBtn: {
+      minWidth: 28,
+      height: 28,
       borderRadius: 999,
       alignItems: "center",
       justifyContent: "center",
+    },
+    emojiPickerText: {
+      fontSize: 14,
+    },
+    replyPreview: {
+      flexDirection: "row",
+      alignItems: "stretch",
+      gap: 10,
+      marginBottom: 10,
+      padding: 10,
+      borderRadius: 12,
+      backgroundColor: "rgba(255,255,255,0.54)",
+    },
+    replyPreviewStripe: {
+      width: 3,
+      borderRadius: 999,
+      backgroundColor: "#2563EB",
+    },
+    replyPreviewCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    replyPreviewName: {
+      color: "#1D4ED8",
+      fontSize: 11,
+      fontWeight: "900",
+    },
+    replyPreviewNameMine: {
+      color: "#15315D",
+    },
+    replyPreviewSnippet: {
+      marginTop: 2,
+      color: "#475569",
+      fontSize: 11,
+      fontWeight: "700",
+      lineHeight: 16,
+    },
+    replyPreviewSnippetMine: {
+      color: "#274472",
     },
     messageMeta: {
       marginTop: 5,
@@ -1832,19 +2100,97 @@ const createStyles = (theme: any) =>
       fontSize: 10.5,
       fontWeight: "900",
     },
-    reactionPill: {
-      marginTop: -3,
-      marginLeft: 10,
-      paddingHorizontal: 7,
-      paddingVertical: 3,
+    messageReactions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      marginTop: 10,
+    },
+    reactionChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
       borderRadius: 999,
+      backgroundColor: "rgba(255,255,255,0.82)",
       borderWidth: 1,
       borderColor: "#DCE7F5",
-      backgroundColor: "#FFFFFF",
       alignSelf: "flex-start",
     },
-    reactionText: {
+    reactionChipEmoji: {
       fontSize: 12,
+    },
+    reactionChipCount: {
+      color: "#475569",
+      fontSize: 11,
+      fontWeight: "900",
+    },
+    documentCard: {
+      minWidth: 220,
+      gap: 12,
+    },
+    documentHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    documentIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor: "#EFF6FF",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    documentIconWrapMine: {
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#A9CFFF",
+    },
+    documentCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    documentName: {
+      color: "#1F2937",
+      fontSize: 14,
+      fontWeight: "900",
+    },
+    documentNameMine: {
+      color: "#15315D",
+    },
+    documentMeta: {
+      marginTop: 3,
+      color: "#475569",
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    documentMetaMine: {
+      color: "#274472",
+    },
+    documentButton: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 12,
+      backgroundColor: "#2563EB",
+    },
+    documentButtonMine: {
+      backgroundColor: "#FFFFFF",
+      borderWidth: 1,
+      borderColor: "#A9CFFF",
+    },
+    documentButtonText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "900",
+    },
+    documentButtonTextMine: {
+      color: "#1D4ED8",
     },
     emptyState: {
       alignItems: "center",
@@ -1913,6 +2259,9 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       justifyContent: "center",
     },
+    composerIconDisabled: {
+      opacity: 0.45,
+    },
     composerField: {
       flex: 1,
       minHeight: 46,
@@ -1922,9 +2271,44 @@ const createStyles = (theme: any) =>
       borderColor: "#DCE7F5",
       backgroundColor: "#F6F9FD",
       paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    replyComposerCard: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: 10,
+      marginBottom: 8,
+      padding: 10,
+      borderRadius: 14,
+      backgroundColor: "#EAF2FF",
+    },
+    replyComposerStripe: {
+      width: 3,
+      alignSelf: "stretch",
+      borderRadius: 999,
+      backgroundColor: "#2563EB",
+    },
+    replyComposerCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    replyComposerLabel: {
+      color: "#1D4ED8",
+      fontSize: 11,
+      fontWeight: "900",
+    },
+    replyComposerSnippet: {
+      marginTop: 2,
+      color: "#475569",
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    replyComposerClose: {
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
     },
     input: {
       flex: 1,
