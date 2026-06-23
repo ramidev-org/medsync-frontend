@@ -5,136 +5,531 @@ import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
-type RowProps = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+type SettingsTabKey =
+  | "profile"
+  | "general"
+  | "preferences"
+  | "applications"
+  | "workspace"
+  | "members"
+  | "upgrade"
+  | "security"
+  | "billing";
+
+type SidebarItem = {
+  key: SettingsTabKey;
   label: string;
-  subtitle: string;
-  onPress: () => void | Promise<void>;
-  danger?: boolean;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  section: "account" | "workspace";
+};
+
+type ToggleRowProps = {
+  title: string;
+  description: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
   theme: any;
 };
 
-function ActionRow({ icon, label, subtitle, onPress, danger = false, theme }: RowProps) {
+type ChoiceRowProps = {
+  title: string;
+  description: string;
+  value: string;
+  theme: any;
+};
+
+type LinkRowProps = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onPress: () => void;
+  theme: any;
+};
+
+function ToggleRow({ title, description, value, onValueChange, theme }: ToggleRowProps) {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.row, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-      <View style={[styles.rowIcon, { backgroundColor: danger ? "rgba(220,38,38,0.10)" : "#EFF6FF" }]}>
-        <Ionicons name={icon} size={18} color={danger ? theme.colors.error : "#1D4ED8"} />
+    <View style={styles.prefRow}>
+      <View style={styles.prefCopy}>
+        <Text style={[styles.prefTitle, { color: theme.colors.text }]}>{title}</Text>
+        <Text style={[styles.prefDesc, { color: theme.colors.textSecondary }]}>{description}</Text>
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.rowLabel, { color: danger ? theme.colors.error : theme.colors.text }]}>{label}</Text>
-        <Text style={[styles.rowSub, { color: theme.colors.textSecondary }]}>{subtitle}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
-    </TouchableOpacity>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: theme.colors.border, true: "#BCD3FF" }}
+        thumbColor={value ? theme.colors.primary : "#FFFFFF"}
+      />
+    </View>
   );
+}
+
+function ChoiceRow({ title, description, value, theme }: ChoiceRowProps) {
+  return (
+    <View style={styles.prefRow}>
+      <View style={styles.prefCopy}>
+        <Text style={[styles.prefTitle, { color: theme.colors.text }]}>{title}</Text>
+        <Text style={[styles.prefDesc, { color: theme.colors.textSecondary }]}>{description}</Text>
+      </View>
+      <View style={[styles.choicePill, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <Text style={[styles.choiceText, { color: theme.colors.textSecondary }]}>{value}</Text>
+        <Ionicons name="chevron-down" size={14} color={theme.colors.textSecondary} />
+      </View>
+    </View>
+  );
+}
+
+function LinkRow({ title, description, actionLabel, onPress, theme }: LinkRowProps) {
+  return (
+    <View style={styles.prefRow}>
+      <View style={styles.prefCopy}>
+        <Text style={[styles.prefTitle, { color: theme.colors.text }]}>{title}</Text>
+        <Text style={[styles.prefDesc, { color: theme.colors.textSecondary }]}>{description}</Text>
+      </View>
+      <TouchableOpacity onPress={onPress} style={[styles.linkButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.linkButtonText, { color: theme.colors.primary }]}>{actionLabel}</Text>
+        <Ionicons name="arrow-forward" size={14} color={theme.colors.primary} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function SectionCard({ children, theme }: { children: React.ReactNode; theme: any }) {
+  return <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>{children}</View>;
 }
 
 export default function SettingsPage() {
   const { theme } = useTheme();
-  const { user, logout } = useAuth();
+  const stylesMemo = React.useMemo(() => createStyles(theme), [theme]);
+  const { logout, user } = useAuth();
   const { clinic, isClinicAdmin, subscription } = useAppData();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 980;
 
-  const expiresAtLabel = React.useMemo(() => {
-    const iso = subscription?.expires_at;
-    if (!iso) return "-";
-    try {
-      return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(iso));
-    } catch {
-      return String(iso);
+  const [activeTab, setActiveTab] = React.useState<SettingsTabKey>("general");
+  const [dailyProductivity, setDailyProductivity] = React.useState(true);
+  const [newEventCreated, setNewEventCreated] = React.useState(true);
+  const [newTeamAdded, setNewTeamAdded] = React.useState(true);
+  const [mobilePush, setMobilePush] = React.useState(true);
+  const [desktopNotification, setDesktopNotification] = React.useState(true);
+  const [emailNotification, setEmailNotification] = React.useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = React.useState(true);
+  const [compactTables, setCompactTables] = React.useState(false);
+  const [autoRefresh, setAutoRefresh] = React.useState(true);
+  const [appBadges, setAppBadges] = React.useState(true);
+  const [sessionAlerts, setSessionAlerts] = React.useState(true);
+
+  const sidebarItems = React.useMemo<SidebarItem[]>(
+    () => [
+      { key: "profile", label: "My Profile", icon: "person-outline", section: "account" },
+      { key: "general", label: "General", icon: "home-outline", section: "account" },
+      { key: "preferences", label: "Preferences", icon: "options-outline", section: "account" },
+      { key: "applications", label: "Applications", icon: "apps-outline", section: "account" },
+      { key: "workspace", label: "Settings", icon: "settings-outline", section: "workspace" },
+      { key: "members", label: "Members", icon: "people-outline", section: "workspace" },
+      { key: "upgrade", label: "Upgrade", icon: "diamond-outline", section: "workspace" },
+      { key: "security", label: "Security", icon: "shield-checkmark-outline", section: "workspace" },
+      { key: "billing", label: "Billing", icon: "card-outline", section: "workspace" },
+    ],
+    [],
+  );
+
+  const tabLabel = React.useMemo(() => sidebarItems.find((item) => item.key === activeTab)?.label ?? "General", [activeTab, sidebarItems]);
+
+  const renderSidebarItem = (item: SidebarItem) => {
+    const active = item.key === activeTab;
+    return (
+      <TouchableOpacity
+        key={item.key}
+        onPress={() => setActiveTab(item.key)}
+        style={[
+          stylesMemo.sidebarItem,
+          active ? { backgroundColor: theme.colors.surfaceVariant || "#F3F7FF" } : null,
+        ]}
+      >
+        <Ionicons name={item.icon} size={15} color={active ? theme.colors.text : theme.colors.textSecondary} />
+        <Text
+          style={[
+            stylesMemo.sidebarItemText,
+            { color: active ? theme.colors.text : theme.colors.textSecondary },
+            active ? stylesMemo.sidebarItemTextActive : null,
+          ]}
+        >
+          {item.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderGeneralContent = () => (
+    <SectionCard theme={theme}>
+      <View style={stylesMemo.sectionBlock}>
+        <View style={stylesMemo.sectionHeadingRow}>
+          <View>
+            <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>My Notifications</Text>
+            <Text style={[stylesMemo.sectionSubheading, { color: theme.colors.textSecondary }]}>Notify me when...</Text>
+          </View>
+          <TouchableOpacity>
+            <Text style={[stylesMemo.helpLink, { color: theme.colors.primary }]}>About notifications?</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={stylesMemo.checkList}>
+          <TouchableOpacity style={stylesMemo.checkItem} onPress={() => setDailyProductivity((v) => !v)}>
+            <Ionicons name={dailyProductivity ? "checkbox" : "square-outline"} size={17} color={theme.colors.primary} />
+            <Text style={[stylesMemo.checkText, { color: theme.colors.textSecondary }]}>Daily productivity update</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={stylesMemo.checkItem} onPress={() => setNewEventCreated((v) => !v)}>
+            <Ionicons name={newEventCreated ? "checkbox" : "square-outline"} size={17} color={theme.colors.primary} />
+            <Text style={[stylesMemo.checkText, { color: theme.colors.textSecondary }]}>New event created</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={stylesMemo.checkItem} onPress={() => setNewTeamAdded((v) => !v)}>
+            <Ionicons name={newTeamAdded ? "checkbox" : "square-outline"} size={17} color={theme.colors.primary} />
+            <Text style={[stylesMemo.checkText, { color: theme.colors.textSecondary }]}>When added on new team</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ToggleRow title="Mobile push notifications" description="Receive push notification whenever your organisation requires your attention." value={mobilePush} onValueChange={setMobilePush} theme={theme} />
+        <ToggleRow title="Desktop notification" description="Receive desktop notification whenever your organisation requires your attention." value={desktopNotification} onValueChange={setDesktopNotification} theme={theme} />
+        <ToggleRow title="Email notification" description="Receive email whenever your organisation requires your attention." value={emailNotification} onValueChange={setEmailNotification} theme={theme} />
+      </View>
+
+      <View style={[stylesMemo.sectionDivider, { backgroundColor: theme.colors.border }]} />
+
+      <View style={stylesMemo.sectionBlock}>
+        <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>My Settings</Text>
+        <ChoiceRow title="Appearance" description="Customize how the theme looks on your device." value="Light" theme={theme} />
+        <ToggleRow title="Two-factor authentication" description="Keep your account secure by enabling 2FA via SMS or using a temporary one-time passcode (TOTP)." value={twoFactorEnabled} onValueChange={setTwoFactorEnabled} theme={theme} />
+        <ChoiceRow title="Language" description="Choose the language used across your workspace." value="English" theme={theme} />
+      </View>
+    </SectionCard>
+  );
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "profile":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>My Profile</Text>
+              <LinkRow title="Profile details" description={`Manage name, username, avatar color, and professional details for ${user?.fullname || "your account"}.`} actionLabel="Open profile" onPress={() => router.push("/profile")} theme={theme} />
+              <ChoiceRow title="Role" description="Your current role inside the clinic workspace." value={`${String(user?.user_type ?? "assistant")}${isClinicAdmin ? " admin" : ""}`} theme={theme} />
+              <ChoiceRow title="Clinic" description="The clinic currently linked to this account." value={clinic?.name ? String(clinic.name) : "No clinic"} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "preferences":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Preferences</Text>
+              <ToggleRow title="Compact data tables" description="Reduce row height across lists and workspace tables." value={compactTables} onValueChange={setCompactTables} theme={theme} />
+              <ToggleRow title="Auto refresh dashboards" description="Refresh dashboard widgets and counts automatically while you work." value={autoRefresh} onValueChange={setAutoRefresh} theme={theme} />
+              <ChoiceRow title="Default calendar view" description="Choose how schedules should open when visiting the calendar page." value="Week" theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "applications":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Applications</Text>
+              <ToggleRow title="Unread badges" description="Show unread counters for key areas such as notifications and chat." value={appBadges} onValueChange={setAppBadges} theme={theme} />
+              <ToggleRow title="Session alerts" description="Warn when another login or sensitive account action is detected." value={sessionAlerts} onValueChange={setSessionAlerts} theme={theme} />
+              <LinkRow title="Notification center" description="Review the full list of alerts and operational updates." actionLabel="Open notifications" onPress={() => router.push("/notifications")} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "workspace":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Workspace Settings</Text>
+              <LinkRow title="Practice settings" description="Update clinic identity, business details, and workspace information." actionLabel="Open practice" onPress={() => router.push("/settings-practice")} theme={theme} />
+              <ChoiceRow title="Current clinic" description="The active workspace connected to your account." value={clinic?.name ? String(clinic.name) : "No clinic"} theme={theme} />
+              <ChoiceRow title="Workspace mode" description="Current workspace access level used inside the clinic." value={isClinicAdmin ? "Clinic admin" : "Standard staff"} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "members":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Members</Text>
+              <LinkRow title="Clinic staff" description="Manage team members, staff access, and invitations." actionLabel="Open staff" onPress={() => router.push(isClinicAdmin ? "/users" : "/profile")} theme={theme} />
+              <ChoiceRow title="Admin access" description="Whether this account can manage clinic-level settings and staff." value={isClinicAdmin ? "Enabled" : "Not enabled"} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "upgrade":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Upgrade</Text>
+              <ChoiceRow title="Current plan" description="Active plan tied to your clinic subscription." value={String(subscription?.tier_plan || clinic?.tier_plan || "basic")} theme={theme} />
+              <ChoiceRow title="Subscription status" description="Current billing and access state." value={String(subscription?.status || "missing").replace(/_/g, " ")} theme={theme} />
+              <LinkRow title="Plan management" description="Review plan limits, renewal details, and billing options." actionLabel="Open subscription" onPress={() => router.push("/settings-subscription")} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "security":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Security</Text>
+              <ToggleRow title="Two-factor authentication" description="Keep your account more secure with an additional verification step." value={twoFactorEnabled} onValueChange={setTwoFactorEnabled} theme={theme} />
+              <LinkRow title="Security settings page" description="Open the full security workspace for password and session-related controls." actionLabel="Open security" onPress={() => router.push("/settings-security")} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "billing":
+        return (
+          <SectionCard theme={theme}>
+            <View style={stylesMemo.sectionBlock}>
+              <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Billing</Text>
+              <ChoiceRow title="Plan" description="Current clinic subscription plan." value={String(subscription?.tier_plan || clinic?.tier_plan || "basic")} theme={theme} />
+              <ChoiceRow title="Status" description="Billing state for the active subscription." value={String(subscription?.status || "missing").replace(/_/g, " ")} theme={theme} />
+              <LinkRow title="Billing workspace" description="Open subscription and billing details for renewals and plan review." actionLabel="Open billing" onPress={() => router.push("/settings-subscription")} theme={theme} />
+            </View>
+          </SectionCard>
+        );
+      case "general":
+      default:
+        return renderGeneralContent();
     }
-  }, [subscription?.expires_at]);
+  };
 
   return (
-    <PageShell scrollable={false} contentStyle={{ flex: 1, paddingTop: 14 }}>
-      <ScrollView contentContainerStyle={{ gap: 14, paddingBottom: 14 }}>
-        <View style={[styles.heroCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-          <View style={styles.brandPill}>
-            <Ionicons name="settings-outline" size={15} color="#1D4ED8" />
-            <Text style={styles.brandText}>MedSync</Text>
-          </View>
-          <Text style={[styles.heroTitle, { color: theme.colors.text }]}>Settings workspace</Text>
-          <Text style={[styles.heroSub, { color: theme.colors.textSecondary }]}>Configure clinic, subscription, security, and account controls.</Text>
+    <PageShell scrollable={false} contentStyle={{ flex: 1, paddingTop: 12 }}>
+      <View style={[stylesMemo.page, isCompact && stylesMemo.pageCompact]}>
+        <View
+          style={[
+            stylesMemo.sidebar,
+            isCompact ? stylesMemo.sidebarCompact : null,
+            {
+              borderRightWidth: isCompact ? 0 : 1,
+              borderBottomWidth: isCompact ? 1 : 0,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <Text style={[stylesMemo.sidebarCaption, { color: theme.colors.textSecondary }]}>ACCOUNT</Text>
+          {sidebarItems.filter((item) => item.section === "account").map(renderSidebarItem)}
+
+          <View style={[stylesMemo.sidebarDivider, { backgroundColor: theme.colors.border }]} />
+
+          <Text style={[stylesMemo.sidebarCaption, { color: theme.colors.textSecondary }]}>WORKSPACE</Text>
+          {sidebarItems.filter((item) => item.section === "workspace").map(renderSidebarItem)}
+
+          <View style={[stylesMemo.sidebarDivider, { backgroundColor: theme.colors.border }]} />
+
+          <TouchableOpacity onPress={() => void logout()} style={stylesMemo.logoutItem}>
+            <Ionicons name="log-out-outline" size={15} color={theme.colors.error} />
+            <Text style={[stylesMemo.sidebarItemText, { color: theme.colors.error }]}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.statGrid}>
-          <View style={[styles.statCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-            <Text style={styles.statLabel}>Plan</Text>
-            <Text style={[styles.statValue, { color: theme.colors.text }]}>{subscription?.tier_plan || clinic?.tier_plan || "basic"}</Text>
+        <ScrollView style={stylesMemo.contentScroll} contentContainerStyle={stylesMemo.contentInner} showsVerticalScrollIndicator={false}>
+          <View style={[stylesMemo.breadcrumbRow, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[stylesMemo.breadcrumbTitle, { color: theme.colors.text }]}>Settings</Text>
+            <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
+            <Text style={[stylesMemo.breadcrumbCurrent, { color: theme.colors.textSecondary }]}>{tabLabel}</Text>
           </View>
-          <View style={[styles.statCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-            <Text style={styles.statLabel}>Status</Text>
-            <Text style={[styles.statValue, { color: theme.colors.text }]}>{subscription?.status || "missing"}</Text>
-          </View>
-          <View style={[styles.statCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-            <Text style={styles.statLabel}>Expiry</Text>
-            <Text style={[styles.statValue, { color: theme.colors.text }]}>{expiresAtLabel}</Text>
-          </View>
-        </View>
 
-        <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account & Clinic</Text>
-          <ActionRow icon="person-circle-outline" label="Profile" subtitle={`Current role: ${String(user?.user_type ?? "assistant")}${isClinicAdmin ? " (admin)" : ""}`} onPress={() => router.push("/profile")} theme={theme} />
-          <ActionRow icon="business-outline" label="Practice Settings" subtitle="Identity, address, and cabinet profile" onPress={() => router.push("/settings-practice")} theme={theme} />
-          {!!isClinicAdmin && <ActionRow icon="people-outline" label="Clinic Staff" subtitle="Manage users and invites" onPress={() => router.push("/users")} theme={theme} />}
-        </View>
-
-        <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Platform Settings</Text>
-          <ActionRow icon="receipt-outline" label="Subscription Settings" subtitle="Plan limits, status, and renewal details" onPress={() => router.push("/settings-subscription")} theme={theme} />
-          <ActionRow icon="cloud-outline" label="Data & Backup Settings" subtitle="Export and backup controls" onPress={() => router.push("/settings-data")} theme={theme} />
-          <ActionRow icon="shield-checkmark-outline" label="Security Settings" subtitle="Password and session security policies" onPress={() => router.push("/settings-security")} theme={theme} />
-          <ActionRow icon="notifications-outline" label="Notifications Page" subtitle="Open full notifications list" onPress={() => router.push("/notifications")} theme={theme} />
-        </View>
-
-        <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Session</Text>
-          <ActionRow icon="log-out-outline" label="Sign Out" subtitle="End current session on this device" onPress={logout} danger theme={theme} />
-        </View>
-      </ScrollView>
+          {renderTabContent()}
+        </ScrollView>
+      </View>
     </PageShell>
   );
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 18,
-    gap: 8,
-  },
-  brandPill: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  brandText: { color: "#1D4ED8", fontWeight: "800", fontSize: 12 },
-  heroTitle: { fontWeight: "900", fontSize: 26, letterSpacing: -0.3 },
-  heroSub: { fontWeight: "700", fontSize: 13 },
-  statGrid: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
-  statCard: { flexGrow: 1, minWidth: 180, borderWidth: 1, borderRadius: 16, padding: 12 },
-  statLabel: { color: "#64748B", fontWeight: "800", fontSize: 12 },
-  statValue: { marginTop: 4, fontWeight: "900", fontSize: 15 },
-  sectionCard: { borderWidth: 1, borderRadius: 20, padding: 14, gap: 8 },
-  sectionTitle: { fontWeight: "900", fontSize: 16, marginBottom: 2 },
-  row: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  rowIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  rowLabel: { fontWeight: "900" },
-  rowSub: { marginTop: 2, fontWeight: "700", fontSize: 12 },
+  prefRow: {},
+  prefCopy: {},
+  prefTitle: {},
+  prefDesc: {},
+  choicePill: {},
+  choiceText: {},
+  linkButton: {},
+  linkButtonText: {},
+  sectionCard: {},
 });
 
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    page: {
+      flex: 1,
+      flexDirection: "row",
+      gap: 18,
+    },
+    pageCompact: {
+      flexDirection: "column",
+      gap: 12,
+    },
+    sidebar: {
+      width: 185,
+      paddingTop: 10,
+      paddingRight: 14,
+    },
+    sidebarCompact: {
+      width: "100%",
+      paddingRight: 0,
+      paddingBottom: 10,
+    },
+    sidebarCaption: {
+      fontSize: 10,
+      fontWeight: "800",
+      marginBottom: 8,
+      letterSpacing: 0.5,
+    },
+    sidebarDivider: {
+      height: 1,
+      marginVertical: 12,
+    },
+    sidebarItem: {
+      height: 36,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 4,
+    },
+    sidebarItemText: {
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    sidebarItemTextActive: {
+      fontWeight: "800",
+    },
+    logoutItem: {
+      height: 36,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    contentScroll: {
+      flex: 1,
+    },
+    contentInner: {
+      paddingBottom: 24,
+    },
+    breadcrumbRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingBottom: 18,
+      marginBottom: 22,
+      borderBottomWidth: 1,
+    },
+    breadcrumbTitle: {
+      fontSize: 28,
+      fontWeight: "800",
+    },
+    breadcrumbCurrent: {
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    sectionCard: {
+      borderWidth: 1,
+      borderRadius: 20,
+      padding: 20,
+    },
+    sectionBlock: {
+      gap: 14,
+    },
+    sectionHeadingRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
+      flexWrap: "wrap",
+    },
+    sectionHeading: {
+      fontSize: 26,
+      fontWeight: "800",
+    },
+    sectionSubheading: {
+      marginTop: 6,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    helpLink: {
+      fontSize: 13,
+      fontWeight: "700",
+      marginTop: 4,
+    },
+    checkList: {
+      gap: 10,
+      paddingBottom: 10,
+    },
+    checkItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    checkText: {
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    prefRow: {
+      minHeight: 72,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 16,
+      paddingVertical: 10,
+    },
+    prefCopy: {
+      flex: 1,
+    },
+    prefTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    prefDesc: {
+      marginTop: 5,
+      fontSize: 13,
+      fontWeight: "500",
+      lineHeight: 19,
+      maxWidth: 760,
+    },
+    choicePill: {
+      minWidth: 102,
+      height: 36,
+      borderRadius: 10,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+    },
+    choiceText: {
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    linkButton: {
+      minWidth: 120,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    linkButtonText: {
+      fontSize: 13,
+      fontWeight: "800",
+    },
+    sectionDivider: {
+      height: 1,
+      marginVertical: 24,
+    },
+  });

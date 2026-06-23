@@ -11,7 +11,15 @@ import {
   type CallInvitePayload,
   type CallMode,
 } from "@/services/calling";
-import { getConversations, getMessages, sendMessage } from "@/services/chats.services";
+import {
+  getChatDocumentUrl,
+  getConversationReadAt,
+  getConversations,
+  getMessages,
+  markConversationRead,
+  sendMessage,
+  uploadChatDocument,
+} from "@/services/chats.services";
 import type { ChatMessageRow, ConversationRow } from "@/services/backend.types";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,7 +50,10 @@ type ChatDocumentPayload = {
   name: string;
   mimeType: string;
   size: number;
-  dataUrl: string;
+  dataUrl?: string;
+  bucket?: string;
+  path?: string;
+  url?: string;
 };
 
 type ChatReactionPayload = {
@@ -64,8 +75,7 @@ type ChatReplyEnvelope = {
 const DOCUMENT_PREFIX = "[medsync-doc]";
 const REACTION_PREFIX = "[medsync-reaction]";
 const REPLY_PREFIX = "[medsync-reply]";
-const REACTION_OPTIONS = ["\u{1F44D}", "\u2764\uFE0F", "\u{1F602}", "\u{1F60E}", "\u{1F680}"];
-const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
 
 export default function ChatConversationPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -78,7 +88,9 @@ export default function ChatConversationPage() {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
   const messagesRef = React.useRef<ScrollView | null>(null);
   const groupOffsetsRef = React.useRef<Record<string, number>>({});
+  const messageOffsetsRef = React.useRef<Record<string, number>>({});
   const floatingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const highlightTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldStickToBottomRef = React.useRef(true);
   const presenceChannelRef = React.useRef<ReturnType<typeof db.channel> | null>(null);
   const incomingChannelRef = React.useRef<ReturnType<typeof db.channel> | null>(null);
@@ -93,6 +105,8 @@ export default function ChatConversationPage() {
   const [floatingDate, setFloatingDate] = React.useState("Today");
   const [showFloatingDate, setShowFloatingDate] = React.useState(false);
   const [activeMessageId, setActiveMessageId] = React.useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = React.useState<string | null>(null);
+  const [isDragActive, setIsDragActive] = React.useState(false);
   const [replyingTo, setReplyingTo] = React.useState<ChatReplyPayload | null>(null);
   const [incomingCallInvite, setIncomingCallInvite] = React.useState<CallInvitePayload | null>(null);
   const [onlineUserIds, setOnlineUserIds] = React.useState<string[]>([]);
@@ -188,7 +202,6 @@ export default function ChatConversationPage() {
   }, [allConversations, searchQuery, user?.id]);
 
   const visibleRows = React.useMemo(() => rows.filter((row) => !parseReactionMessage(row.body)), [rows]);
-  const reactionsByMessage = React.useMemo(() => buildReactionsMap(rows), [rows]);
   const messageLookup = React.useMemo(
     () => Object.fromEntries(visibleRows.map((row) => [row.id, row])),
     [visibleRows],
@@ -210,10 +223,44 @@ export default function ChatConversationPage() {
       if (floatingTimerRef.current) {
         clearTimeout(floatingTimerRef.current);
       }
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
       presenceChannelRef.current?.unsubscribe();
       incomingChannelRef.current?.unsubscribe();
     };
   }, []);
+
+  React.useEffect(() => {
+    if (!user?.id || !conversationId || visibleRows.length === 0) return;
+    const latestVisibleMessage = visibleRows[visibleRows.length - 1];
+    const readAt = latestVisibleMessage?.created_at ?? new Date().toISOString();
+    void markConversationRead({
+      requesterId: user.id,
+      conversationId,
+      readAt,
+    });
+    setAllConversations((prev) =>
+      prev.map((item) =>
+        item.id === conversationId
+          ? {
+              ...item,
+              unread_count: 0,
+              last_read_at: readAt,
+            }
+          : item,
+      ),
+    );
+    setConversation((prev) =>
+      prev && prev.id === conversationId
+        ? {
+            ...prev,
+            unread_count: 0,
+            last_read_at: readAt,
+          }
+        : prev,
+    );
+  }, [conversationId, user?.id, visibleRows]);
 
   React.useEffect(() => {
     if (!user?.id || !user?.clinic_id) return;
@@ -338,6 +385,26 @@ export default function ChatConversationPage() {
     await sendBody(body);
   }, [sendBody, text]);
 
+  const uploadSelectedDocument = React.useCallback(async (file: File) => {
+    if (!user?.id || !user?.clinic_id) {
+      Alert.alert("Documents", "Your account is missing clinic access for uploads.");
+      return;
+    }
+
+    if (file.size > MAX_DOCUMENT_BYTES) {
+      Alert.alert("Document too large", "Please choose a file smaller than 5 MB.");
+      return;
+    }
+
+    const uploaded = await uploadChatDocument({
+      clinicId: user.clinic_id,
+      conversationId,
+      requesterId: user.id,
+      file,
+    });
+    await sendBody(`${DOCUMENT_PREFIX}${JSON.stringify(uploaded)}`);
+  }, [conversationId, sendBody, user?.clinic_id, user?.id]);
+
   const onPickDocument = React.useCallback(async () => {
     if (Platform.OS !== "web") {
       Alert.alert("Documents", "Document sending is currently available on web.");
@@ -345,22 +412,13 @@ export default function ChatConversationPage() {
     }
 
     try {
-      const payload = await pickDocumentFromWeb();
-      if (!payload) return;
-      if (payload.size > MAX_DOCUMENT_BYTES) {
-        Alert.alert("Document too large", "Please choose a document smaller than 2 MB.");
-        return;
-      }
-      await sendBody(`${DOCUMENT_PREFIX}${JSON.stringify(payload)}`);
+      const file = await pickDocumentFromWeb();
+      if (!file) return;
+      await uploadSelectedDocument(file);
     } catch (error: any) {
       Alert.alert("Documents", error?.message || "Unable to attach this document.");
     }
-  }, [sendBody]);
-
-  const onReactToMessage = React.useCallback(async (messageId: string, emoji: string) => {
-    await sendBody(`${REACTION_PREFIX}${JSON.stringify({ messageId, emoji } satisfies ChatReactionPayload)}`);
-    setActiveMessageId(null);
-  }, [sendBody]);
+  }, [uploadSelectedDocument]);
 
   const onReplyToMessage = React.useCallback((message: ChatMessageRow) => {
     setReplyingTo({
@@ -370,6 +428,51 @@ export default function ChatConversationPage() {
     });
     setActiveMessageId(null);
   }, [user?.id]);
+
+  const onJumpToMessage = React.useCallback((messageId: string) => {
+    const offset = messageOffsetsRef.current[messageId];
+    if (typeof offset !== "number") {
+      Alert.alert("Reply", "The original message is not in the loaded history yet.");
+      return;
+    }
+    messagesRef.current?.scrollTo({
+      y: Math.max(offset - 120, 0),
+      animated: true,
+    });
+    setHighlightedMessageId(messageId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightedMessageId(null), 2200);
+  }, []);
+
+  const webDropProps =
+    Platform.OS === "web"
+      ? ({
+          onDragOver: (event: any) => {
+            event.preventDefault?.();
+            if (!isDragActive) setIsDragActive(true);
+          },
+          onDragEnter: (event: any) => {
+            event.preventDefault?.();
+            setIsDragActive(true);
+          },
+          onDragLeave: (event: any) => {
+            if (event?.currentTarget === event?.target) {
+              setIsDragActive(false);
+            }
+          },
+          onDrop: async (event: any) => {
+            event.preventDefault?.();
+            setIsDragActive(false);
+            const file = event?.dataTransfer?.files?.[0] as File | undefined;
+            if (!file) return;
+            try {
+              await uploadSelectedDocument(file);
+            } catch (error: any) {
+              Alert.alert("Documents", error?.message || "Unable to attach this document.");
+            }
+          },
+        } as any)
+      : {};
 
   const startCall = React.useCallback(
     async () => {
@@ -522,13 +625,6 @@ export default function ChatConversationPage() {
         <View style={styles.page}>
           {isWideWeb && (
             <View style={styles.sidebar}>
-              <View style={styles.brandPill}>
-                <Ionicons name="chatbubbles-outline" size={14} color="#2563EB" />
-                <Text style={styles.brandPillText}>MedSync Chat</Text>
-              </View>
-              <Text style={styles.sidebarTitle}>Chats</Text>
-              <Text style={styles.sidebarSub}>Recent clinic conversations</Text>
-
               <View style={styles.sidebarSearch}>
                 <Ionicons name="search-outline" size={16} color="#71819A" />
                 <TextInput
@@ -543,6 +639,7 @@ export default function ChatConversationPage() {
               <ScrollView contentContainerStyle={styles.sidebarList}>
                 {filteredConversations.map((row, index) => {
                   const active = row.id === conversationId;
+                  const directMember = row.members.find((member) => member.id !== user?.id);
                   const rowTitle =
                     row.kind === "group"
                       ? row.title || "Group chat"
@@ -551,7 +648,17 @@ export default function ChatConversationPage() {
                           .map((member) => member.full_name || "Unknown")
                           .join(", ") || "Direct chat";
                   const rowSub = formatConversationPreview(row.last_message?.body);
-                  const unread = row.last_message?.sender_id && row.last_message.sender_id !== user?.id && !active ? 1 : 0;
+                  const localReadAt = user?.id ? getConversationReadAt(user.id, row.id) : null;
+                  const unread =
+                    active
+                      ? 0
+                      : typeof row.unread_count === "number"
+                        ? Math.max(row.unread_count, 0)
+                        : row.last_message?.sender_id &&
+                            row.last_message.sender_id !== user?.id &&
+                            (!localReadAt || new Date(row.last_message.created_at).getTime() > new Date(localReadAt).getTime())
+                          ? 1
+                          : 0;
                   const avatarTone = getChatAvatarTone(index);
                   return (
                     <TouchableOpacity
@@ -559,7 +666,13 @@ export default function ChatConversationPage() {
                       style={[styles.chatItem, active ? styles.chatItemActive : null]}
                       onPress={() => router.replace(`/chats/${row.id}` as any)}
                     >
-                      <ChatAvatar name={rowTitle} size={42} square tone={avatarTone} />
+                      <ChatAvatar
+                        name={rowTitle}
+                        avatarColor={row.kind === "direct" ? directMember?.avatar_color ?? null : null}
+                        size={42}
+                        square
+                        tone={avatarTone}
+                      />
                       <View style={styles.chatCopy}>
                         <View style={styles.chatTopline}>
                           <Text style={styles.chatName} numberOfLines={1}>
@@ -587,12 +700,13 @@ export default function ChatConversationPage() {
             </View>
           )}
 
-          <View style={styles.mainPanel}>
+          <View style={styles.mainPanel} {...webDropProps}>
             {!!conversation && (
               <View style={styles.chatHeader}>
                 <View style={styles.personWrap}>
                   <ChatAvatar
                     name={talkingWith}
+                    avatarColor={otherParticipant?.avatar_color ?? null}
                     size={42}
                     square
                     tone={getChatAvatarTone(1)}
@@ -620,6 +734,15 @@ export default function ChatConversationPage() {
             )}
 
             <View style={styles.messagesWrap}>
+              {isDragActive ? (
+                <View style={styles.dropOverlay}>
+                  <View style={styles.dropGlass}>
+                    <Ionicons name="cloud-upload-outline" size={22} color="#2563EB" />
+                    <Text style={styles.dropTitle}>Drop file to send</Text>
+                    <Text style={styles.dropHint}>Images, PDF, Word, Excel and text files up to 5 MB.</Text>
+                  </View>
+                </View>
+              ) : null}
               <View style={[styles.floatingDate, showFloatingDate ? styles.floatingDateVisible : null]}>
                 <Text style={styles.floatingDateText}>{floatingDate}</Text>
               </View>
@@ -646,7 +769,13 @@ export default function ChatConversationPage() {
                       const active = activeMessageId === item.id;
                       const replyData = parseReplyMessage(item.body);
                       return (
-                        <View key={item.id} style={[styles.messageRow, mine ? styles.messageRowMine : styles.messageRowOther]}>
+                        <View
+                          key={item.id}
+                          style={[styles.messageRow, mine ? styles.messageRowMine : styles.messageRowOther]}
+                          onLayout={(event) => {
+                            messageOffsetsRef.current[item.id] = event.nativeEvent.layout.y;
+                          }}
+                        >
                           <View style={[styles.messageStack, mine ? styles.messageStackMine : null]}>
                             <Text style={[styles.senderLabel, mine ? styles.senderLabelMine : null]} numberOfLines={1}>
                               {mine ? "You" : item.sender_name || "Staff"}
@@ -661,11 +790,11 @@ export default function ChatConversationPage() {
                                 item={item}
                                 mine={mine}
                                 active={active}
+                                highlighted={highlightedMessageId === item.id}
                                 replyTo={replyData?.replyTo ?? null}
                                 replySource={replyData?.replyTo ? messageLookup[replyData.replyTo.messageId] ?? null : null}
-                                reactions={reactionsByMessage[item.id] ?? []}
-                                onReact={onReactToMessage}
                                 onReply={onReplyToMessage}
+                                onNavigateToReply={onJumpToMessage}
                                 styles={styles}
                               />
                             </Pressable>
@@ -789,21 +918,21 @@ function MessageBubble({
   item,
   mine,
   active,
+  highlighted,
   replyTo,
   replySource,
-  reactions,
-  onReact,
   onReply,
+  onNavigateToReply,
   styles,
 }: {
   item: ChatMessageRow;
   mine: boolean;
   active: boolean;
+  highlighted: boolean;
   replyTo: ChatReplyPayload | null;
   replySource: ChatMessageRow | null;
-  reactions: Array<{ emoji: string; count: number }>;
-  onReact: (messageId: string, emoji: string) => void | Promise<void>;
   onReply: (message: ChatMessageRow) => void;
+  onNavigateToReply: (messageId: string) => void;
   styles: ReturnType<typeof createStyles>;
 }) {
   const normalizedBody = getMessageBody(item.body);
@@ -816,17 +945,12 @@ function MessageBubble({
         <TouchableOpacity style={styles.replyActionBtn} onPress={() => onReply(item)}>
           <Ionicons name="return-up-back-outline" size={14} color="#405B82" />
         </TouchableOpacity>
-        {REACTION_OPTIONS.map((emoji) => (
-          <TouchableOpacity key={`${item.id}_${emoji}`} style={styles.emojiPickerBtn} onPress={() => void onReact(item.id, emoji)}>
-            <Text style={styles.emojiPickerText}>{emoji}</Text>
-          </TouchableOpacity>
-        ))}
       </View>
     ) : null;
 
   const renderReplyPreview = () =>
     replyTo ? (
-      <View style={styles.replyPreview}>
+      <Pressable style={styles.replyPreview} onPress={() => onNavigateToReply(replyTo.messageId)}>
         <View style={styles.replyPreviewStripe} />
         <View style={styles.replyPreviewCopy}>
           <Text style={[styles.replyPreviewName, mine ? styles.replyPreviewNameMine : null]} numberOfLines={1}>
@@ -836,24 +960,12 @@ function MessageBubble({
             {replySource ? buildReplySnippet(replySource.body) : replyTo.snippet}
           </Text>
         </View>
-      </View>
-    ) : null;
-
-  const renderReactions = () =>
-    reactions.length > 0 ? (
-      <View style={styles.messageReactions}>
-        {reactions.map((reaction) => (
-          <TouchableOpacity key={`${item.id}_${reaction.emoji}`} style={styles.reactionChip} onPress={() => void onReact(item.id, reaction.emoji)}>
-            <Text style={styles.reactionChipEmoji}>{reaction.emoji}</Text>
-            <Text style={styles.reactionChipCount}>{reaction.count}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      </Pressable>
     ) : null;
 
   if (invite) {
     return (
-      <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
+      <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther, highlighted ? styles.messageBubbleHighlighted : null]}>
         {renderReactionPicker()}
         {renderReplyPreview()}
         <View style={styles.callInviteCard}>
@@ -875,20 +987,26 @@ function MessageBubble({
             <Text style={[styles.callInviteButtonText, mine ? styles.callInviteButtonTextMine : null]}>Legacy call log</Text>
           </View>
         </View>
-        {renderReactions()}
       </View>
     );
   }
 
   if (documentPayload) {
+    const documentVisual = getDocumentVisual(documentPayload.mimeType, documentPayload.name);
     return (
-      <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
+      <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther, highlighted ? styles.messageBubbleHighlighted : null]}>
         {renderReactionPicker()}
         {renderReplyPreview()}
         <View style={styles.documentCard}>
           <View style={styles.documentHeader}>
-            <View style={[styles.documentIconWrap, mine ? styles.documentIconWrapMine : null]}>
-              <Ionicons name="document-text-outline" size={18} color={mine ? "#1D4ED8" : "#2563EB"} />
+            <View
+              style={[
+                styles.documentIconWrap,
+                { backgroundColor: documentVisual.backgroundColor, borderColor: documentVisual.borderColor },
+                mine ? styles.documentIconWrapMine : null,
+              ]}
+            >
+              <Ionicons name={documentVisual.icon} size={18} color={documentVisual.color} />
             </View>
             <View style={styles.documentCopy}>
               <Text style={[styles.documentName, mine ? styles.documentNameMine : null]} numberOfLines={1}>
@@ -904,17 +1022,15 @@ function MessageBubble({
             <Text style={[styles.documentButtonText, mine ? styles.documentButtonTextMine : null]}>Open document</Text>
           </TouchableOpacity>
         </View>
-        {renderReactions()}
       </View>
     );
   }
 
   return (
-    <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther]}>
+    <View style={[styles.messageBubble, mine ? styles.messageBubbleMine : styles.messageBubbleOther, highlighted ? styles.messageBubbleHighlighted : null]}>
       {renderReactionPicker()}
       {renderReplyPreview()}
       <Text style={[styles.messageBody, mine ? styles.messageBodyMine : styles.messageBodyOther]}>{formatTextMessage(normalizedBody)}</Text>
-      {renderReactions()}
     </View>
   );
 }
@@ -1088,7 +1204,7 @@ function formatConversationPreview(body?: string | null) {
     return invite.mode === "video" ? "Legacy video call invite" : "Legacy audio call invite";
   }
   const reaction = parseReactionMessage(normalizedBody);
-  if (reaction) return `${reaction.emoji} reaction`;
+  if (reaction) return "Activity update";
   const documentPayload = parseDocumentMessage(normalizedBody);
   if (documentPayload) return `Document: ${documentPayload.name}`;
   return formatTextMessage(normalizedBody);
@@ -1183,12 +1299,15 @@ function parseDocumentMessage(body?: string | null): ChatDocumentPayload | null 
   if (!body?.startsWith(DOCUMENT_PREFIX)) return null;
   try {
     const parsed = JSON.parse(body.slice(DOCUMENT_PREFIX.length));
-    if (!parsed?.name || !parsed?.dataUrl) return null;
+    if (!parsed?.name || (!parsed?.dataUrl && !(parsed?.bucket && parsed?.path) && !parsed?.url)) return null;
     return {
       name: String(parsed.name),
       mimeType: String(parsed.mimeType || "application/octet-stream"),
       size: Number(parsed.size || 0),
-      dataUrl: String(parsed.dataUrl),
+      dataUrl: parsed.dataUrl ? String(parsed.dataUrl) : undefined,
+      bucket: parsed.bucket ? String(parsed.bucket) : undefined,
+      path: parsed.path ? String(parsed.path) : undefined,
+      url: parsed.url ? String(parsed.url) : undefined,
     };
   } catch {
     return null;
@@ -1231,29 +1350,12 @@ function getMessageBody(body: string) {
   return parseReplyMessage(body)?.body ?? body;
 }
 
-function buildReactionsMap(rows: ChatMessageRow[]) {
-  const map: Record<string, Record<string, number>> = {};
-  rows.forEach((row) => {
-    const reaction = parseReactionMessage(row.body);
-    if (!reaction) return;
-    if (!map[reaction.messageId]) map[reaction.messageId] = {};
-    map[reaction.messageId][reaction.emoji] = (map[reaction.messageId][reaction.emoji] ?? 0) + 1;
-  });
-
-  return Object.fromEntries(
-    Object.entries(map).map(([messageId, reactions]) => [
-      messageId,
-      Object.entries(reactions).map(([emoji, count]) => ({ emoji, count })),
-    ]),
-  ) as Record<string, Array<{ emoji: string; count: number }>>;
-}
-
 function formatTextMessage(body: string) {
   const normalizedBody = getMessageBody(body);
   const documentPayload = parseDocumentMessage(normalizedBody);
   if (documentPayload) return documentPayload.name;
   const reaction = parseReactionMessage(normalizedBody);
-  if (reaction) return `${reaction.emoji} reaction`;
+  if (reaction) return "Activity update";
   return normalizedBody;
 }
 
@@ -1264,16 +1366,68 @@ function buildReplySnippet(body: string) {
   const invite = parseLegacyCallInvite(normalizedBody);
   if (invite) return invite.mode === "video" ? "Video call invite" : "Audio call invite";
   const reaction = parseReactionMessage(normalizedBody);
-  if (reaction) return `${reaction.emoji} reaction`;
+  if (reaction) return "Activity update";
   return normalizedBody.length > 90 ? `${normalizedBody.slice(0, 90).trimEnd()}...` : normalizedBody;
 }
 
-function formatDocumentType(mimeType: string) {
-  if (mimeType.includes("pdf")) return "PDF";
-  if (mimeType.includes("word") || mimeType.includes("document")) return "DOC";
-  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "XLS";
-  if (mimeType.includes("text")) return "TXT";
-  return "Document";
+function getDocumentVisual(mimeType: string, fileName?: string) {
+  const normalized = `${mimeType} ${String(fileName ?? "").toLowerCase()}`;
+  if (normalized.includes("pdf")) {
+    return {
+      icon: "document-text-outline" as const,
+      color: "#DC2626",
+      backgroundColor: "#FEF2F2",
+      borderColor: "#FECACA",
+    };
+  }
+  if (normalized.includes("png") || normalized.includes("jpg") || normalized.includes("jpeg") || normalized.includes("webp") || normalized.includes("gif") || normalized.includes("image")) {
+    return {
+      icon: "image-outline" as const,
+      color: "#7C3AED",
+      backgroundColor: "#F5F3FF",
+      borderColor: "#DDD6FE",
+    };
+  }
+  if (normalized.includes("word") || normalized.includes("doc")) {
+    return {
+      icon: "document-outline" as const,
+      color: "#1D4ED8",
+      backgroundColor: "#EFF6FF",
+      borderColor: "#BFDBFE",
+    };
+  }
+  if (normalized.includes("sheet") || normalized.includes("excel") || normalized.includes("xls")) {
+    return {
+      icon: "grid-outline" as const,
+      color: "#047857",
+      backgroundColor: "#ECFDF5",
+      borderColor: "#A7F3D0",
+    };
+  }
+  if (normalized.includes("text") || normalized.includes("txt") || normalized.includes("rtf")) {
+    return {
+      icon: "reader-outline" as const,
+      color: "#EA580C",
+      backgroundColor: "#FFF7ED",
+      borderColor: "#FED7AA",
+    };
+  }
+  return {
+    icon: "attach-outline" as const,
+    color: "#475569",
+    backgroundColor: "#F8FAFC",
+    borderColor: "#DCE7F5",
+  };
+}
+
+function formatDocumentType(mimeType: string, fileName?: string) {
+  const normalized = `${mimeType} ${String(fileName ?? "").toLowerCase()}`;
+  if (normalized.includes("pdf")) return "PDF";
+  if (normalized.includes("png") || normalized.includes("jpg") || normalized.includes("jpeg") || normalized.includes("webp") || normalized.includes("gif") || normalized.includes("image")) return "IMAGE";
+  if (normalized.includes("word") || normalized.includes("doc")) return "DOC";
+  if (normalized.includes("sheet") || normalized.includes("excel") || normalized.includes("xls")) return "XLS";
+  if (normalized.includes("text") || normalized.includes("txt") || normalized.includes("rtf")) return "TXT";
+  return "FILE";
 }
 
 function formatFileSize(size: number) {
@@ -1283,7 +1437,7 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-async function pickDocumentFromWeb(): Promise<ChatDocumentPayload | null> {
+async function pickDocumentFromWeb(): Promise<File | null> {
   return new Promise((resolve, reject) => {
     if (typeof document === "undefined") {
       resolve(null);
@@ -1292,7 +1446,7 @@ async function pickDocumentFromWeb(): Promise<ChatDocumentPayload | null> {
 
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".pdf,.doc,.docx,.txt,.rtf,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain";
+    input.accept = ".pdf,.doc,.docx,.txt,.rtf,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/png,image/jpeg,image/webp,image/gif";
 
     input.onchange = () => {
       const file = input.files?.[0];
@@ -1303,14 +1457,8 @@ async function pickDocumentFromWeb(): Promise<ChatDocumentPayload | null> {
 
       const reader = new FileReader();
       reader.onerror = () => reject(new Error("Unable to read the selected document."));
-      reader.onload = () =>
-        resolve({
-          name: file.name,
-          mimeType: file.type || "application/octet-stream",
-          size: file.size,
-          dataUrl: String(reader.result || ""),
-        });
-      reader.readAsDataURL(file);
+      reader.onload = () => resolve(file);
+      reader.readAsArrayBuffer(file);
     };
 
     input.click();
@@ -1320,7 +1468,20 @@ async function pickDocumentFromWeb(): Promise<ChatDocumentPayload | null> {
 async function openDocumentPayload(payload: ChatDocumentPayload) {
   if (Platform.OS === "web" && typeof document !== "undefined") {
     const link = document.createElement("a");
-    link.href = payload.dataUrl;
+    const href =
+      payload.dataUrl ??
+      payload.url ??
+      (payload.bucket && payload.path
+        ? await getChatDocumentUrl({
+            bucket: payload.bucket,
+            path: payload.path,
+          })
+        : null);
+    if (!href) {
+      Alert.alert("Document", "This attachment is missing its file link.");
+      return;
+    }
+    link.href = href;
     link.download = payload.name;
     link.target = "_blank";
     link.rel = "noreferrer";
@@ -1363,35 +1524,6 @@ const createStyles = (theme: any) =>
             boxShadow: "0 18px 48px rgba(48,80,130,0.10)",
           } as any)
         : null),
-    },
-    brandPill: {
-      alignSelf: "flex-start",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      height: 30,
-      paddingHorizontal: 12,
-      borderRadius: 999,
-      backgroundColor: "#EDF5FF",
-    },
-    brandPillText: {
-      color: "#2563EB",
-      fontSize: 12,
-      fontWeight: "900",
-    },
-    sidebarTitle: {
-      marginTop: 16,
-      color: theme.colors.text,
-      fontSize: 24,
-      fontWeight: "900",
-      letterSpacing: -0.6,
-    },
-    sidebarSub: {
-      marginTop: 2,
-      marginBottom: 12,
-      color: "#64748B",
-      fontSize: 12,
-      fontWeight: "800",
     },
     sidebarSearch: {
       height: 42,
@@ -1862,6 +1994,44 @@ const createStyles = (theme: any) =>
       minHeight: 0,
       position: "relative",
     },
+    dropOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 8,
+      backgroundColor: "rgba(37,99,235,0.10)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    dropGlass: {
+      width: "100%",
+      maxWidth: 340,
+      paddingHorizontal: 20,
+      paddingVertical: 18,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: "rgba(147,197,253,0.55)",
+      backgroundColor: "rgba(255,255,255,0.78)",
+      alignItems: "center",
+      gap: 6,
+      ...(Platform.OS === "web"
+        ? ({
+            backdropFilter: "blur(14px)",
+            boxShadow: "0 18px 48px rgba(37,99,235,0.14)",
+          } as any)
+        : null),
+    },
+    dropTitle: {
+      color: "#0F172A",
+      fontSize: 16,
+      fontWeight: "900",
+    },
+    dropHint: {
+      color: "#475569",
+      fontSize: 12,
+      fontWeight: "700",
+      textAlign: "center",
+      lineHeight: 18,
+    },
     messagesContent: {
       paddingHorizontal: 16,
       paddingVertical: 18,
@@ -1944,6 +2114,10 @@ const createStyles = (theme: any) =>
     },
     messageBubbleWrap: {
       position: "relative",
+    },
+    messageBubbleHighlighted: {
+      borderColor: "#2563EB",
+      backgroundColor: "#E9F2FF",
     },
     messageBubbleMine: {
       backgroundColor: "#DCECFF",
@@ -2100,35 +2274,19 @@ const createStyles = (theme: any) =>
       fontSize: 10.5,
       fontWeight: "900",
     },
-    messageReactions: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 6,
-      marginTop: 10,
-    },
-    reactionChip: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 5,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 999,
-      backgroundColor: "rgba(255,255,255,0.82)",
-      borderWidth: 1,
-      borderColor: "#DCE7F5",
-      alignSelf: "flex-start",
-    },
-    reactionChipEmoji: {
-      fontSize: 12,
-    },
-    reactionChipCount: {
-      color: "#475569",
-      fontSize: 11,
-      fontWeight: "900",
-    },
     documentCard: {
       minWidth: 220,
       gap: 12,
+      padding: 14,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.62)",
+      backgroundColor: "rgba(255,255,255,0.38)",
+      ...(Platform.OS === "web"
+        ? ({
+            backdropFilter: "blur(14px)",
+          } as any)
+        : null),
     },
     documentHeader: {
       flexDirection: "row",
@@ -2144,7 +2302,6 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
     },
     documentIconWrapMine: {
-      backgroundColor: "#FFFFFF",
       borderWidth: 1,
       borderColor: "#A9CFFF",
     },

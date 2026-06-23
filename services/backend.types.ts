@@ -27,6 +27,7 @@ export type UsersMetadataRow = {
   username: string | null;
   full_name: string | null;
   email: string | null;
+  avatar_color: string | null;
   clinic_id: string | null;
   active: boolean | null;
   created_at: string | null;
@@ -402,6 +403,7 @@ export type InventoryListResponse = {
 export type ConversationMemberMini = {
   id: string;
   full_name: string | null;
+  avatar_color?: string | null;
   user_type: UserType;
 };
 
@@ -422,6 +424,8 @@ export type ConversationRow = {
   updated_at: string;
   last_message: ConversationLastMessageMini;
   members: ConversationMemberMini[];
+  unread_count?: number | null;
+  last_read_at?: string | null;
 };
 
 export type ConversationsListResponse = {

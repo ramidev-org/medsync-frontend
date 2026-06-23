@@ -49,6 +49,7 @@ export type RpcName =
   | "rpc_get_or_create_direct_conversation"
   | "rpc_get_conversations"
   | "rpc_get_messages"
+  | "rpc_mark_conversation_read"
   | "rpc_send_message"
   | "rpc_update_my_profile"
   | "rpc_get_prescription_items"

@@ -369,7 +369,7 @@ export default function CalendarPage() {
               <View key={card.key} style={[styles.metricCard, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.border }]}>
                 <View style={styles.metricIconRow}>
                   <View style={[styles.metricIconWrap, { backgroundColor: card.tint }]}>
-                    <Ionicons name={card.icon} size={16} color={card.iconColor} />
+                    <Ionicons name={card.icon} size={24} color={card.iconColor} />
                   </View>
                   <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>{card.label}</Text>
                 </View>
@@ -572,8 +572,8 @@ const createStyles = (theme: any) =>
       marginBottom: 8,
     },
     metricIconWrap: {
-      width: 30,
-      height: 30,
+      width: 46,
+      height: 46,
       borderRadius: 999,
       alignItems: "center",
       justifyContent: "center",

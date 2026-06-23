@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { UserAvatar, type UserAvatarPalette } from "@/components/user_avatar";
 
 const TONES = [
   { backgroundColor: "#EDF5FF", borderColor: "#CCDBF1", color: "#1D4ED8" },
@@ -14,43 +14,27 @@ export function getChatAvatarTone(index: number) {
 
 export function ChatAvatar({
   name,
+  avatarColor,
   size,
   square = false,
   tone,
   small = false,
 }: {
   name: string;
+  avatarColor?: string | null;
   size: number;
   square?: boolean;
-  tone?: { backgroundColor: string; borderColor: string; color: string };
+  tone?: UserAvatarPalette;
   small?: boolean;
 }) {
-  const palette = tone || getChatAvatarTone(0);
-  const initials =
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "?";
-
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: square ? Math.max(11, size * 0.36) : size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: palette.borderColor,
-        backgroundColor: small ? "#F8FBFF" : palette.backgroundColor,
-        overflow: "hidden",
-      }}
-    >
-      <Text style={{ fontWeight: "900", color: palette.color, fontSize: Math.max(9, size * 0.28) }}>
-        {initials}
-      </Text>
-    </View>
+    <UserAvatar
+      name={name}
+      avatarColor={avatarColor}
+      size={size}
+      square={square}
+      small={small}
+      palette={tone}
+    />
   );
 }

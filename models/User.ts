@@ -22,6 +22,7 @@ export class User {
   email: string;
   username: string;
   fullname: string;
+  avatarColor: string;
   user_type: "doctor" | "assistant";
   clinic_id: string;
 
@@ -33,6 +34,7 @@ export class User {
     email: string;
     username: string;
     fullname: string;
+    avatarColor?: string;
     user_type: "doctor" | "assistant";
     clinic_id: string;
     doctorProfile?: DoctorProfile | null;
@@ -42,6 +44,7 @@ export class User {
     this.email = params.email;
     this.username = params.username;
     this.fullname = params.fullname;
+    this.avatarColor = params.avatarColor ?? "";
     this.user_type = params.user_type;
     this.clinic_id = params.clinic_id;
     this.doctorProfile = params.doctorProfile ?? null;
@@ -57,6 +60,7 @@ export class User {
       email: data.email ?? "",
       username: data.username ?? "",
       fullname: data.full_name ?? "",
+      avatarColor: data.avatar_color ?? "",
       user_type,
       clinic_id: data.clinic_id,
       doctorProfile: data.doctor_profiles ?? null,

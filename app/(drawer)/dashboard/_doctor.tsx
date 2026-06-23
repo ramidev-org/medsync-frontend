@@ -1,6 +1,6 @@
 import { TopBar } from "@/components/top_bar";
 import { EChart } from "@/components/charts/echart";
-import { getCurrentRoleImage } from "@/config/runtime";
+import { UserAvatar } from "@/components/user_avatar";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAuth } from "@/contexts/auth_context";
 import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
@@ -179,7 +179,7 @@ export default function DoctorDashboardPage() {
           <View style={styles.rightColumn}>
             <View style={[styles.doctorCard, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.doctorHeader}>
-                <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
+                <UserAvatar name={user?.fullname || "Doctor"} avatarColor={user?.avatarColor} size={98} />
                 <View style={styles.doctorInfo}>
                   <Text style={[styles.doctorName, { color: theme.colors.text }]}>Dr {user?.fullname}</Text>
                   <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>{specialityLabelFr(doctorSpecialityKey)}</Text>
@@ -306,8 +306,8 @@ const DoctorStat = ({ label, value, theme, progress }: any) => {
 
 const DoctorInlineStat = ({ label, value, theme }: any) => (
   <View style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 10, backgroundColor: theme.colors.background }}>
-    <Text style={{ fontSize: 12, fontWeight: "700", color: theme.colors.muted }}>{label}</Text>
-    <Text style={{ marginTop: 4, fontSize: 28, fontWeight: "900", color: theme.colors.text }}>{value}</Text>
+    <Text style={{ fontSize: 14, fontWeight: "600", color: theme.colors.muted }}>{label}</Text>
+    <Text style={{ marginTop: 4, fontSize: 18, fontWeight: "400", color: theme.colors.text }}>{value}</Text>
   </View>
 );
 

@@ -1,5 +1,5 @@
 import PatientForm from "@/components/new_patient";
-import { getCurrentRoleImage } from "@/config/runtime";
+import { UserAvatar } from "@/components/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { getConversations } from "@/services/chats.services";
@@ -12,7 +12,7 @@ import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface TopBarProps {
   theme: any;
@@ -294,6 +294,10 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                     const others = row.members?.filter((m) => m.id !== user?.id) ?? [];
                     const title = row.kind === "group" ? row.title || "Group chat" : others.map((m) => m.full_name || "Unknown").join(", ") || "Direct chat";
                     const subtitle = formatChatPreview(row.last_message?.body);
+                    const previewBody = parseReplyEnvelope(row.last_message?.body ?? "")?.body ?? row.last_message?.body;
+                    const documentPayload = parseTopBarDocumentMessage(previewBody);
+                    const documentVisual = documentPayload ? getTopBarDocumentVisual(documentPayload.mimeType, documentPayload.name) : null;
+                    const directMember = row.kind === "direct" ? others[0] : null;
                     return (
                       <Pressable
                         key={row.id}
@@ -303,6 +307,13 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                         }}
                         style={styles.notificationRow}
                       >
+                        {documentVisual ? (
+                          <View style={[styles.chatPreviewIcon, { backgroundColor: documentVisual.background }]}>
+                            <Ionicons name={documentVisual.icon} size={16} color={documentVisual.color} />
+                          </View>
+                        ) : (
+                          <UserAvatar name={title} avatarColor={directMember?.avatar_color ?? null} size={38} />
+                        )}
                         <View style={{ flex: 1 }}>
                           <Text numberOfLines={1} style={[styles.notificationText, { color: theme.colors.text, fontWeight: "800" }]}>{title}</Text>
                           <Text numberOfLines={1} style={styles.notificationTime}>{subtitle}</Text>
@@ -325,13 +336,13 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
               </View>
             )}
             <Pressable onPress={() => setMenuVisible(!menuVisible)} style={({ hovered, pressed }) => [hovered && Platform.OS === "web" ? styles.hover : null, pressed ? styles.pressed : null]}>
-              <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
+              <UserAvatar name={user?.fullname || user?.email || "User"} avatarColor={user?.avatarColor} size={42} />
             </Pressable>
             {menuVisible && (
               <View style={styles.avatarMenu}>
                 <View style={styles.menuHeader}>
                   <View style={styles.menuHeaderRow}>
-                    <Image source={{ uri: getCurrentRoleImage() }} style={styles.menuAvatar} />
+                    <UserAvatar name={user?.fullname || user?.email || "User"} avatarColor={user?.avatarColor} size={54} />
                     <View style={{ flex: 1 }}>
                       <Text numberOfLines={1} style={styles.menuName}>{user?.fullname || user?.email || "—"}</Text>
                       <Text numberOfLines={1} style={styles.menuSub}>
@@ -378,11 +389,53 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
 
 const formatChatPreview = (body?: string | null) => {
   if (!body) return "No messages yet";
-  if (body.startsWith("[medsync-call]")) {
-    return body.includes('"mode":"video"') ? "Started a video call" : "Started an audio call";
+  const replyBody = parseReplyEnvelope(body)?.body ?? body;
+  if (replyBody.startsWith("[medsync-call]")) {
+    return replyBody.includes('"mode":"video"') ? "Started a video call" : "Started an audio call";
   }
-  return body;
+  const documentPayload = parseTopBarDocumentMessage(replyBody);
+  if (documentPayload) return `Document: ${documentPayload.name}`;
+  return replyBody.length > 82 ? `${replyBody.slice(0, 82).trimEnd()}...` : replyBody;
 };
+
+const DOCUMENT_PREFIX = "[medsync-document]";
+const REPLY_PREFIX = "[medsync-reply]";
+
+function parseReplyEnvelope(body?: string | null) {
+  if (!body?.startsWith(REPLY_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(body.slice(REPLY_PREFIX.length));
+    if (typeof parsed?.body !== "string") return null;
+    return { body: String(parsed.body) };
+  } catch {
+    return null;
+  }
+}
+
+function parseTopBarDocumentMessage(body?: string | null) {
+  if (!body?.startsWith(DOCUMENT_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(body.slice(DOCUMENT_PREFIX.length));
+    if (!parsed?.name) return null;
+    return {
+      name: String(parsed.name),
+      mimeType: String(parsed.mimeType || "application/octet-stream"),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getTopBarDocumentVisual(mimeType: string, fileName?: string) {
+  const normalized = `${mimeType} ${String(fileName ?? "").toLowerCase()}`;
+  if (normalized.includes("pdf")) return { icon: "document-text-outline" as const, color: "#DC2626", background: "#FEF2F2" };
+  if (normalized.includes("png") || normalized.includes("jpg") || normalized.includes("jpeg") || normalized.includes("webp") || normalized.includes("gif") || normalized.includes("image")) {
+    return { icon: "image-outline" as const, color: "#7C3AED", background: "#F5F3FF" };
+  }
+  if (normalized.includes("word") || normalized.includes("doc")) return { icon: "document-outline" as const, color: "#1D4ED8", background: "#EFF6FF" };
+  if (normalized.includes("sheet") || normalized.includes("excel") || normalized.includes("xls")) return { icon: "grid-outline" as const, color: "#047857", background: "#ECFDF5" };
+  return { icon: "attach-outline" as const, color: "#475569", background: "#F8FAFC" };
+}
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
@@ -407,7 +460,6 @@ const createStyles = (theme: any) =>
     primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
     dateText: { fontSize: 14, color: theme.colors.textSecondary, fontWeight: "700" },
     iconButton: { padding: 8, borderRadius: 12, backgroundColor: "transparent" },
-    avatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: theme.colors.border },
     hover: { backgroundColor: theme.colors.hoverBg },
     pressed: { backgroundColor: theme.colors.pressedBg, transform: [{ scale: 0.98 }] },
     avatarMenu: { position: "absolute", top: 56, right: 0, minWidth: 360, backgroundColor: theme.colors.background, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.border, zIndex: 20, paddingVertical: 8 },
@@ -416,6 +468,7 @@ const createStyles = (theme: any) =>
       top: 56,
       right: 104,
       minWidth: 330,
+      maxWidth: 380,
       backgroundColor: theme.colors.background,
       borderRadius: 14,
       borderWidth: 1,
@@ -429,6 +482,7 @@ const createStyles = (theme: any) =>
       top: 56,
       right: 58,
       minWidth: 350,
+      maxWidth: 400,
       backgroundColor: theme.colors.background,
       borderRadius: 14,
       borderWidth: 1,
@@ -442,6 +496,15 @@ const createStyles = (theme: any) =>
     notificationRow: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface },
     notificationText: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
     notificationTime: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11, marginTop: 2 },
+    chatPreviewIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "rgba(148, 163, 184, 0.18)",
+    },
     dropdownFooter: {
       marginTop: 2,
       borderTopWidth: 1,

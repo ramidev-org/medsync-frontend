@@ -1,7 +1,7 @@
 import { PageShell } from "@/components/page_shell";
 import { ChatAvatar, getChatAvatarTone } from "@/components/chat_avatar";
 import { useAuth } from "@/contexts/auth_context";
-import { getConversations } from "@/services/chats.services";
+import { getConversationReadAt, getConversations } from "@/services/chats.services";
 import type { ConversationRow } from "@/services/backend.types";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -76,13 +76,6 @@ export default function ChatsEntryPage() {
         <View style={styles.page}>
           {isWideWeb && (
             <View style={styles.sidebar}>
-              <View style={styles.brandPill}>
-                <Ionicons name="chatbubbles-outline" size={14} color="#2563EB" />
-                <Text style={styles.brandPillText}>MedSync Chat</Text>
-              </View>
-              <Text style={styles.sidebarTitle}>Chats</Text>
-              <Text style={styles.sidebarSub}>Recent clinic conversations</Text>
-
               <View style={styles.sidebarSearch}>
                 <Ionicons name="search-outline" size={16} color="#71819A" />
                 <TextInput
@@ -96,6 +89,7 @@ export default function ChatsEntryPage() {
 
               <ScrollView contentContainerStyle={styles.sidebarList}>
                 {filteredConversations.map((row, index) => {
+                  const directMember = row.members.find((member) => member.id !== user?.id);
                   const rowTitle =
                     row.kind === "group"
                       ? row.title || "Group chat"
@@ -104,7 +98,15 @@ export default function ChatsEntryPage() {
                           .map((member) => member.full_name || "Unknown")
                           .join(", ") || "Direct chat";
                   const rowSub = formatConversationPreview(row.last_message?.body);
-                  const unread = row.last_message?.sender_id && row.last_message.sender_id !== user?.id ? 1 : 0;
+                  const localReadAt = user?.id ? getConversationReadAt(user.id, row.id) : null;
+                  const unread =
+                    typeof row.unread_count === "number"
+                      ? Math.max(row.unread_count, 0)
+                      : row.last_message?.sender_id &&
+                          row.last_message.sender_id !== user?.id &&
+                          (!localReadAt || new Date(row.last_message.created_at).getTime() > new Date(localReadAt).getTime())
+                        ? 1
+                        : 0;
                   const avatarTone = getChatAvatarTone(index);
                   return (
                     <TouchableOpacity
@@ -112,7 +114,13 @@ export default function ChatsEntryPage() {
                       style={styles.chatItem}
                       onPress={() => router.replace(`/chats/${row.id}` as any)}
                     >
-                      <ChatAvatar name={rowTitle} size={42} square tone={avatarTone} />
+                      <ChatAvatar
+                        name={rowTitle}
+                        avatarColor={row.kind === "direct" ? directMember?.avatar_color ?? null : null}
+                        size={42}
+                        square
+                        tone={avatarTone}
+                      />
                       <View style={styles.chatCopy}>
                         <View style={styles.chatTopline}>
                           <Text style={styles.chatName} numberOfLines={1}>
@@ -207,12 +215,7 @@ function formatConversationPreview(body?: string | null) {
     }
   }
   if (body.startsWith("[medsync-reaction]")) {
-    try {
-      const parsed = JSON.parse(body.slice("[medsync-reaction]".length));
-      return `${String(parsed?.emoji || "Emoji")} reaction`;
-    } catch {
-      return "Reaction";
-    }
+    return "Activity update";
   }
   return body;
 }
@@ -248,35 +251,6 @@ const createStyles = (theme: any) =>
             boxShadow: "0 18px 48px rgba(48,80,130,0.10)",
           } as any)
         : null),
-    },
-    brandPill: {
-      alignSelf: "flex-start",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      height: 30,
-      paddingHorizontal: 12,
-      borderRadius: 999,
-      backgroundColor: "#EDF5FF",
-    },
-    brandPillText: {
-      color: "#2563EB",
-      fontSize: 12,
-      fontWeight: "900",
-    },
-    sidebarTitle: {
-      marginTop: 16,
-      color: theme.colors.text,
-      fontSize: 24,
-      fontWeight: "900",
-      letterSpacing: -0.6,
-    },
-    sidebarSub: {
-      marginTop: 2,
-      marginBottom: 12,
-      color: "#64748B",
-      fontSize: 12,
-      fontWeight: "800",
     },
     sidebarSearch: {
       height: 42,

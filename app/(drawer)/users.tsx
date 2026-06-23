@@ -1,4 +1,5 @@
 import { PageShell } from "@/components/page_shell";
+import { UserAvatar } from "@/components/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
@@ -27,6 +28,7 @@ type StaffRow = {
   id: string;
   email?: string | null;
   full_name?: string | null;
+  avatar_color?: string | null;
   user_type: UserType;
   active?: boolean | null;
 };
@@ -423,11 +425,11 @@ export default function UsersPage() {
               rows.map((item) => (
                 <View key={item.id} style={styles.personRow}>
                   <View style={[styles.personMain, styles.memberCol]}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>
-                        {getInitials(item.full_name || item.email || "User")}
-                      </Text>
-                    </View>
+                    <UserAvatar
+                      name={item.full_name || item.email || "User"}
+                      avatarColor={item.avatar_color ?? null}
+                      size={44}
+                    />
 
                     <View style={styles.personCopy}>
                       <View style={styles.personTitleRow}>

@@ -1,5 +1,5 @@
 import { TopBar } from "@/components/top_bar";
-import { getCurrentRoleImage } from "@/config/runtime";
+import { UserAvatar } from "@/components/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { useTasks } from "@/contexts/tasks_context";
@@ -163,7 +163,7 @@ export default function ReceptionDashboardPage() {
           <View style={styles.rightColumn}>
             <View style={[styles.doctorCard, localStyles.profileCard]}>
               <View style={styles.doctorHeader}>
-                <Image source={{ uri: getCurrentRoleImage() }} style={styles.avatar} />
+                <UserAvatar name={user?.fullname || "Assistant"} avatarColor={user?.avatarColor} size={98} />
                 <View style={styles.doctorInfo}>
                   <Text style={[styles.doctorName, { color: theme.colors.text }]}>{user?.fullname ?? "Assistant"}</Text>
                   <Text style={[styles.doctorRole, { color: theme.colors.muted }]}>Front desk operations</Text>
