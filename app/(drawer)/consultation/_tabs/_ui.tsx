@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 /* ================= METRIC CARD ================= */
@@ -84,6 +84,64 @@ export function BlueField({
         }}
       />
     </View>
+  );
+}
+
+export function SelectionCard({
+  theme,
+  icon,
+  title,
+  description,
+  active,
+  onPress,
+}: {
+  theme: any;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  title: string;
+  description: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onPress}
+      style={{
+        flex: 1,
+        minWidth: 170,
+        borderWidth: 1.5,
+        borderColor: active ? theme.colors.primary : theme.colors.border,
+        borderRadius: 16,
+        padding: 14,
+        backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
+        gap: 10,
+      }}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: active ? theme.colors.primary : theme.colors.surfaceVariant,
+        }}
+      >
+        <MaterialCommunityIcons
+          name={icon}
+          size={18}
+          color={active ? theme.colors.textOnPrimary : theme.colors.primary}
+        />
+      </View>
+      <View style={{ gap: 4 }}>
+        <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.text }}>
+          {title}
+        </Text>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 }}>
+          {description}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 

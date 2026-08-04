@@ -2,13 +2,14 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { FIELD_ICON_MAP, getTreatmentExtraFields } from "@/components/consultation/observation_fields";
+import { FIELD_ICON_MAP, getTreatmentExtraFields, getTreatmentOptions } from "@/components/consultation/observation_fields";
 import { WorkspaceInputField, WorkspaceReadOnlyField } from "@/components/workspaces/theme/WorkspaceTheme";
 import { CardiologyTab, type CardiologyState } from "./observation_specialities/_cardiologie";
 import { DentistryTab, type DentistryState } from "./observation_specialities/_dentistry";
 import { DermatologyTab, type DermatologyState } from "./observation_specialities/_dermatologie";
 import { GynecologyTab, type GynecologyState } from "./observation_specialities/_gynecologie";
 import { OrthopedicsTab, type OrthopedicsState } from "./observation_specialities/_orthopedie";
+import { SelectionCard } from "./_ui";
 
 type TreatmentViewTab = "summary" | "history";
 
@@ -28,22 +29,6 @@ type SpecialitiesState = {
   dermatology: DermatologyState;
   orthopedics: OrthopedicsState;
   dentistry: DentistryState;
-};
-
-const TREATMENT_OPTIONS_BY_SPECIALTY: Record<string, Array<{ key: string; label: string }>> = {
-  dentistry: [
-    { key: "full_cleanup", label: "Full Cleanup" },
-    { key: "braces", label: "Braces" },
-    { key: "whitening", label: "Whitening" },
-    { key: "retainer_check", label: "Retainer Check" },
-    { key: "other_treatment", label: "Other Treatment" },
-  ],
-  default: [
-    { key: "follow_up_treatment", label: "Follow-up treatment" },
-    { key: "medication_adjustment", label: "Medication adjustment" },
-    { key: "procedure", label: "Procedure" },
-    { key: "other", label: "Other" },
-  ],
 };
 
 const SIDEBAR_TABS: Array<{
@@ -126,8 +111,7 @@ export default function TreatmentTab({
     setSelectedWorkspace(workspaceKey || "general_medicine");
   }, [workspaceKey]);
 
-  const treatmentOptions =
-    TREATMENT_OPTIONS_BY_SPECIALTY[selectedWorkspace] ?? TREATMENT_OPTIONS_BY_SPECIALTY.default;
+  const treatmentOptions = React.useMemo(() => getTreatmentOptions(selectedWorkspace), [selectedWorkspace]);
 
   React.useEffect(() => {
     if (!treatmentOptions.some((item) => item.key === treatmentType)) {
@@ -136,11 +120,7 @@ export default function TreatmentTab({
   }, [treatmentOptions, treatmentType]);
 
   const treatmentTypeLabel = React.useCallback(
-    (key: string, workspace = selectedWorkspace) =>
-      (
-        TREATMENT_OPTIONS_BY_SPECIALTY[workspace] ??
-        TREATMENT_OPTIONS_BY_SPECIALTY.default
-      ).find((item) => item.key === key)?.label || key,
+    (key: string, workspace = selectedWorkspace) => getTreatmentOptions(workspace).find((item) => item.key === key)?.label || key,
     [selectedWorkspace],
   );
 
@@ -365,32 +345,18 @@ export default function TreatmentTab({
                 <View style={[styles.detailCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
                   <Text style={[styles.detailTitle, { color: theme.colors.text }]}>Critères du traitement actuel</Text>
                   <View style={{ marginTop: 8, gap: 12 }}>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    <View style={styles.optionGrid}>
                       {treatmentOptions.map((option) => {
-                        const active = treatmentType === option.key;
                         return (
-                          <TouchableOpacity
+                          <SelectionCard
                             key={option.key}
+                            theme={theme}
+                            icon={option.icon}
+                            title={option.label}
+                            description={option.description}
+                            active={treatmentType === option.key}
                             onPress={() => setTreatmentType(option.key)}
-                            style={{
-                              borderWidth: 1,
-                              borderColor: active ? theme.colors.primary : theme.colors.border,
-                              backgroundColor: active ? theme.colors.primarySoft : theme.colors.surface,
-                              borderRadius: 999,
-                              paddingHorizontal: 12,
-                              paddingVertical: 8,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontWeight: "900",
-                                color: active ? theme.colors.primary : theme.colors.textSecondary,
-                                fontSize: 12,
-                              }}
-                            >
-                              {option.label}
-                            </Text>
-                          </TouchableOpacity>
+                          />
                         );
                       })}
                     </View>
@@ -628,5 +594,10 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 14,
       paddingVertical: 14,
       borderBottomWidth: 1,
+    },
+    optionGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
     },
   });

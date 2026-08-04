@@ -26,6 +26,7 @@ import {
   SPECIALTY_TABS,
   getConsultationFields,
   getTreatmentExtraFields,
+  getTreatmentOptions,
   isSpecialtyKey,
   type ParameterField,
   type SpecialtyKey,
@@ -312,22 +313,7 @@ export default function ObservationMedicalTab({
 
   const meta = workspaceMeta[selectedWorkspace] ?? workspaceMeta.general_medicine;
   const activeFields = React.useMemo(() => getConsultationFields(selectedWorkspace), [selectedWorkspace]);
-  const treatmentOptionsBySpecialty: Record<string, Array<{ key: string; label: string }>> = {
-    dentistry: [
-      { key: "full_cleanup", label: "Full Cleanup" },
-      { key: "braces", label: "Braces" },
-      { key: "whitening", label: "Whitening" },
-      { key: "retainer_check", label: "Retainer Check" },
-      { key: "other_treatment", label: "Other Treatment" },
-    ],
-    default: [
-      { key: "follow_up_treatment", label: "Follow-up treatment" },
-      { key: "medication_adjustment", label: "Medication adjustment" },
-      { key: "procedure", label: "Procedure" },
-      { key: "other", label: "Other" },
-    ],
-  };
-  const treatmentOptions = treatmentOptionsBySpecialty[selectedWorkspace] ?? treatmentOptionsBySpecialty.default;
+  const treatmentOptions = React.useMemo(() => getTreatmentOptions(selectedWorkspace), [selectedWorkspace]);
   const treatmentTypeLabel = (key: string) => treatmentOptions.find((t) => t.key === key)?.label || key;
   const hasSpecialtyWidgetTab = ["gynecology", "cardiology", "dermatology", "orthopedics", "dentistry"].includes(selectedWorkspace);
   const renderSpecialtyDialogPanel = () => {

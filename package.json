@@ -10,6 +10,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "desktop:dev": "cross-env MEDSYNC_DESKTOP_URL=http://localhost:8081 electron desktop/main.cjs",
+    "desktop:start": "electron desktop/main.cjs",
+    "desktop:package": "npm run export:web && electron-builder",
+    "desktop:package:dir": "npm run export:web && electron-builder --dir",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web && node ./scripts/patch-export-assets.cjs",
@@ -66,9 +70,27 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "cross-env": "^10.0.0",
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "build": {
+    "appId": "dz.medsync.desktop",
+    "productName": "MedSync",
+    "extraMetadata": {
+      "main": "desktop/main.cjs"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
 }

@@ -1,10 +1,9 @@
 import React from "react";
-import { BlueField } from "../_ui";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-type LocalMode = "form" | "widgets" | "history";
+import { BlueField, SelectionCard } from "../_ui";
+import { StyleSheet, Text, View } from "react-native";
 
 export type DermatologyState = {
+  carePath?: string;
   chiefComplaint?: string;
   lesionSite?: string;
   morphology?: string;
@@ -33,83 +32,54 @@ export function DermatologyTab({
 }) {
   const styles = createStyles(theme);
   const set = (p: Partial<DermatologyState>) => onChange({ ...value, ...p });
-  const [mode, setMode] = React.useState<LocalMode>("form");
-
-  const lesionTrend = [2, 3, 4, 3, 2];
-  const historyRows = [
-    "Dermocorticoide topique initie - 24/05/2026",
-    "Biopsie demandee - 12/05/2026",
-    "Photoprotection renforcee - 28/04/2026",
-  ];
+  const careOptions = [
+    { key: "topical_care", title: "Soin topique", icon: "medical-bag", description: "Traitement local et apaisement cutane." },
+    { key: "systemic_treatment", title: "Systemique", icon: "pill", description: "Prescription orale ou injectable." },
+    { key: "biopsy_follow_up", title: "Biopsie / bilan", icon: "microscope", description: "Prelevement ou bilan associe." },
+    { key: "skin_monitoring", title: "Surveillance", icon: "image-search-outline", description: "Evolution et controle dermatologique." },
+  ] as const;
 
   return (
     <View style={{ gap: 12 }}>
       {showTitle ? <Text style={styles.title}>DERMATOLOGIE</Text> : null}
 
-      <View style={styles.modeTabs}>
-        {[
-          { key: "form", label: "Form" },
-          { key: "widgets", label: "Widgets / Chart" },
-          { key: "history", label: "History Treatments" },
-        ].map((tab) => {
-          const active = mode === (tab.key as LocalMode);
-          return (
-            <TouchableOpacity key={tab.key} onPress={() => setMode(tab.key as LocalMode)} style={[styles.modeBtn, active && styles.modeBtnActive]}>
-              <Text style={[styles.modeBtnText, active && styles.modeBtnTextActive]}>{tab.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {mode === "form" ? (
-        <>
-          <BlueField theme={theme} label="Plainte principale" value={value.chiefComplaint ?? ""} onChange={(v: string) => set({ chiefComplaint: v })} multiline minHeight={80} />
-          <View style={styles.row}>
-            <BlueField theme={theme} label="Site lesionnel" value={value.lesionSite ?? ""} onChange={(v: string) => set({ lesionSite: v })} minHeight={56} />
-            <BlueField theme={theme} label="Morphologie" value={value.morphology ?? ""} onChange={(v: string) => set({ morphology: v })} minHeight={56} />
-          </View>
-          <View style={styles.row}>
-            <BlueField theme={theme} label="Taille (mm)" value={value.sizeMm ?? ""} onChange={(v: string) => set({ sizeMm: v })} minHeight={56} />
-            <BlueField theme={theme} label="Couleur" value={value.color ?? ""} onChange={(v: string) => set({ color: v })} minHeight={56} />
-          </View>
-          <View style={styles.row}>
-            <BlueField theme={theme} label="Bordure" value={value.border ?? ""} onChange={(v: string) => set({ border: v })} minHeight={56} />
-            <BlueField theme={theme} label="Asymetrie" value={value.asymmetry ?? ""} onChange={(v: string) => set({ asymmetry: v })} minHeight={56} />
-          </View>
-          <BlueField theme={theme} label="Evolution" value={value.evolution ?? ""} onChange={(v: string) => set({ evolution: v })} minHeight={56} />
-          <BlueField theme={theme} label="Symptomes associes" value={value.symptoms ?? ""} onChange={(v: string) => set({ symptoms: v })} minHeight={56} />
-          <BlueField theme={theme} label="Dermoscopie" value={value.dermoscopy ?? ""} onChange={(v: string) => set({ dermoscopy: v })} multiline minHeight={88} />
-          <BlueField theme={theme} label="Decision biopsie / histologie" value={value.biopsyDecision ?? ""} onChange={(v: string) => set({ biopsyDecision: v })} minHeight={56} />
-          <BlueField theme={theme} label="Diagnostic differentiel" value={value.differential ?? ""} onChange={(v: string) => set({ differential: v })} multiline minHeight={80} />
-          <BlueField theme={theme} label="Plan therapeutique" value={value.plan ?? ""} onChange={(v: string) => set({ plan: v })} multiline minHeight={90} />
-        </>
-      ) : null}
-
-      {mode === "widgets" ? (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Score evolution lesionnelle (5 controles)</Text>
-          <View style={styles.chartRow}>
-            {lesionTrend.map((v, idx) => (
-              <View key={`${idx}-${v}`} style={styles.chartCol}>
-                <View style={[styles.chartBar, { height: 22 + v * 20 }]} />
-                <Text style={styles.chartVal}>{v}</Text>
-              </View>
-            ))}
-          </View>
-          <Text style={styles.panelHint}>Widget interactif: mettez a jour taille/couleur/evolution pour guider le suivi.</Text>
-        </View>
-      ) : null}
-
-      {mode === "history" ? (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Historique des traitements</Text>
-          {historyRows.map((row) => (
-            <View key={row} style={styles.historyItem}>
-              <Text style={styles.historyText}>{row}</Text>
-            </View>
+      <View style={styles.panel}>
+        <Text style={styles.panelTitle}>Orientation du traitement</Text>
+        <View style={styles.cardGrid}>
+          {careOptions.map((option) => (
+            <SelectionCard
+              key={option.key}
+              theme={theme}
+              icon={option.icon}
+              title={option.title}
+              description={option.description}
+              active={value.carePath === option.key}
+              onPress={() => set({ carePath: option.key })}
+            />
           ))}
         </View>
-      ) : null}
+        <Text style={styles.panelHint}>Selection rapide pour cadrer le traitement sans widgets.</Text>
+      </View>
+
+      <BlueField theme={theme} label="Plainte principale" value={value.chiefComplaint ?? ""} onChange={(v: string) => set({ chiefComplaint: v })} multiline minHeight={80} />
+      <View style={styles.row}>
+        <BlueField theme={theme} label="Site lesionnel" value={value.lesionSite ?? ""} onChange={(v: string) => set({ lesionSite: v })} minHeight={56} />
+        <BlueField theme={theme} label="Morphologie" value={value.morphology ?? ""} onChange={(v: string) => set({ morphology: v })} minHeight={56} />
+      </View>
+      <View style={styles.row}>
+        <BlueField theme={theme} label="Taille (mm)" value={value.sizeMm ?? ""} onChange={(v: string) => set({ sizeMm: v })} minHeight={56} />
+        <BlueField theme={theme} label="Couleur" value={value.color ?? ""} onChange={(v: string) => set({ color: v })} minHeight={56} />
+      </View>
+      <View style={styles.row}>
+        <BlueField theme={theme} label="Bordure" value={value.border ?? ""} onChange={(v: string) => set({ border: v })} minHeight={56} />
+        <BlueField theme={theme} label="Asymetrie" value={value.asymmetry ?? ""} onChange={(v: string) => set({ asymmetry: v })} minHeight={56} />
+      </View>
+      <BlueField theme={theme} label="Evolution" value={value.evolution ?? ""} onChange={(v: string) => set({ evolution: v })} minHeight={56} />
+      <BlueField theme={theme} label="Symptomes associes" value={value.symptoms ?? ""} onChange={(v: string) => set({ symptoms: v })} minHeight={56} />
+      <BlueField theme={theme} label="Dermoscopie" value={value.dermoscopy ?? ""} onChange={(v: string) => set({ dermoscopy: v })} multiline minHeight={88} />
+      <BlueField theme={theme} label="Decision biopsie / histologie" value={value.biopsyDecision ?? ""} onChange={(v: string) => set({ biopsyDecision: v })} minHeight={56} />
+      <BlueField theme={theme} label="Diagnostic differentiel" value={value.differential ?? ""} onChange={(v: string) => set({ differential: v })} multiline minHeight={80} />
+      <BlueField theme={theme} label="Plan therapeutique" value={value.plan ?? ""} onChange={(v: string) => set({ plan: v })} multiline minHeight={90} />
     </View>
   );
 }
@@ -118,21 +88,6 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     title: { fontWeight: "900", color: theme.colors.primary },
     row: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
-    modeTabs: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    modeBtn: {
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-    },
-    modeBtnActive: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primarySoft,
-    },
-    modeBtnText: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary },
-    modeBtnTextActive: { color: theme.colors.primary },
     panel: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -143,18 +98,7 @@ const createStyles = (theme: any) =>
     },
     panelTitle: { fontWeight: "900", color: theme.colors.text },
     panelHint: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
-    chartRow: { flexDirection: "row", alignItems: "flex-end", gap: 10, minHeight: 140 },
-    chartCol: { alignItems: "center", gap: 4 },
-    chartBar: { width: 22, borderRadius: 8, backgroundColor: theme.colors.primary },
-    chartVal: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary },
-    historyItem: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 10,
-      padding: 10,
-      backgroundColor: theme.colors.background,
-    },
-    historyText: { fontWeight: "700", color: theme.colors.text },
+    cardGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   });
 
 export default function DermatologyRoute() {

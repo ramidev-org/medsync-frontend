@@ -1,6 +1,7 @@
 import { AppDataProvider } from "@/contexts/appData_context";
 import { AuthProvider, useAuth } from "@/contexts/auth_context";
 import { TasksProvider } from "@/contexts/tasks_context";
+import { OfflineSyncProvider } from "@/contexts/offline_sync_context";
 import { LocalizationProvider } from "@/localization/localization_provider";
 import { ThemeProvider } from "@/theme/theme_provider";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -94,7 +95,9 @@ function AuthGateWrapper() {
   // AppDataProvider must always wrap the navigation stack so drawer layouts can safely use useAppData()
   return (
     <AppDataProvider>
-      <TasksProvider>{stack}</TasksProvider>
+      <OfflineSyncProvider>
+        <TasksProvider>{stack}</TasksProvider>
+      </OfflineSyncProvider>
     </AppDataProvider>
   );
 }

@@ -11,6 +11,12 @@ import { useAuth } from "@/contexts/auth_context";
 import { useAppData } from "@/contexts/appData_context";
 import { callRpc } from "@/services/backend";
 import type { ConsultationSession } from "@/services/backend.types";
+import { isDesktopApp } from "@/services/desktop_runtime";
+import { cacheConsultation, getCachedConsultation } from "@/services/offline_cache";
+import {
+  enqueueOfflineRpc,
+  isLikelyOfflineError,
+} from "@/services/offline_queue";
 import { printOrdonnanceA4 } from "@/services/print.services";
 
 // Tab pages (separate files)
@@ -339,6 +345,77 @@ export default function ConsultationPage() {
 
   /* ================= LOAD ================= */
 
+  const hydrateConsultation = (nextAppointment: Appointment, session: ConsultationSession) => {
+    setAppointment(nextAppointment);
+
+    if (!session?.consultation?.id) return;
+
+    const sessionPayload = {
+      ...asObservationPayload(session.consultation.speciality_payload),
+      ...asObservationPayload(
+        (session as ConsultationSession & { observations?: ObservationPayload | null }).observations,
+      ),
+    };
+
+    setConsultation({
+      id: String(session.consultation.id),
+      appointment_id: String(session.consultation.appointment_id),
+      diagnosis: (session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean),
+      observations: String(session.consultation.observations ?? ""),
+      treatment_plan: String(session.consultation.treatment_plan ?? ""),
+      follow_up: String(session.consultation.follow_up ?? ""),
+      status: (session.consultation.status as any) === "closed" ? "closed" : "open",
+      vitals: { ...initialVitals },
+      parameters: { ...initialParams },
+      speciality_payload: sessionPayload,
+    });
+    setDiagnosisCodes((session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean));
+
+    if (session.consultation.speciality_key) {
+      setActiveWorkspaceKey(sanitizeWorkspaceKey(session.consultation.speciality_key));
+    }
+
+    setObservations(String(session.consultation.observations ?? ""));
+
+    if (Object.keys(sessionPayload).length) {
+      const nextState = extractObservationPayloadState(sessionPayload);
+      setParameters(nextState.parameters);
+      setVitals(nextState.vitals);
+      setSelectedSymptoms(
+        Array.isArray(sessionPayload.symptoms_selected)
+          ? sessionPayload.symptoms_selected.map((item) => String(item)).filter(Boolean)
+          : [],
+      );
+    } else if (session.parameters) {
+      setParameters({
+        motif_consultation: String(session.parameters.motif_consultation ?? ""),
+        glycemie: String(session.parameters.glycemie ?? ""),
+        hba1c: String(session.parameters.hba1c ?? ""),
+        examen_clinique: String(session.parameters.examen_clinique ?? ""),
+        conclusion: String(session.parameters.conclusion ?? ""),
+      });
+      setSelectedSymptoms([]);
+    } else {
+      setParameters({ ...initialParams });
+      setSelectedSymptoms([]);
+    }
+
+    if (session.vitals) {
+      const tension =
+        session.vitals.systolic_bp != null && session.vitals.diastolic_bp != null
+          ? `${session.vitals.systolic_bp}/${session.vitals.diastolic_bp}`
+          : "";
+      setVitals({
+        taille_cm: session.vitals.height != null ? String(session.vitals.height) : "",
+        poids_kg: session.vitals.weight != null ? String(session.vitals.weight) : "",
+        tension,
+        temperature_c: session.vitals.temperature != null ? String(session.vitals.temperature) : "",
+      });
+    } else {
+      setVitals({ ...initialVitals });
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -376,85 +453,30 @@ export default function ConsultationPage() {
             created_at: "",
           },
         };
-        setAppointment(nextAppointment);
-
         const session = await callRpc<ConsultationSession, Record<string, unknown>>("rpc_open_consultation", {
           p_requester_id: user.id,
           p_appointment_id: id,
         });
-
-        if (session?.consultation?.id) {
-          const sessionPayload = {
-            ...asObservationPayload(session.consultation.speciality_payload),
-            ...asObservationPayload((session as ConsultationSession & { observations?: ObservationPayload | null }).observations),
-          };
-
-          setConsultation({
-            id: String(session.consultation.id),
-            appointment_id: String(session.consultation.appointment_id),
-            diagnosis: (session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean),
-            observations: String(session.consultation.observations ?? ""),
-            treatment_plan: String(session.consultation.treatment_plan ?? ""),
-            follow_up: String(session.consultation.follow_up ?? ""),
-            status: (session.consultation.status as any) === "closed" ? "closed" : "open",
-            vitals: { ...initialVitals },
-            parameters: { ...initialParams },
-            speciality_payload: sessionPayload,
-          });
-          setDiagnosisCodes((session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean));
-
-          if (session.consultation.speciality_key) {
-            setActiveWorkspaceKey(sanitizeWorkspaceKey(session.consultation.speciality_key));
-          }
-
-          // Hydrate UI fields
-          setObservations(String(session.consultation.observations ?? ""));
-
-          if (Object.keys(sessionPayload).length) {
-            const nextState = extractObservationPayloadState(sessionPayload);
-            setParameters(nextState.parameters);
-            setVitals(nextState.vitals);
-            setSelectedSymptoms(
-              Array.isArray(sessionPayload.symptoms_selected)
-                ? sessionPayload.symptoms_selected.map((item) => String(item)).filter(Boolean)
-                : [],
-            );
-          } else if (session.parameters) {
-            setParameters({
-              motif_consultation: String(session.parameters.motif_consultation ?? ""),
-              glycemie: String(session.parameters.glycemie ?? ""),
-              hba1c: String(session.parameters.hba1c ?? ""),
-              examen_clinique: String(session.parameters.examen_clinique ?? ""),
-              conclusion: String(session.parameters.conclusion ?? ""),
-            });
-            setSelectedSymptoms([]);
-          } else {
-            setParameters({ ...initialParams });
-            setSelectedSymptoms([]);
-          }
-
-          // Map DB vitals to existing UI shape
-          if (session.vitals) {
-            const tension =
-              session.vitals.systolic_bp != null && session.vitals.diastolic_bp != null
-                ? `${session.vitals.systolic_bp}/${session.vitals.diastolic_bp}`
-                : "";
-            setVitals({
-              taille_cm: session.vitals.height != null ? String(session.vitals.height) : "",
-              poids_kg: session.vitals.weight != null ? String(session.vitals.weight) : "",
-              tension,
-              temperature_c: session.vitals.temperature != null ? String(session.vitals.temperature) : "",
-            });
-          } else {
-            setVitals({ ...initialVitals });
-          }
-        }
+        hydrateConsultation(nextAppointment, session);
+        await cacheConsultation(user.id, String(id), { appointment: nextAppointment, session });
       } catch (e) {
         console.error("Load consultation details error:", e);
         if (!cancelled) {
-          Alert.alert("Erreur", e instanceof Error ? e.message : "Impossible d'ouvrir la consultation");
-          setAppointment(null);
-          setConsultation(null);
+          const cached = isDesktopApp()
+            ? await getCachedConsultation<{ appointment: Appointment; session: ConsultationSession }>(
+                String(user?.id || ""),
+                String(id || ""),
+              )
+            : null;
+
+          if (cached?.appointment && cached.session) {
+            hydrateConsultation(cached.appointment, cached.session);
+            Alert.alert("Mode hors connexion", "Consultation chargee depuis le poste local.");
+          } else {
+            Alert.alert("Erreur", e instanceof Error ? e.message : "Impossible d'ouvrir la consultation");
+            setAppointment(null);
+            setConsultation(null);
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -527,40 +549,75 @@ export default function ConsultationPage() {
       status: closeAfterSave ? "closed" : "open",
     };
 
-    try {
-      if (user?.id && appointment?.id) {
-        const [sysStr, diaStr] = String(vitals.tension || "").split("/").map((x) => x.trim());
-        const systolic = sysStr && /^\d+$/.test(sysStr) ? Number(sysStr) : null;
-        const diastolic = diaStr && /^\d+$/.test(diaStr) ? Number(diaStr) : null;
+    const [sysStr, diaStr] = String(vitals.tension || "").split("/").map((x) => x.trim());
+    const systolic = sysStr && /^\d+$/.test(sysStr) ? Number(sysStr) : null;
+    const diastolic = diaStr && /^\d+$/.test(diaStr) ? Number(diaStr) : null;
+    const saveParams: Record<string, unknown> = {
+      p_requester_id: user?.id,
+      p_consultation_id: consultation.id,
+      p_observations: observations,
+      p_treatment_plan: updated.treatment_plan,
+      p_follow_up: updated.follow_up,
+      p_status: closeAfterSave ? "closed" : "open",
+      p_vitals: {
+        weight: vitals.poids_kg || null,
+        height: vitals.taille_cm || null,
+        temperature: vitals.temperature_c || null,
+        systolic_bp: systolic,
+        diastolic_bp: diastolic,
+      },
+      p_parameters: {
+        ...parameters,
+        motif_consultation: parameters.motif_consultation || null,
+        glycemie: parameters.glycemie || null,
+        hba1c: parameters.hba1c || null,
+        examen_clinique: parameters.examen_clinique || null,
+        conclusion: parameters.conclusion || null,
+      },
+      p_diagnoses: diagnosisCodes.map((code) => ({
+        code,
+        label: code,
+      })),
+      p_speciality_key: activeWorkspaceKey,
+      p_speciality_payload: specialityPayload,
+    };
 
-        await callRpc<boolean, Record<string, unknown>>("rpc_save_consultation", {
-          p_requester_id: user.id,
-          p_consultation_id: consultation.id,
-          p_observations: observations,
-          p_treatment_plan: updated.treatment_plan,
-          p_follow_up: updated.follow_up,
-          p_status: closeAfterSave ? "closed" : "open",
-          p_vitals: {
+    // Keep the latest draft available for the next desktop launch. This is a
+    // no-op in the browser, which intentionally remains online-only.
+    if (user?.id && appointment?.id) {
+      await cacheConsultation(user.id, appointment.id, {
+        appointment: {
+          ...appointment,
+          status: closeAfterSave ? "completed" : appointment.status,
+        },
+        session: {
+          consultation: {
+            id: updated.id,
+            appointment_id: updated.appointment_id,
+            observations: updated.observations,
+            treatment_plan: updated.treatment_plan,
+            follow_up: updated.follow_up,
+            status: updated.status,
+            speciality_key: activeWorkspaceKey,
+            speciality_payload: specialityPayload,
+          },
+          diagnoses: diagnosisCodes.map((code) => ({ code, label: code })),
+          parameters: updated.parameters,
+          vitals: {
             weight: vitals.poids_kg || null,
             height: vitals.taille_cm || null,
             temperature: vitals.temperature_c || null,
             systolic_bp: systolic,
             diastolic_bp: diastolic,
           },
-          p_parameters: {
-            ...parameters,
-            motif_consultation: parameters.motif_consultation || null,
-            glycemie: parameters.glycemie || null,
-            hba1c: parameters.hba1c || null,
-            examen_clinique: parameters.examen_clinique || null,
-            conclusion: parameters.conclusion || null,
-          },
-          p_diagnoses: diagnosisCodes.map((code) => ({
-            code,
-            label: code,
-          })),
-          p_speciality_key: activeWorkspaceKey,
-          p_speciality_payload: specialityPayload,
+        },
+      });
+    }
+
+    try {
+      if (user?.id && appointment?.id) {
+        await callRpc<boolean, Record<string, unknown>>("rpc_save_consultation", {
+          ...saveParams,
         });
 
         if (closeAfterSave) {
@@ -584,6 +641,42 @@ export default function ConsultationPage() {
         router.replace("/consultations");
       }
     } catch (e: any) {
+      if (user?.id && appointment?.id && isDesktopApp() && isLikelyOfflineError(e)) {
+        await enqueueOfflineRpc({
+          ownerUserId: user.id,
+          rpcName: "rpc_save_consultation",
+          params: saveParams,
+        });
+
+        if (closeAfterSave) {
+          await enqueueOfflineRpc({
+            ownerUserId: user.id,
+            rpcName: "rpc_close_consultation",
+            params: {
+              p_requester_id: user.id,
+              p_consultation_id: consultation.id,
+            },
+          });
+        }
+
+        setAppointment((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: closeAfterSave ? "completed" : prev.status === "pending" ? "in_consultation" : prev.status,
+              }
+            : prev,
+        );
+        setConsultation(updated);
+        Alert.alert(
+          "Enregistre sur ce poste",
+          closeAfterSave
+            ? "La consultation sera synchronisee automatiquement quand Internet reviendra."
+            : "Le brouillon sera synchronise automatiquement quand Internet reviendra.",
+        );
+        return;
+      }
+
       Alert.alert("Erreur", e?.message || "Impossible de sauvegarder la consultation");
     }
   };

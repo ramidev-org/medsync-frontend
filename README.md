@@ -42,6 +42,29 @@ Real mode (Supabase):
 2) Run SQL in Supabase:
    - `database/sql/000_all_changes.sql`
 
+## Desktop offline mode
+
+The browser version is intentionally online-only. Offline storage is enabled only
+when the app is launched through the Electron desktop shell.
+
+Development:
+
+1. Start the Expo web server with `npm run web`.
+2. In a second terminal, run `npm run desktop:dev`.
+
+Production installer:
+
+```bash
+npm run desktop:package
+```
+
+The desktop shell stores encrypted offline queue/cache files in the operating
+system's application data directory when Electron's OS encryption is available.
+The consultation workflow is the first offline-enabled workflow: open a
+consultation once while online, then drafts and closures can be saved during an
+outage and replayed automatically when connectivity returns. Chat, calls,
+analytics, billing, and other workflows remain online-only for now.
+
 Supabase WebRTC calls:
 - Presence channel: `clinic:{clinic_id}:presence`
 - Incoming call channel: `clinic:{clinic_id}:user:{receiver_id}`
