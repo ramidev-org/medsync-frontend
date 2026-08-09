@@ -145,7 +145,7 @@ export function DentistryTreatmentHistoryCards({
         >
           {filtered.length === 0 ? (
             <View style={{ padding: 4 }}>
-              <Text style={{ fontWeight: "900", color: theme.colors.text }}>No treatments in range</Text>
+              <Text style={{ fontWeight: "700", color: theme.colors.text }}>No treatments in range</Text>
               <Text style={{ marginTop: 6, fontWeight: "700", color: theme.colors.textSecondary }}>Adjust the date range.</Text>
             </View>
           ) : (
@@ -158,20 +158,20 @@ export function DentistryTreatmentHistoryCards({
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <View style={{ width: 10, height: 10, borderRadius: 999, backgroundColor: proc?.color ?? theme.colors.primary }} />
-                    <Text style={{ fontWeight: "900", color: theme.colors.text }}>{proc?.label ?? r.procedure}</Text>
+                    <Text style={{ fontWeight: "700", color: theme.colors.text }}>{proc?.label ?? r.procedure}</Text>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>{dateLabel}</Text>
+                    <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>{dateLabel}</Text>
                     <Pressable
                       onPress={() => setViewRow(r)}
                       style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: theme.colors.background, flexDirection: "row", alignItems: "center", gap: 6 }}
                     >
                       <MaterialCommunityIcons name="eye-outline" size={14} color={theme.colors.textSecondary} />
-                      <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 12 }}>View</Text>
+                      <Text style={{ fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>View</Text>
                     </Pressable>
                   </View>
                 </View>
-                <Text style={{ fontWeight: "800", color: theme.colors.textSecondary }}>
+                <Text style={{ fontWeight: "600", color: theme.colors.textSecondary }}>
                   Teeth: {r.teeth.join(", ")}
                 </Text>
                 {r.note ? <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>{r.note}</Text> : null}
@@ -202,14 +202,14 @@ export function DentistryHistoryFilters({
 }) {
   return (
     <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.background, padding: 10, gap: 10 }}>
-      <Text style={{ fontWeight: "900", color: theme.colors.text }}>Filters</Text>
+      <Text style={{ fontWeight: "700", color: theme.colors.text }}>Filters</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
         <View style={{ flexDirection: "column", gap: 6 }}>
-          <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>From</Text>
+          <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>From</Text>
           <DatePickerField label="From" date={from} setDate={onFromChange} />
         </View>
         <View style={{ flexDirection: "column", gap: 6 }}>
-          <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>To</Text>
+          <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>To</Text>
           <DatePickerField label="To" date={to} setDate={onToChange} />
         </View>
         <Pressable
@@ -217,7 +217,7 @@ export function DentistryHistoryFilters({
           style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: theme.colors.surface, flexDirection: "row", alignItems: "center", gap: 8 }}
         >
           <MaterialCommunityIcons name="broom" size={16} color={theme.colors.textSecondary} />
-          <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>Reset</Text>
+          <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>Reset</Text>
         </Pressable>
       </View>
     </View>

@@ -241,7 +241,9 @@ export type ClinicNotificationRow = {
 
 export type PrescriptionMedicationRow = {
   id: string;
+  catalog_id: string | null;
   medicine_name: string;
+  quantity: number | null;
   dose: string | null;
   frequency: string | null;
   duration: string | null;

@@ -282,7 +282,7 @@ export default function ProfilePage() {
 function TabButton({ active, onPress, label }: { active: boolean; onPress: () => void; label: string }) {
   return (
     <TouchableOpacity onPress={onPress} style={[{ paddingVertical: 12, marginRight: 22, borderBottomWidth: 2 }, active ? { borderBottomColor: "#2563EB" } : { borderBottomColor: "transparent" }]}>
-      <Text style={[{ fontWeight: "800", fontSize: 12 }, active ? { color: "#1D4ED8" } : { color: "#64748B" }]}>{label}</Text>
+      <Text style={[{ fontWeight: "600", fontSize: 12 }, active ? { color: "#1D4ED8" } : { color: "#64748B" }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -304,7 +304,7 @@ function toIntOrNull(value: string) {
 function Badge({ label, theme }: { label: string; theme: any }) {
   return (
     <View style={{ borderWidth: 1, borderColor: "#A9CBFF", backgroundColor: "#EDF4FF", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
-      <Text style={{ color: "#1E40AF", fontWeight: "900", fontSize: 11 }}>{label}</Text>
+      <Text style={{ color: "#1E40AF", fontWeight: "700", fontSize: 11 }}>{label}</Text>
     </View>
   );
 }
@@ -328,7 +328,7 @@ function Field({
 }) {
   return (
     <View style={{ marginTop: 12 }}>
-      <Text style={{ marginBottom: 6, color: theme.colors.textSecondary, fontWeight: "800" }}>{label}</Text>
+      <Text style={{ marginBottom: 6, color: theme.colors.textSecondary, fontWeight: "600" }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -410,23 +410,23 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       gap: 6,
     },
-    editProfileText: { color: "#1D4ED8", fontWeight: "800", fontSize: 12 },
+    editProfileText: { color: "#1D4ED8", fontWeight: "600", fontSize: 12 },
     iconEditBtnActive: {
       borderColor: "#1D4ED8",
       backgroundColor: "#2563EB",
     },
-    heroName: { color: "#0F172A", fontWeight: "900", fontSize: 24 },
+    heroName: { color: "#0F172A", fontWeight: "700", fontSize: 24 },
     heroSub: { marginTop: 3, color: "#5B708E", fontWeight: "700" },
     badgeRow: { marginTop: 8, flexDirection: "row", gap: 8, flexWrap: "wrap" },
     quickActionBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
     quickActionText: { color: theme.colors.text, fontWeight: "700", fontSize: 13 },
     tabsBar: { flexDirection: "row", flexWrap: "wrap", marginTop: 16 },
     tabPanel: { paddingHorizontal: 28, paddingTop: 22, paddingBottom: 26, backgroundColor: "#FFFFFF", minHeight: 420 },
-    sectionTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 22, marginBottom: 12 },
+    sectionTitle: { color: theme.colors.text, fontWeight: "700", fontSize: 22, marginBottom: 12 },
     row: { flexDirection: "row", gap: 16, flexWrap: "nowrap" },
     rowStack: { flexDirection: "column", gap: 0 },
     fieldCol: { flex: 1, minWidth: 0 },
-    colorLabel: { marginTop: 12, marginBottom: 6, color: theme.colors.textSecondary, fontWeight: "800" },
+    colorLabel: { marginTop: 12, marginBottom: 6, color: theme.colors.textSecondary, fontWeight: "600" },
     colorPickerCard: {
       minHeight: 56,
       borderWidth: 1,
@@ -452,7 +452,7 @@ const createStyles = (theme: any) =>
       borderColor: "rgba(15, 23, 42, 0.12)",
     },
     colorPickerTextWrap: { flex: 1 },
-    colorValue: { color: theme.colors.text, fontWeight: "900", fontSize: 14 },
+    colorValue: { color: theme.colors.text, fontWeight: "700", fontSize: 14 },
     colorHelper: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
     dialogBackdrop: {
       flex: 1,
@@ -471,7 +471,7 @@ const createStyles = (theme: any) =>
       padding: 20,
     },
     dialogHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-    dialogTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 20 },
+    dialogTitle: { color: theme.colors.text, fontWeight: "700", fontSize: 20 },
     dialogSub: { marginTop: 4, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
     dialogCloseBtn: {
       width: 34,
@@ -496,8 +496,8 @@ const createStyles = (theme: any) =>
       gap: 14,
     },
     dialogPreviewCopy: { flex: 1 },
-    dialogPreviewLabel: { color: theme.colors.textSecondary, fontWeight: "800", fontSize: 12 },
-    dialogPreviewValue: { marginTop: 4, color: theme.colors.text, fontWeight: "900", fontSize: 16 },
+    dialogPreviewLabel: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 12 },
+    dialogPreviewValue: { marginTop: 4, color: theme.colors.text, fontWeight: "700", fontSize: 16 },
     colorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
     colorGridItem: {
       width: 54,
@@ -509,7 +509,7 @@ const createStyles = (theme: any) =>
     },
     settingsGrid: { flexDirection: "row", gap: 14, flexWrap: "wrap" },
     settingsBox: { borderWidth: 1, borderColor: "#D9E7FF", borderRadius: 8, padding: 14, backgroundColor: "#F8FBFF", marginTop: 4, minWidth: 240, flex: 1 },
-    settingsTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 13, marginBottom: 4 },
+    settingsTitle: { color: theme.colors.text, fontWeight: "700", fontSize: 13, marginBottom: 4 },
     footerActions: { flexDirection: "row", gap: 10, justifyContent: "flex-end", marginTop: 18 },
     topAction: {
       height: 36,
@@ -521,7 +521,7 @@ const createStyles = (theme: any) =>
       flexDirection: "row",
       gap: 6,
     },
-    topActionText: { fontWeight: "900", fontSize: 12 },
+    topActionText: { fontWeight: "700", fontSize: 12 },
     actionGhost: { borderColor: "#A9CBFF", backgroundColor: "#FFFFFF" },
     actionPrimary: { borderColor: "#1D4ED8", backgroundColor: "#2563EB" },
   });

@@ -217,7 +217,7 @@ export function WebOdontogram({
 
 const createStyles = () =>
   StyleSheet.create({
-    archLabel: { fontWeight: "900", opacity: 0.8, marginBottom: 8 },
+    archLabel: { fontWeight: "700", opacity: 0.8, marginBottom: 8 },
     switchBtn: {
       borderWidth: 1,
       borderColor: "rgba(0,0,0,0.15)",
@@ -231,7 +231,7 @@ const createStyles = () =>
       backgroundColor: "rgba(37,99,235,0.12)",
     },
     switchText: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 12,
       color: "rgba(0,0,0,0.75)",
     },

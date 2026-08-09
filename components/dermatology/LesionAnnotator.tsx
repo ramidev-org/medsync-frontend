@@ -134,7 +134,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    title: { fontWeight: "900", color: theme.colors.text },
+    title: { fontWeight: "700", color: theme.colors.text },
     row: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "center" },
     metaRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
     metaChip: {
@@ -148,7 +148,7 @@ const createStyles = (theme: any) =>
       borderRadius: 999,
       backgroundColor: theme.colors.background,
     },
-    metaText: { fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 },
+    metaText: { fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 },
     input: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -156,7 +156,7 @@ const createStyles = (theme: any) =>
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 10,
-      fontWeight: "800",
+      fontWeight: "600",
       color: theme.colors.text,
     },
     btn: {
@@ -167,7 +167,7 @@ const createStyles = (theme: any) =>
       paddingVertical: 10,
       backgroundColor: theme.colors.surface,
     },
-    btnText: { fontWeight: "900", color: theme.colors.primary },
+    btnText: { fontWeight: "700", color: theme.colors.primary },
     canvasWrap: {
       borderWidth: 1,
       borderColor: theme.colors.border,

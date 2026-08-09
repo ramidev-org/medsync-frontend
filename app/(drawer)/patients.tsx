@@ -170,7 +170,7 @@ const createStyles = (theme: any) =>
     clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     iconBtn: { width: 42, height: 42, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surface },
     addBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 12, backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 10, minHeight: 42 },
-    addTxt: { color: "#fff", fontWeight: "800" },
+    addTxt: { color: "#fff", fontWeight: "600" },
     pageContent: { flex: 1, minHeight: 0 },
     tableCard: { flex: 1, minHeight: 0 },
     tableScroller: { flex: 1 },

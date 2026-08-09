@@ -1461,7 +1461,7 @@ const styles = StyleSheet.create({
   title: {
     color: COLORS.text,
     fontSize: 28,
-    fontWeight: "800",
+    fontWeight: "600",
     letterSpacing: -0.5,
   },
   description: {
@@ -1514,17 +1514,17 @@ const styles = StyleSheet.create({
   },
   buttonTextWhite: {
     color: "#FFFFFF",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 14,
   },
   buttonTextDark: {
     color: "#334155",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 14,
   },
   buttonTextBlue: {
     color: "#1D4ED8",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 14,
   },
   pressed: {
@@ -1566,14 +1566,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     overflow: "hidden",
   },
   statNumber: {
     marginTop: 18,
     color: COLORS.text,
     fontSize: 32,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   statLabel: {
     marginTop: 4,
@@ -1610,7 +1610,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: COLORS.text,
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   sectionSubtitle: {
     marginTop: 4,
@@ -1660,7 +1660,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     color: "#334155",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 12,
   },
   filterChipTextActive: {
@@ -1678,7 +1678,7 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     color: COLORS.text,
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 14,
   },
   emptyStateText: {
@@ -1721,7 +1721,7 @@ const styles = StyleSheet.create({
   requestName: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   requestAge: {
     color: COLORS.lightMuted,
@@ -1761,7 +1761,7 @@ const styles = StyleSheet.create({
   },
   openButtonText: {
     color: "#334155",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 13,
   },
   sideColumn: {
@@ -1792,7 +1792,7 @@ const styles = StyleSheet.create({
   },
   alertTitle: {
     color: "#92400E",
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   alertText: {
@@ -1815,7 +1815,7 @@ const styles = StyleSheet.create({
   resultName: {
     color: COLORS.text,
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   resultNormal: {
     marginTop: 4,
@@ -1827,18 +1827,18 @@ const styles = StyleSheet.create({
   },
   resultValue: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   resultNoteNormal: {
     color: "#059669",
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 12,
     marginTop: 3,
   },
   resultNoteHigh: {
     color: "#DC2626",
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 12,
     marginTop: 3,
   },
@@ -1881,7 +1881,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 18,
   },
   modalSubtitle: {
@@ -1918,7 +1918,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: "#334155",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 13,
   },
   input: {
@@ -2004,12 +2004,12 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: "#334155",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 13,
   },
   chipTextSelected: {
     color: "#FFFFFF",
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 13,
   },
   paymentSummary: {
@@ -2020,7 +2020,7 @@ const styles = StyleSheet.create({
   },
   paymentTitle: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 15,
   },
   paymentRow: {
@@ -2034,7 +2034,7 @@ const styles = StyleSheet.create({
   },
   paymentValue: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 13,
   },
   modalFooter: {
@@ -2067,7 +2067,7 @@ const styles = StyleSheet.create({
   },
   resultEditName: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   resultEditInputs: {
@@ -2101,7 +2101,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 15,
     marginTop: 4,
   },
@@ -2117,7 +2117,7 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 15,
   },
   timelineRow: {
@@ -2138,7 +2138,7 @@ const styles = StyleSheet.create({
   },
   timelineStep: {
     color: COLORS.text,
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 14,
   },
   timelineTime: {
@@ -2157,7 +2157,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   bold: {
-    fontWeight: "900",
+    fontWeight: "700",
   },
   historyList: {
     gap: 10,
@@ -2180,7 +2180,7 @@ const styles = StyleSheet.create({
   },
   historyTitle: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   historyMeta: {
@@ -2212,7 +2212,7 @@ const styles = StyleSheet.create({
   reportClinic: {
     color: COLORS.text,
     fontSize: 20,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   reportSubtitle: {
     color: COLORS.muted,
@@ -2231,7 +2231,7 @@ const styles = StyleSheet.create({
   },
   reportInfoValue: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   reportResultsBox: {
@@ -2248,7 +2248,7 @@ const styles = StyleSheet.create({
   },
   reportResultName: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   reportResultValue: {
@@ -2266,7 +2266,7 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     color: COLORS.text,
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 14,
   },
   noteText: {

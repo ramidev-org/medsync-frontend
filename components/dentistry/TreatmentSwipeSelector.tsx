@@ -121,14 +121,14 @@ const createStyles = (theme: any) =>
     },
     eyebrow: {
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
       letterSpacing: 0.8,
       textTransform: "uppercase",
       color: theme.colors.primary,
     },
     title: {
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
       color: theme.colors.text,
     },
     grid: {
@@ -176,14 +176,14 @@ const createStyles = (theme: any) =>
     },
     tagText: {
       fontSize: 10,
-      fontWeight: "900",
+      fontWeight: "700",
       letterSpacing: 0.5,
       textTransform: "uppercase",
     },
     cardLabel: {
       fontSize: 16,
       lineHeight: 20,
-      fontWeight: "900",
+      fontWeight: "700",
       color: theme.colors.text,
     },
     cardDescription: {
@@ -201,7 +201,7 @@ const createStyles = (theme: any) =>
     },
     selectedPillText: {
       color: theme.colors.textOnPrimary,
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 12,
     },
   });

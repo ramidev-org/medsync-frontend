@@ -57,7 +57,7 @@ export function GynecologySteps({
               }}
             >
               <MaterialCommunityIcons name={s.icon} size={16} color={isActive ? theme.colors.textOnPrimary : theme.colors.textSecondary} />
-              <Text style={{ fontWeight: "900", fontSize: 12, color: isActive ? theme.colors.textOnPrimary : theme.colors.textSecondary }}>{s.title}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 12, color: isActive ? theme.colors.textOnPrimary : theme.colors.textSecondary }}>{s.title}</Text>
             </Pressable>
           );
         })}
@@ -70,7 +70,7 @@ export function GynecologySteps({
               <MaterialCommunityIcons name={step.icon} size={16} color={theme.colors.primary} />
             </View>
             <View>
-              <Text style={{ fontWeight: "900", color: theme.colors.text }}>{step.title}</Text>
+              <Text style={{ fontWeight: "700", color: theme.colors.text }}>{step.title}</Text>
               <Text style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>{step.subtitle}</Text>
             </View>
           </View>
@@ -85,7 +85,7 @@ export function GynecologySteps({
           <View style={{ gap: 10 }}>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
               <View style={{ flexDirection: "column", gap: 6 }}>
-                <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>LMP</Text>
+                <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>LMP</Text>
                 <DatePickerField label="LMP" date={form.history.lmp} setDate={(lmp) => setForm((f: any) => ({ ...f, history: { ...f.history, lmp } }))} />
               </View>
               <View style={{ minWidth: 220, flexGrow: 1, flexBasis: 220 }}>
@@ -142,7 +142,7 @@ export function GynecologySteps({
           }}
         >
           <MaterialCommunityIcons name="content-save-outline" size={16} color={theme.colors.textOnPrimary} />
-          <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Save step</Text>
+          <Text style={{ fontWeight: "700", color: theme.colors.textOnPrimary }}>Save step</Text>
         </Pressable>
       </View>
     </View>

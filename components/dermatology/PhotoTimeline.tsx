@@ -118,7 +118,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    title: { fontWeight: "900", color: theme.colors.text },
+    title: { fontWeight: "700", color: theme.colors.text },
     row: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "center" },
     input: {
       borderWidth: 1,
@@ -127,7 +127,7 @@ const createStyles = (theme: any) =>
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 10,
-      fontWeight: "800",
+      fontWeight: "600",
       color: theme.colors.text,
     },
     btn: {
@@ -138,7 +138,7 @@ const createStyles = (theme: any) =>
       paddingVertical: 10,
       backgroundColor: theme.colors.surface,
     },
-    btnText: { fontWeight: "900", color: theme.colors.primary },
+    btnText: { fontWeight: "700", color: theme.colors.primary },
 
     timelineWrap: { gap: 10, marginTop: 2 },
     itemRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
@@ -158,7 +158,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
     },
     thumb: { width: 108, height: 76, borderRadius: 10, backgroundColor: theme.colors.background },
-    cardTitle: { fontWeight: "900", color: theme.colors.text, fontSize: 13 },
+    cardTitle: { fontWeight: "700", color: theme.colors.text, fontSize: 13 },
     cardNote: { marginTop: 4, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
     removeBtn: {
       marginTop: 10,
@@ -172,7 +172,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 6,
     },
-    removeText: { fontWeight: "900", color: theme.colors.textSecondary },
+    removeText: { fontWeight: "700", color: theme.colors.textSecondary },
     empty: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -183,6 +183,6 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    emptyText: { fontWeight: "800", color: theme.colors.textSecondary },
+    emptyText: { fontWeight: "600", color: theme.colors.textSecondary },
   });
 

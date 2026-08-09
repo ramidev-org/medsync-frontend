@@ -164,7 +164,7 @@ export default function DoctorDashboardPage() {
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Patient Flow</Text>
                 <TouchableOpacity onPress={() => router.push("/statistiques")} style={{ paddingVertical: 4 }}>
-                  <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: 12, textDecorationLine: "underline" }}>View more data</Text>
+                  <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: 12, textDecorationLine: "underline" }}>View more data</Text>
                 </TouchableOpacity>
               </View>
               <View
@@ -196,7 +196,7 @@ export default function DoctorDashboardPage() {
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Taches recentes</Text>
                 <TouchableOpacity onPress={() => router.push("/tasks")}>
-                  <Text style={{ color: theme.colors.primary, fontWeight: "900", fontSize: 12 }}>View all tasks</Text>
+                  <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: 12 }}>View all tasks</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.activityList}>
@@ -262,7 +262,7 @@ const StatCard = ({ title, value, icon, iconFamily = "ion", color, theme }: Stat
       alignItems: "center",
       justifyContent: "center",
     },
-    statValue: { fontSize: 28, fontWeight: "800", marginBottom: 2, color: theme.colors.text },
+    statValue: { fontSize: 28, fontWeight: "600", marginBottom: 2, color: theme.colors.text },
     statTitle: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary },
   });
   return (

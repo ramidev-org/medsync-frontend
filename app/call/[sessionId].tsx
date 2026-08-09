@@ -548,7 +548,7 @@ const createStyles = (theme: any) =>
     eyebrow: {
       color: "#3158A8",
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
       textTransform: "uppercase",
       letterSpacing: 0.6,
     },
@@ -556,7 +556,7 @@ const createStyles = (theme: any) =>
       marginTop: 6,
       color: theme.colors.text,
       fontSize: 26,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     headerSubtitle: {
       marginTop: 4,
@@ -582,7 +582,7 @@ const createStyles = (theme: any) =>
     dangerBtnText: {
       color: "#FFFFFF",
       fontSize: 13,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     shell: {
       flex: 1,
@@ -614,13 +614,13 @@ const createStyles = (theme: any) =>
     callTitle: {
       color: theme.colors.text,
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callSubtitle: {
       marginTop: 4,
       color: "#64748B",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     callDeviceRow: {
       flexDirection: "row",
@@ -645,7 +645,7 @@ const createStyles = (theme: any) =>
     callDeviceBadgeText: {
       color: "#3158A8",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callDeviceBadgeTextWarning: {
       color: "#B45309",
@@ -694,7 +694,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: "#3158A8",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
       lineHeight: 18,
     },
     callNoticeTextError: {
@@ -743,17 +743,17 @@ const createStyles = (theme: any) =>
     },
     callAvatarText: {
       fontSize: 42,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callAvatarName: {
       color: theme.colors.text,
       fontSize: 22,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callAvatarMeta: {
       color: "#64748B",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     callAvatarHint: {
       maxWidth: 260,
@@ -780,12 +780,12 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: theme.colors.text,
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callParticipantStatus: {
       color: "#64748B",
       fontSize: 11,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     fallbackCard: {
       marginTop: 48,
@@ -803,7 +803,7 @@ const createStyles = (theme: any) =>
     fallbackTitle: {
       color: theme.colors.text,
       fontSize: 22,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     fallbackText: {
       color: "#64748B",
@@ -823,6 +823,6 @@ const createStyles = (theme: any) =>
     primaryBtnText: {
       color: "#FFFFFF",
       fontSize: 13,
-      fontWeight: "900",
+      fontWeight: "700",
     },
   });

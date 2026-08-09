@@ -1,3 +1,4 @@
+import "@/theme/global_typography";
 import { AppDataProvider } from "@/contexts/appData_context";
 import { AuthProvider, useAuth } from "@/contexts/auth_context";
 import { TasksProvider } from "@/contexts/tasks_context";
@@ -18,6 +19,12 @@ import {
     MaterialIcons,
 } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
 import { ActivityIndicator, Platform, View } from "react-native";
 
 function AuthGateWrapper() {
@@ -105,6 +112,10 @@ function AuthGateWrapper() {
 export default function RootLayout() {
   // ✅ LOAD ICON FONTS HERE (fixes □ icons on Vercel)
   const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
     ...Ionicons.font,
     ...MaterialIcons.font,
     ...MaterialCommunityIcons.font,

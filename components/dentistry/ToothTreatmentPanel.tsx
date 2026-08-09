@@ -103,14 +103,14 @@ export function ToothTreatmentPanel({
                 style={{ borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }}
               >
                 <MaterialCommunityIcons name="tooth-outline" size={16} color={theme.colors.textSecondary} />
-                <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 12 }}>Teeth</Text>
+                <Text style={{ fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>Teeth</Text>
               </TouchableOpacity>
             ) : null}
           </View>
 
           <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: theme.colors.background }}>
-            <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>Selected teeth</Text>
-            <Text style={{ marginTop: 4, fontWeight: "900", color: theme.colors.text, fontSize: 12 }}>
+            <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>Selected teeth</Text>
+            <Text style={{ marginTop: 4, fontWeight: "700", color: theme.colors.text, fontSize: 12 }}>
               {selectedTeeth.length ? selectedTeeth.join(", ") : "None"}
             </Text>
           </View>
@@ -123,7 +123,7 @@ export function ToothTreatmentPanel({
                 { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, borderColor: theme.colors.primary, backgroundColor: theme.colors.primary, opacity: selectedTeeth.length === 0 ? 0.45 : 1 },
               ]}
             >
-              <Text style={{ fontWeight: "900", fontSize: 12, color: theme.colors.textOnPrimary }}>Create treatment</Text>
+              <Text style={{ fontWeight: "700", fontSize: 12, color: theme.colors.textOnPrimary }}>Create treatment</Text>
             </TouchableOpacity>
             <TouchableOpacity
               disabled={selectedTeeth.length === 0}
@@ -133,7 +133,7 @@ export function ToothTreatmentPanel({
                 { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10 },
               ]}
             >
-              <Text style={{ fontWeight: "900", fontSize: 12, color: theme.colors.text }}>Clear selected</Text>
+              <Text style={{ fontWeight: "700", fontSize: 12, color: theme.colors.text }}>Clear selected</Text>
             </TouchableOpacity>
           </View>
 

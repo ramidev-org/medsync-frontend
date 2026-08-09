@@ -268,7 +268,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: "#71819A",
       fontSize: 13,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     sidebarList: {
       gap: 9,
@@ -305,12 +305,12 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: theme.colors.text,
       fontSize: 14,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     chatTime: {
       color: "#7B8AA1",
       fontSize: 10.5,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     chatLast: {
       marginTop: 4,
@@ -330,7 +330,7 @@ const createStyles = (theme: any) =>
     unreadText: {
       color: "#FFFFFF",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     mainPanel: {
       flex: 1,
@@ -367,7 +367,7 @@ const createStyles = (theme: any) =>
     emptyTitle: {
       color: theme.colors.text,
       fontSize: 16,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     emptySub: {
       marginTop: 6,
@@ -414,7 +414,7 @@ const createStyles = (theme: any) =>
       maxHeight: 100,
       color: "#334155",
       fontSize: 14,
-      fontWeight: "800",
+      fontWeight: "600",
       paddingVertical: 9,
     },
     sendBtn: {

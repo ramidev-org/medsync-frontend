@@ -280,7 +280,7 @@ const createStyles = (theme: any) =>
     },
     brandText: {
       color: "#1D4ED8",
-      fontWeight: "800",
+      fontWeight: "600",
       fontSize: 12,
     },
     heroTop: {
@@ -292,7 +292,7 @@ const createStyles = (theme: any) =>
     heroTitle: {
       color: theme.colors.text,
       fontSize: 28,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     heroDescription: {
       marginTop: 8,
@@ -321,7 +321,7 @@ const createStyles = (theme: any) =>
     },
     heroButtonText: {
       color: "#fff",
-      fontWeight: "900",
+      fontWeight: "700",
     },
     feedbackCard: {
       borderRadius: 16,
@@ -334,7 +334,7 @@ const createStyles = (theme: any) =>
       gap: 10,
       marginBottom: 12,
     },
-    feedbackText: { color: theme.colors.textSecondary, fontWeight: "800" },
+    feedbackText: { color: theme.colors.textSecondary, fontWeight: "600" },
     kpiGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -367,12 +367,12 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 10,
       paddingVertical: 5,
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     kpiValue: {
       color: theme.colors.text,
       fontSize: 28,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     kpiLabel: {
       color: theme.colors.textSecondary,
@@ -397,7 +397,7 @@ const createStyles = (theme: any) =>
     sectionTitle: {
       color: theme.colors.text,
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     sectionSubtitle: {
       color: theme.colors.textSecondary,
@@ -423,14 +423,14 @@ const createStyles = (theme: any) =>
     highlightTitle: {
       color: theme.colors.textSecondary,
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
       textTransform: "uppercase",
     },
     highlightMeta: {
       marginTop: 4,
       color: theme.colors.text,
       fontSize: 17,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     highlightDetail: {
       marginTop: 4,
@@ -447,7 +447,7 @@ const createStyles = (theme: any) =>
     snapshotLead: {
       color: "#1D4ED8",
       fontSize: 16,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     snapshotText: {
       color: "#334155",
@@ -465,11 +465,11 @@ const createStyles = (theme: any) =>
     snapshotMetricLabel: {
       color: theme.colors.textSecondary,
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
       textTransform: "uppercase",
     },
     snapshotMetricValue: {
       color: theme.colors.text,
-      fontWeight: "900",
+      fontWeight: "700",
     },
   });

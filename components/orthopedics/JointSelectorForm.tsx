@@ -41,7 +41,7 @@ export function JointSelectorForm({
           <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primarySoft, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.colors.border }}>
             <MaterialCommunityIcons name="flask-outline" size={16} color={theme.colors.primary} />
           </View>
-          <Text style={{ fontWeight: "900", color: theme.colors.text }}>Joint selection</Text>
+          <Text style={{ fontWeight: "700", color: theme.colors.text }}>Joint selection</Text>
         </View>
         <Dropdown
           label="Joint"
@@ -57,7 +57,7 @@ export function JointSelectorForm({
       </View>
 
       <View style={{ gap: 10 }}>
-        <Text style={{ fontWeight: "900", color: theme.colors.text }}>Quick pick</Text>
+        <Text style={{ fontWeight: "700", color: theme.colors.text }}>Quick pick</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
           {JOINTS.map((j) => {
             const active = j.id === selected;
@@ -74,7 +74,7 @@ export function JointSelectorForm({
                   paddingVertical: 8,
                 }}
               >
-                <Text style={{ fontWeight: "900", fontSize: 12, color: active ? theme.colors.primary : theme.colors.textSecondary }}>{j.label}</Text>
+                <Text style={{ fontWeight: "700", fontSize: 12, color: active ? theme.colors.primary : theme.colors.textSecondary }}>{j.label}</Text>
               </Pressable>
             );
           })}

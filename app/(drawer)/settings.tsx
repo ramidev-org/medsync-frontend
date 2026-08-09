@@ -380,7 +380,7 @@ const createStyles = (theme: any) =>
     },
     sidebarCaption: {
       fontSize: 10,
-      fontWeight: "800",
+      fontWeight: "600",
       marginBottom: 8,
       letterSpacing: 0.5,
     },
@@ -402,7 +402,7 @@ const createStyles = (theme: any) =>
       fontWeight: "700",
     },
     sidebarItemTextActive: {
-      fontWeight: "800",
+      fontWeight: "600",
     },
     logoutItem: {
       height: 36,
@@ -428,7 +428,7 @@ const createStyles = (theme: any) =>
     },
     breadcrumbTitle: {
       fontSize: 28,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     breadcrumbCurrent: {
       fontSize: 13,
@@ -451,7 +451,7 @@ const createStyles = (theme: any) =>
     },
     sectionHeading: {
       fontSize: 26,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     sectionSubheading: {
       marginTop: 6,
@@ -526,7 +526,7 @@ const createStyles = (theme: any) =>
     },
     linkButtonText: {
       fontSize: 13,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     sectionDivider: {
       height: 1,

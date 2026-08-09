@@ -1541,7 +1541,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: "#71819A",
       fontSize: 13,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     sidebarList: {
       gap: 9,
@@ -1582,12 +1582,12 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: theme.colors.text,
       fontSize: 14,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     chatTime: {
       color: "#7B8AA1",
       fontSize: 10.5,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     chatLast: {
       marginTop: 4,
@@ -1607,7 +1607,7 @@ const createStyles = (theme: any) =>
     unreadText: {
       color: "#FFFFFF",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     mainPanel: {
       flex: 1,
@@ -1652,7 +1652,7 @@ const createStyles = (theme: any) =>
     personName: {
       color: theme.colors.text,
       fontSize: 15,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     personStatusRow: {
       marginTop: 5,
@@ -1663,7 +1663,7 @@ const createStyles = (theme: any) =>
     personStatus: {
       color: "#64748B",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     headerActions: {
       flexDirection: "row",
@@ -1703,7 +1703,7 @@ const createStyles = (theme: any) =>
     callInviteOverlayTitle: {
       color: "#0F172A",
       fontSize: 20,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callInviteOverlayText: {
       color: "#475569",
@@ -1731,7 +1731,7 @@ const createStyles = (theme: any) =>
     callDeclineBtnText: {
       color: "#DC2626",
       fontSize: 13,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callAcceptBtn: {
       minWidth: 96,
@@ -1744,7 +1744,7 @@ const createStyles = (theme: any) =>
     callAcceptBtnText: {
       color: "#FFFFFF",
       fontSize: 13,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callShell: {
       flex: 1,
@@ -1779,7 +1779,7 @@ const createStyles = (theme: any) =>
     callTitle: {
       color: "#FFFFFF",
       fontSize: 16,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callSubtitle: {
       color: "rgba(255,255,255,0.72)",
@@ -1816,7 +1816,7 @@ const createStyles = (theme: any) =>
     callDeviceBadgeText: {
       color: "#DBEAFE",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callDeviceBadgeTextWarning: {
       color: "#FDE68A",
@@ -1863,7 +1863,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: "#E2E8F0",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
       lineHeight: 18,
     },
     callStage: {
@@ -1920,17 +1920,17 @@ const createStyles = (theme: any) =>
     callAvatarText: {
       color: "#FFFFFF",
       fontSize: 42,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callAvatarName: {
       color: "#F8FAFC",
       fontSize: 20,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callAvatarMeta: {
       color: "#CBD5E1",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     callAvatarHint: {
       maxWidth: 260,
@@ -1958,7 +1958,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       color: "#F8FAFC",
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callParticipantBadges: {
       flexDirection: "row",
@@ -1968,7 +1968,7 @@ const createStyles = (theme: any) =>
     callParticipantStatus: {
       color: "#CBD5E1",
       fontSize: 11,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     callEmptyState: {
       flex: 1,
@@ -1979,7 +1979,7 @@ const createStyles = (theme: any) =>
     callEmptyTitle: {
       color: "#F8FAFC",
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callEmptyText: {
       maxWidth: 320,
@@ -2023,7 +2023,7 @@ const createStyles = (theme: any) =>
     dropTitle: {
       color: "#0F172A",
       fontSize: 16,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     dropHint: {
       color: "#475569",
@@ -2057,7 +2057,7 @@ const createStyles = (theme: any) =>
     floatingDateText: {
       color: "#64748B",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     groupWrap: {
       marginBottom: 8,
@@ -2075,7 +2075,7 @@ const createStyles = (theme: any) =>
     datePillText: {
       color: "#64748B",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     messageRow: {
       alignItems: "stretch",
@@ -2099,7 +2099,7 @@ const createStyles = (theme: any) =>
       marginBottom: 6,
       color: "#64748B",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     senderLabelMine: {
       marginRight: 4,
@@ -2152,7 +2152,7 @@ const createStyles = (theme: any) =>
     callInviteTitle: {
       color: "#1F2937",
       fontSize: 14,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callInviteTitleMine: {
       color: "#15315D",
@@ -2183,7 +2183,7 @@ const createStyles = (theme: any) =>
     callInviteButtonText: {
       color: "#FFFFFF",
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     callInviteButtonTextMine: {
       color: "#1D4ED8",
@@ -2244,7 +2244,7 @@ const createStyles = (theme: any) =>
     replyPreviewName: {
       color: "#1D4ED8",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     replyPreviewNameMine: {
       color: "#15315D",
@@ -2272,7 +2272,7 @@ const createStyles = (theme: any) =>
     messageTime: {
       color: "#76869B",
       fontSize: 10.5,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     documentCard: {
       minWidth: 220,
@@ -2312,7 +2312,7 @@ const createStyles = (theme: any) =>
     documentName: {
       color: "#1F2937",
       fontSize: 14,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     documentNameMine: {
       color: "#15315D",
@@ -2344,7 +2344,7 @@ const createStyles = (theme: any) =>
     documentButtonText: {
       color: "#FFFFFF",
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     documentButtonTextMine: {
       color: "#1D4ED8",
@@ -2357,7 +2357,7 @@ const createStyles = (theme: any) =>
     emptyTitle: {
       color: theme.colors.text,
       fontSize: 16,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     emptySub: {
       marginTop: 6,
@@ -2393,7 +2393,7 @@ const createStyles = (theme: any) =>
     typingText: {
       color: "#64748B",
       fontSize: 12,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     composer: {
       minHeight: 64,
@@ -2452,7 +2452,7 @@ const createStyles = (theme: any) =>
     replyComposerLabel: {
       color: "#1D4ED8",
       fontSize: 11,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     replyComposerSnippet: {
       marginTop: 2,
@@ -2473,7 +2473,7 @@ const createStyles = (theme: any) =>
       maxHeight: 100,
       color: "#334155",
       fontSize: 14,
-      fontWeight: "800",
+      fontWeight: "600",
       paddingVertical: 9,
     },
     sendBtn: {

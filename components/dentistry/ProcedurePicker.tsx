@@ -83,8 +83,8 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.surface,
     },
     dot: { width: 10, height: 10, borderRadius: 999 },
-    btnText: { fontWeight: "900", opacity: 0.8 },
-    btnTextStrong: { fontWeight: "900" },
+    btnText: { fontWeight: "700", opacity: 0.8 },
+    btnTextStrong: { fontWeight: "700" },
     backdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.35)",
@@ -101,7 +101,7 @@ const createStyles = (theme: any) =>
       overflow: "hidden",
       padding: 14,
     },
-    title: { fontWeight: "900", marginBottom: 8 },
+    title: { fontWeight: "700", marginBottom: 8 },
     item: {
       flexDirection: "row",
       alignItems: "center",
@@ -112,6 +112,6 @@ const createStyles = (theme: any) =>
       paddingVertical: 12,
       marginBottom: 10,
     },
-    itemText: { fontWeight: "900" },
+    itemText: { fontWeight: "700" },
   });
 

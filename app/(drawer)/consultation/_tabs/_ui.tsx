@@ -48,8 +48,8 @@ const metricStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  label: { fontWeight: "800", fontSize: 13 },
-  value: { fontWeight: "900", fontSize: 14, marginTop: 2 },
+  label: { fontWeight: "600", fontSize: 13 },
+  value: { fontWeight: "700", fontSize: 14, marginTop: 2 },
 });
 
 /* ================= BLUE FIELD ================= */
@@ -66,7 +66,7 @@ export function BlueField({
 
   return (
     <View style={{ marginTop: 12, flex: 1 }}>
-      <Text style={{ color: theme.colors.primary, fontWeight: "900", marginBottom: 6 }}>
+      <Text style={{ color: theme.colors.primary, fontWeight: "700", marginBottom: 6 }}>
         {label}
       </Text>
 
@@ -134,7 +134,7 @@ export function SelectionCard({
         />
       </View>
       <View style={{ gap: 4 }}>
-        <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.text }}>
+        <Text style={{ fontWeight: "700", color: active ? theme.colors.primary : theme.colors.text }}>
           {title}
         </Text>
         <Text style={{ color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 }}>
@@ -160,7 +160,7 @@ export function SimpleInput({
 }) {
   return (
     <View style={{ flex: 1, marginTop: 12 }}>
-      <Text style={{ fontWeight: "800", marginBottom: 8 }}>{label}</Text>
+      <Text style={{ fontWeight: "600", marginBottom: 8 }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -238,7 +238,7 @@ const subTabStyles = StyleSheet.create({
     maxWidth: 260,
   },
   pillText: {
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 12,
   },
 });

@@ -65,7 +65,7 @@ export function WorkspaceReadOnlyField({
 }) {
   return (
     <View style={{ marginTop: 12, flex: 1 }}>
-      <Text style={{ color: theme.colors.primary, fontWeight: "900", marginBottom: 6 }}>{label}</Text>
+      <Text style={{ color: theme.colors.primary, fontWeight: "700", marginBottom: 6 }}>{label}</Text>
       <View style={{ flexDirection: "row", alignItems: multiline ? "flex-start" : "center", gap: 8 }}>
         {icon ? (
           <View
@@ -94,7 +94,7 @@ export function WorkspaceReadOnlyField({
           flex: 1,
         }}
       >
-        <Text style={{ fontWeight: "900", opacity: 0.75 }}>{value}</Text>
+        <Text style={{ fontWeight: "700", opacity: 0.75 }}>{value}</Text>
       </View>
       </View>
     </View>
@@ -118,7 +118,7 @@ export function WorkspaceInputField({
 }) {
   return (
     <View style={{ marginTop: 12, flex: 1 }}>
-      <Text style={{ color: theme.colors.primary, fontWeight: "900", marginBottom: 6 }}>{label}</Text>
+      <Text style={{ color: theme.colors.primary, fontWeight: "700", marginBottom: 6 }}>{label}</Text>
       <View style={{ flexDirection: "row", alignItems: multiline ? "flex-start" : "center", gap: 8 }}>
         {icon ? (
           <View
@@ -195,6 +195,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tabText: {
-    fontWeight: "900",
+    fontWeight: "700",
   },
 });

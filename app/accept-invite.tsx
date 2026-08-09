@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   summaryLabel: { fontSize: 12, fontWeight: "700", color: "#1d4ed8", textTransform: "uppercase" },
-  summaryValue: { fontSize: 16, fontWeight: "800", color: "#0f172a" },
+  summaryValue: { fontSize: 16, fontWeight: "600", color: "#0f172a" },
   form: { gap: 14 },
   row: { flexDirection: "row", gap: 10 },
   rowItem: { flex: 1 },
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   },
   pillActive: { borderColor: "#0D6EFD", backgroundColor: "#EFF6FF" },
   pillLocked: { alignSelf: "flex-start" },
-  pillText: { fontWeight: "800", color: "#334155" },
+  pillText: { fontWeight: "600", color: "#334155" },
   pillTextActive: { color: "#0D6EFD" },
   helpText: { flex: 1, color: "#64748b", fontSize: 13, lineHeight: 18 },
   button: {

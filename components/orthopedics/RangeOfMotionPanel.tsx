@@ -106,7 +106,7 @@ export function RangeOfMotionPanel({
         }}
       >
         <MaterialCommunityIcons name="plus" size={16} color={theme.colors.textOnPrimary} />
-        <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary }}>Create entry</Text>
+        <Text style={{ fontWeight: "700", color: theme.colors.textOnPrimary }}>Create entry</Text>
       </Pressable>
     </View>
   );
@@ -152,7 +152,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    title: { fontWeight: "900", color: theme.colors.text },
+    title: { fontWeight: "700", color: theme.colors.text },
     metaChip: {
       flexDirection: "row",
       alignItems: "center",
@@ -165,9 +165,9 @@ const createStyles = (theme: any) =>
       borderRadius: 999,
       backgroundColor: theme.colors.background,
     },
-    metaText: { fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 },
+    metaText: { fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 },
     grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-    label: { fontWeight: "800", color: theme.colors.textSecondary, marginTop: 6 },
+    label: { fontWeight: "600", color: theme.colors.textSecondary, marginTop: 6 },
     input: {
       marginTop: 8,
       borderWidth: 1,
@@ -176,7 +176,7 @@ const createStyles = (theme: any) =>
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 10,
-      fontWeight: "800",
+      fontWeight: "600",
       color: theme.colors.text,
     },
     hintCard: {

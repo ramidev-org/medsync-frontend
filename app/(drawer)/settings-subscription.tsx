@@ -32,8 +32,8 @@ export default function SubscriptionSettingsPage() {
 function Row({ label, value, theme }: { label: string; value: string; theme: any }) {
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 8 }}>
-      <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>{label}</Text>
-      <Text style={{ color: theme.colors.text, fontWeight: "900", textAlign: "right", flex: 1 }}>{value}</Text>
+      <Text style={{ color: theme.colors.textSecondary, fontWeight: "600" }}>{label}</Text>
+      <Text style={{ color: theme.colors.text, fontWeight: "700", textAlign: "right", flex: 1 }}>{value}</Text>
     </View>
   );
 }
@@ -41,6 +41,6 @@ function Row({ label, value, theme }: { label: string; value: string; theme: any
 const createStyles = (theme: any) =>
   StyleSheet.create({
     card: { padding: 16, marginBottom: 12 },
-    title: { color: theme.colors.text, fontWeight: "900", fontSize: 16 },
+    title: { color: theme.colors.text, fontWeight: "700", fontSize: 16 },
     copy: { marginTop: 8, color: theme.colors.textSecondary, fontWeight: "700", lineHeight: 20 },
   });

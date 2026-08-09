@@ -291,7 +291,7 @@ export default function StatistiquesPage() {
             padding: 16,
           }}
         >
-          <Text style={{ fontSize: 24, fontWeight: "900", color: theme.colors.text }}>
+          <Text style={{ fontSize: 24, fontWeight: "700", color: theme.colors.text }}>
             Statistics
           </Text>
           <Text
@@ -319,7 +319,7 @@ export default function StatistiquesPage() {
               gap: 10,
             }}
           >
-            <Text style={{ color: theme.colors.error, fontWeight: "800" }}>{error}</Text>
+            <Text style={{ color: theme.colors.error, fontWeight: "600" }}>{error}</Text>
           </View>
         ) : null}
 
@@ -341,7 +341,7 @@ export default function StatistiquesPage() {
               >
                 <Text
                   style={{
-                    fontWeight: "900",
+                    fontWeight: "700",
                     fontSize: 12,
                     color: active ? "#fff" : theme.colors.text,
                   }}
@@ -362,7 +362,7 @@ export default function StatistiquesPage() {
               backgroundColor: theme.colors.surface,
             }}
           >
-            <Text style={{ fontWeight: "900", fontSize: 12, color: theme.colors.text }}>
+            <Text style={{ fontWeight: "700", fontSize: 12, color: theme.colors.text }}>
               Refresh
             </Text>
           </TouchableOpacity>
@@ -380,7 +380,7 @@ export default function StatistiquesPage() {
         >
           <Text
             style={{
-              fontWeight: "900",
+              fontWeight: "700",
               fontSize: 18,
               color: theme.colors.text,
               marginBottom: 12,
@@ -399,7 +399,7 @@ export default function StatistiquesPage() {
               }}
             >
               <ActivityIndicator color={theme.colors.primary} />
-              <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: "600" }}>
                 Loading chart data…
               </Text>
             </View>

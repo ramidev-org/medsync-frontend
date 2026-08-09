@@ -104,7 +104,7 @@ function Field({
 }) {
   return (
     <View style={{ flex: 1, minWidth: field.multiline ? 280 : 220 }}>
-      <Text style={{ marginBottom: 6, fontWeight: "900", color: theme.colors.text }}>{field.label}</Text>
+      <Text style={{ marginBottom: 6, fontWeight: "700", color: theme.colors.text }}>{field.label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -175,16 +175,16 @@ export function SpecialtyInteractiveWorkspace({
           }}
         >
           <MaterialCommunityIcons name={icon} size={14} color="#1D4ED8" />
-          <Text style={{ color: "#1D4ED8", fontWeight: "800", fontSize: 12 }}>MedSync Specialty</Text>
+          <Text style={{ color: "#1D4ED8", fontWeight: "600", fontSize: 12 }}>MedSync Specialty</Text>
         </View>
-        <Text style={{ color: COLORS.text, fontSize: 27, fontWeight: "900", letterSpacing: -0.4 }}>{heroTitle}</Text>
+        <Text style={{ color: COLORS.text, fontSize: 27, fontWeight: "700", letterSpacing: -0.4 }}>{heroTitle}</Text>
         <Text style={{ marginTop: 6, color: COLORS.muted, fontWeight: "700", lineHeight: 21 }}>{heroSubtitle}</Text>
       </Card>
 
       <Card theme={theme}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
           <View style={{ flex: 1, minWidth: 240 }}>
-            <Text style={{ fontSize: 20, fontWeight: "900", color: theme.colors.text }}>{workspaceTitle}</Text>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.text }}>{workspaceTitle}</Text>
             <Text style={{ marginTop: 4, color: theme.colors.textSecondary, fontWeight: "700", lineHeight: 20 }}>
               {workspaceSubtitle}
             </Text>
@@ -198,7 +198,7 @@ export function SpecialtyInteractiveWorkspace({
               paddingVertical: 12,
             }}
           >
-            <Text style={{ color: "#FFFFFF", fontWeight: "900" }}>{actionLabel}</Text>
+            <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>{actionLabel}</Text>
           </TouchableOpacity>
         </View>
       </Card>
@@ -224,7 +224,7 @@ export function SpecialtyInteractiveWorkspace({
                   backgroundColor: active ? COLORS.blue : "#F1F5F9",
                 }}
               >
-                <Text style={{ fontWeight: "900", color: active ? "#FFFFFF" : "#334155", fontSize: 12 }}>{tab.label}</Text>
+                <Text style={{ fontWeight: "700", color: active ? "#FFFFFF" : "#334155", fontSize: 12 }}>{tab.label}</Text>
               </Pressable>
             );
           })}
@@ -254,7 +254,7 @@ export function SpecialtyInteractiveWorkspace({
                   paddingVertical: 10,
                 }}
               >
-                <Text style={{ color: "#92400E", fontWeight: "800" }}>{warningText}</Text>
+                <Text style={{ color: "#92400E", fontWeight: "600" }}>{warningText}</Text>
               </View>
             ) : null}
           </View>
@@ -262,7 +262,7 @@ export function SpecialtyInteractiveWorkspace({
 
         {mode === "widgets" ? (
           <View style={{ marginTop: 12, gap: 10 }}>
-            <Text style={{ fontWeight: "900", color: theme.colors.text }}>{widgetTitle}</Text>
+            <Text style={{ fontWeight: "700", color: theme.colors.text }}>{widgetTitle}</Text>
             <View style={{ minHeight: 156, flexDirection: "row", alignItems: "flex-end", gap: 10 }}>
               {widgetPoints.map((point, index) => {
                 const barHeight = Math.max(24, Math.round((point.value / pointsMax) * 120));
@@ -276,7 +276,7 @@ export function SpecialtyInteractiveWorkspace({
                         backgroundColor: COLORS.blue,
                       }}
                     />
-                    <Text style={{ fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary }}>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: theme.colors.textSecondary }}>
                       {point.displayValue ?? String(point.value)}
                     </Text>
                     <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary }}>
@@ -292,7 +292,7 @@ export function SpecialtyInteractiveWorkspace({
 
         {mode === "history" ? (
           <View style={{ marginTop: 12, gap: 8 }}>
-            <Text style={{ fontWeight: "900", color: theme.colors.text }}>{historyTitle}</Text>
+            <Text style={{ fontWeight: "700", color: theme.colors.text }}>{historyTitle}</Text>
             {historyRows.map((row) => (
               <View
                 key={row}
@@ -305,7 +305,7 @@ export function SpecialtyInteractiveWorkspace({
                 backgroundColor: COLORS.page,
               }}
             >
-                <Text style={{ fontWeight: "800", color: theme.colors.text }}>{row}</Text>
+                <Text style={{ fontWeight: "600", color: theme.colors.text }}>{row}</Text>
               </View>
             ))}
           </View>
@@ -331,7 +331,7 @@ export function SpecialtyInteractiveWorkspace({
             ]}
           >
             <View style={{ borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingHorizontal: 16, paddingVertical: 14 }}>
-              <Text style={{ fontSize: 18, fontWeight: "900", color: theme.colors.text }}>{modalTitle}</Text>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.text }}>{modalTitle}</Text>
               <Text style={{ marginTop: 4, color: theme.colors.textSecondary, fontWeight: "700" }}>{modalSubtitle}</Text>
             </View>
             <View style={{ paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
@@ -351,7 +351,7 @@ export function SpecialtyInteractiveWorkspace({
                   onPress={() => setModalOpen(false)}
                   style={{ borderRadius: 14, backgroundColor: "#F1F5F9", paddingHorizontal: 14, paddingVertical: 11 }}
                 >
-                  <Text style={{ color: "#334155", fontWeight: "900" }}>Cancel</Text>
+                  <Text style={{ color: "#334155", fontWeight: "700" }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
@@ -360,7 +360,7 @@ export function SpecialtyInteractiveWorkspace({
                   }}
                   style={{ borderRadius: 14, backgroundColor: COLORS.dark, paddingHorizontal: 14, paddingVertical: 11 }}
                 >
-                  <Text style={{ color: "#FFFFFF", fontWeight: "900" }}>Save</Text>
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Save</Text>
                 </TouchableOpacity>
               </View>
             </View>

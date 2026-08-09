@@ -67,8 +67,8 @@ const createStyles = (theme: any) =>
       gap: 10,
       backgroundColor: theme.colors.surface,
     },
-    title: { fontWeight: "900", color: theme.colors.primary },
-    subtitle: { fontWeight: "800", opacity: 0.7 },
+    title: { fontWeight: "700", color: theme.colors.primary },
+    subtitle: { fontWeight: "600", opacity: 0.7 },
     previewWrap: {
       height: 220,
       borderRadius: 12,
@@ -80,7 +80,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
     },
     preview: { width: "100%", height: "100%" },
-    empty: { fontWeight: "800", opacity: 0.6 },
+    empty: { fontWeight: "600", opacity: 0.6 },
     thumbRow: { gap: 10, paddingTop: 2, paddingBottom: 2 },
     thumbItem: { width: 110, gap: 6 },
     thumbBtn: {
@@ -103,6 +103,6 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surfaceVariant,
     },
-    removeText: { fontWeight: "900", fontSize: 12, opacity: 0.85 },
+    removeText: { fontWeight: "700", fontSize: 12, opacity: 0.85 },
   });
 

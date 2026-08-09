@@ -233,7 +233,7 @@ function CalendarPickerModal({
                     style={[
                       styles.dayText,
                       { color: inMonth ? theme.colors.text : theme.colors.textSecondary },
-                      active && { color: theme.colors.textOnPrimary, fontWeight: "900" },
+                      active && { color: theme.colors.textOnPrimary, fontWeight: "700" },
                     ]}
                   >
                     {date.getDate()}
@@ -497,7 +497,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
     },
     todayText: {
-      fontWeight: "800",
+      fontWeight: "600",
       fontSize: 12,
     },
     dateHeroBtn: {
@@ -512,7 +512,7 @@ const createStyles = (theme: any) =>
       minWidth: 240,
     },
     dateHeroTitle: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 13,
       textTransform: "capitalize",
     },
@@ -535,7 +535,7 @@ const createStyles = (theme: any) =>
       minWidth: 280,
     },
     dateTitle: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 22,
     },
     summaryPickerBtn: {
@@ -549,7 +549,7 @@ const createStyles = (theme: any) =>
       gap: 8,
     },
     summaryPickerText: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 12,
     },
     metricRow: {
@@ -579,7 +579,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
     },
     metricValue: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 22,
     },
     metricLabel: {
@@ -599,7 +599,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
     },
     filterText: {
-      fontWeight: "800",
+      fontWeight: "600",
       fontSize: 12,
       textTransform: "capitalize",
     },
@@ -624,7 +624,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 12,
     },
     slotHeaderLabel: {
-      fontWeight: "800",
+      fontWeight: "600",
       fontSize: 11,
       textTransform: "uppercase",
       letterSpacing: 0.5,
@@ -664,7 +664,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
     },
     roomTitle: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 12,
     },
     gridBody: {
@@ -690,7 +690,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
     },
     apptTitle: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 12,
     },
     apptMeta: {
@@ -719,7 +719,7 @@ const createStyles = (theme: any) =>
       alignItems: "flex-start",
     },
     dateModalTitle: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 20,
     },
     dateModalSubtitle: {
@@ -751,7 +751,7 @@ const createStyles = (theme: any) =>
       minWidth: 88,
     },
     historyChipDay: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 12,
     },
     historyChipDate: {
@@ -767,7 +767,7 @@ const createStyles = (theme: any) =>
       gap: 12,
     },
     calendarModalTitle: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 18,
     },
     calendarNavRow: {
@@ -776,7 +776,7 @@ const createStyles = (theme: any) =>
       gap: 10,
     },
     jumpTodayText: {
-      fontWeight: "800",
+      fontWeight: "600",
       fontSize: 13,
     },
     weekHeader: {

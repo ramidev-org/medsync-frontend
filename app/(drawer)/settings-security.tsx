@@ -34,5 +34,5 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     card: { padding: 16, gap: 12 },
     row: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-    text: { flex: 1, color: theme.colors.text, fontWeight: "800", lineHeight: 20 },
+    text: { flex: 1, color: theme.colors.text, fontWeight: "600", lineHeight: 20 },
   });

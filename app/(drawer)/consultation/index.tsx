@@ -4,7 +4,7 @@ import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useAuth } from "@/contexts/auth_context";
@@ -21,7 +21,7 @@ import { printOrdonnanceA4 } from "@/services/print.services";
 
 // Tab pages (separate files)
 import ConsultationHeader from "./_tabs/_consultation_header";
-import LettresTab from "./_tabs/_lettres";
+import LettresTab, { type LettresTabHandle } from "./_tabs/_lettres";
 import MaladiesTab from "./_tabs/_maladies";
 import ObservationMedicalTab from "./_tabs/_observation";
 import OrdonnancesTab from "./_tabs/_ordonnance";
@@ -152,6 +152,11 @@ const MAIN_TABS: { key: MainTabKey; label: string }[] = [
   { key: "diagnoses", label: "Maladies" },
   { key: "symptoms", label: "Symptômes" },
 ];
+
+function resolveModuleKey(value: unknown): MainTabKey | null {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return MAIN_TABS.some((tab) => tab.key === candidate) ? (candidate as MainTabKey) : null;
+}
 
 const WORKSPACE_OPTIONS = [
   { key: "general_medicine", label: "Medecine Generale" },
@@ -304,8 +309,8 @@ function formatVisitDateLabel(input?: string | null): string {
 
 /* ================= PAGE ================= */
 
-export default function ConsultationPage() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function ConsultationPage({ standaloneModule = false }: { standaloneModule?: boolean }) {
+  const { id, module: moduleParam, workspace: workspaceParam } = useLocalSearchParams<{ id: string; module?: string; workspace?: string }>();
   const router = useRouter();
   const { theme } = useTheme();
   const consultationTheme = theme;
@@ -325,14 +330,30 @@ export default function ConsultationPage() {
     : null;
   const doctorSpeciality =
     (user as any)?.doctorProfile?.speciality ?? null;
-  const [activeWorkspaceKey, setActiveWorkspaceKey] = useState<string>("general_medicine");
+  const routeWorkspaceKey = WORKSPACE_OPTION_KEYS.has(String(workspaceParam || ""))
+    ? sanitizeWorkspaceKey(workspaceParam)
+    : null;
+  const [activeWorkspaceKey, setActiveWorkspaceKey] = useState<string>(routeWorkspaceKey || "general_medicine");
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Which main tab is open (code key). Labels shown to the user are in French.
-  const [activeMainTab, setActiveMainTab] = useState<MainTabKey>("observation");
+  const requestedModule = resolveModuleKey(moduleParam);
+  const isStandalonePage = standaloneModule || Boolean(requestedModule);
+  const [activeMainTab, setActiveMainTab] = useState<MainTabKey>(requestedModule || "observation");
+  const [showModule, setShowModule] = useState(Boolean(requestedModule));
+
+  useEffect(() => {
+    const nextModule = resolveModuleKey(moduleParam);
+    setActiveMainTab(nextModule || "observation");
+    setShowModule(Boolean(nextModule));
+  }, [moduleParam]);
+
+  useEffect(() => {
+    if (routeWorkspaceKey) setActiveWorkspaceKey(routeWorkspaceKey);
+  }, [routeWorkspaceKey]);
 
   // Shared states for tabs
   const [vitals, setVitals] = useState<ConsultationVitals>(initialVitals);
@@ -341,6 +362,9 @@ export default function ConsultationPage() {
   const [diagnosisCodes, setDiagnosisCodes] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedOrdonnance, setSelectedOrdonnance] = useState<SelectedOrdonnance | null>(null);
+  const [ordonnanceResetSignal, setOrdonnanceResetSignal] = useState(0);
+  const [treatmentCreateSignal, setTreatmentCreateSignal] = useState(0);
+  const lettersRef = useRef<LettresTabHandle>(null);
   const isClosed = consultation?.status === "closed" || appointment?.status === "completed";
 
   /* ================= LOAD ================= */
@@ -371,7 +395,7 @@ export default function ConsultationPage() {
     });
     setDiagnosisCodes((session.diagnoses || []).map((d) => String(d.code || d.label)).filter(Boolean));
 
-    if (session.consultation.speciality_key) {
+    if (session.consultation.speciality_key && !routeWorkspaceKey) {
       setActiveWorkspaceKey(sanitizeWorkspaceKey(session.consultation.speciality_key));
     }
 
@@ -708,61 +732,126 @@ export default function ConsultationPage() {
 
   return (
     <View style={[styles.page, { backgroundColor: consultationTheme.colors.backgroundAlt }]}>
-      <TopBar theme={consultationTheme} />
+      {!isStandalonePage && <TopBar theme={consultationTheme} />}
 
-      <View
-        style={{
-          paddingHorizontal: PAGE_GUTTER,
-          position: "relative",
-          zIndex: 40,
-          ...(Platform.OS === "web" ? ({ overflow: "visible" } as any) : null),
-        }}
-      >
-        <ConsultationHeader
-          theme={consultationTheme}
-          title="CONSULTATION"
-          stepText="1/4"
-          onBack={() => router.push("/visits")}
-          onLastVisit={() => router.push("/consultations")}
-          onSave={isClosed ? undefined : saveDraft}
-          onClose={isClosed ? undefined : closeConsultation}
-          onPrint={handlePrintOrdonnance}
-          status={appointment?.status === "completed" ? "closed" : "in_consultation"}
-          patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
-          patientMeta={`${appointment?.patient?.age ?? "-"} ans • ${appointment?.patient?.sex === "female" ? "F" : "M"}`}
-          workspaceLabel={WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace"}
-          workspaceOptions={[...WORKSPACE_OPTIONS]}
-          onWorkspaceChange={isClosed ? undefined : (key) => setActiveWorkspaceKey(sanitizeWorkspaceKey(key))}
-          visitMeta={`Visite • ${formatVisitDateLabel(appointment?.time)}`}
-          consultationStats={{
-            statusLabel: appointment?.status === "completed" ? "TERMINEE" : "EN COURS",
-            specialtyLabel: WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace",
-            visitLabel: formatVisitDateLabel(appointment?.time),
-          }}
-        />
-      </View>
-
-      {/* Main tabs (simplified: wrapped layout, no horizontal scrolling) */}
-      <View style={{ paddingHorizontal: PAGE_GUTTER, position: "relative", zIndex: 5 }}>
-        <View style={styles.tabsContainer}>
-          {MAIN_TABS.map((t) => (
-            <TouchableOpacity
-              key={t.key}
-              onPress={() => setActiveMainTab(t.key)}
-              style={[
-                styles.mainTab,
-                activeMainTab === t.key && styles.mainTabActive,
-              ]}
-            >
-              <Text style={[styles.mainTabText, activeMainTab === t.key && styles.mainTabTextActive]}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      {isStandalonePage ? (
+        <View style={styles.standaloneHeader}>
+          <TouchableOpacity
+            onPress={() => router.replace({ pathname: "/consultation", params: { id: String(id) } } as any)}
+            style={styles.standaloneBack}
+            accessibilityLabel="Retour à la consultation"
+          >
+            <Ionicons name="chevron-back" size={22} color={consultationTheme.colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.standaloneTitle}>{activeMainTab === "observation" ? "Consultation" : MAIN_TABS.find((tab) => tab.key === activeMainTab)?.label}</Text>
+          <View style={styles.standaloneActions}>
+            {!isClosed && (
+              activeMainTab === "observation" ? (
+                <>
+                  <TouchableOpacity onPress={() => { if (Platform.OS === "web" && typeof window !== "undefined") window.print(); }} style={styles.standalonePrint}>
+                    <Ionicons name="print-outline" size={17} color={consultationTheme.colors.text} />
+                    <Text style={styles.standalonePrintText}>IMPRIMER</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push("/consultations?open_new=1" as any)} style={styles.standaloneNewConsultation}>
+                    <Ionicons name="add-circle-outline" size={18} color={consultationTheme.colors.textOnPrimary} />
+                    <Text style={styles.standaloneSaveText}>NOUVELLE CONSULTATION</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.standaloneMore} accessibilityLabel="Plus d’actions">
+                    <Ionicons name="ellipsis-vertical" size={20} color={consultationTheme.colors.primary} />
+                  </TouchableOpacity>
+                </>
+              ) : activeMainTab === "treatment" ? (
+                <>
+                  <TouchableOpacity onPress={() => { if (Platform.OS === "web" && typeof window !== "undefined") window.print(); }} style={styles.standalonePrint}>
+                    <Ionicons name="print-outline" size={17} color={consultationTheme.colors.text} />
+                    <Text style={styles.standalonePrintText}>IMPRIMER</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setTreatmentCreateSignal((value) => value + 1)} style={styles.standaloneNewConsultation}>
+                    <Ionicons name="add" size={19} color={consultationTheme.colors.textOnPrimary} />
+                    <Text style={styles.standaloneSaveText}>NOUVEAU TRAITEMENT</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.standaloneMore} accessibilityLabel="Plus d’actions">
+                    <Ionicons name="ellipsis-vertical" size={20} color={consultationTheme.colors.primary} />
+                  </TouchableOpacity>
+                </>
+              ) : activeMainTab === "letters" ? (
+                <>
+                  <TouchableOpacity onPress={() => lettersRef.current?.print()} style={styles.standalonePrint}>
+                    <Ionicons name="print-outline" size={17} color={consultationTheme.colors.text} />
+                    <Text style={styles.standalonePrintText}>IMPRIMER</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { lettersRef.current?.save(); void saveDraft(); }} style={styles.standaloneSave}>
+                    <Ionicons name="save-outline" size={16} color={consultationTheme.colors.textOnPrimary} />
+                    <Text style={styles.standaloneSaveText}>SAUVEGARDER</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { lettersRef.current?.save(); void closeConsultation(); }} style={styles.standaloneClose}>
+                    <Ionicons name="checkmark" size={17} color={consultationTheme.colors.textOnPrimary} />
+                    <Text style={styles.standaloneSaveText}>CLÔTURER</Text>
+                  </TouchableOpacity>
+                </>
+              ) : <>
+                {activeMainTab === "prescriptions" && (
+                  <TouchableOpacity onPress={() => setOrdonnanceResetSignal((value) => value + 1)} style={styles.standaloneReset}>
+                    <Ionicons name="refresh-outline" size={15} color={consultationTheme.colors.warning} />
+                    <Text style={styles.standaloneResetText}>RÉINITIALISER</Text>
+                  </TouchableOpacity>
+                )}
+                {(activeMainTab === "diagnoses" || activeMainTab === "symptoms") && (
+                  <TouchableOpacity onPress={saveDraft} style={styles.standaloneSync}>
+                    <Ionicons name="sync-outline" size={17} color={consultationTheme.colors.primary} />
+                    <Text style={styles.standaloneSyncText}>SYNC AVEC LA CONSULTATION</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={saveDraft} style={styles.standaloneSave}>
+                  <Ionicons name="save-outline" size={15} color={consultationTheme.colors.textOnPrimary} />
+                  <Text style={styles.standaloneSaveText}>SAUVEGARDER</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={closeConsultation} style={styles.standaloneClose}>
+                  <Ionicons name="checkmark" size={15} color={consultationTheme.colors.textOnPrimary} />
+                  <Text style={styles.standaloneSaveText}>CLÔTURER</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
-      </View>
+      ) : (
+        <View
+          style={{
+            paddingHorizontal: PAGE_GUTTER,
+            position: "relative",
+            zIndex: 40,
+            ...(Platform.OS === "web" ? ({ overflow: "visible" } as any) : null),
+          }}
+        >
+          <ConsultationHeader
+            theme={consultationTheme}
+            title="CONSULTATION"
+            stepText="1/4"
+            onBack={() => router.push("/visits")}
+            onLastVisit={() => router.push("/consultations")}
+            onSave={isClosed ? undefined : saveDraft}
+            onClose={isClosed ? undefined : closeConsultation}
+            onPrint={handlePrintOrdonnance}
+            status={appointment?.status === "completed" ? "closed" : "in_consultation"}
+            patientName={`${appointment?.patient?.first_name ?? ""} ${appointment?.patient?.last_name ?? ""}`.trim()}
+            patientMeta={`${appointment?.patient?.age ?? "-"} ans • ${appointment?.patient?.sex === "female" ? "F" : "M"}`}
+            patientBirthDate={appointment?.patient?.date_of_birth}
+            patientPhone={appointment?.patient?.phone}
+            patientId={appointment?.patient?.id}
+            doctorName={doctor?.nom_complet}
+            workspaceLabel={WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace"}
+            workspaceOptions={[...WORKSPACE_OPTIONS]}
+            onWorkspaceChange={(key) => setActiveWorkspaceKey(sanitizeWorkspaceKey(key))}
+            visitMeta={`Visite • ${formatVisitDateLabel(appointment?.time)}`}
+            consultationStats={{
+              statusLabel: appointment?.status === "completed" ? "TERMINEE" : "EN COURS",
+              specialtyLabel: WORKSPACE_OPTIONS.find((w) => w.key === activeWorkspaceKey)?.label || "Workspace",
+              visitLabel: formatVisitDateLabel(appointment?.time),
+            }}
+          />
+        </View>
+      )}
 
-      {/* Content */}
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: PAGE_GUTTER,
@@ -772,7 +861,50 @@ export default function ConsultationPage() {
           ...getWebContainerFill(),
         }}
       >
-        <View style={styles.contentCard}>
+        {!showModule ? (
+          <View style={styles.moduleGrid}>
+            {[
+              { key: "observation" as MainTabKey, title: "Observations médicales", description: "Consulter et gérer les observations médicales de la consultation.", icon: "medkit-outline" as const, color: "#2161f5", soft: "#edf3ff" },
+              { key: "prescriptions" as MainTabKey, title: "Ordonnances", description: "Créer, modifier et gérer les ordonnances médicales.", icon: "document-text-outline" as const, color: "#16a46b", soft: "#eafaf3" },
+              { key: "treatment" as MainTabKey, title: "Traitements", description: "Planifier et suivre les traitements recommandés.", icon: "bandage-outline" as const, color: "#8657f5", soft: "#f2edff" },
+              { key: "letters" as MainTabKey, title: "Lettres", description: "Rédiger et consulter les lettres médicales.", icon: "document-attach-outline" as const, color: "#f2a400", soft: "#fff8e5" },
+              { key: "diagnoses" as MainTabKey, title: "Maladies", description: "Consulter et gérer les antécédents médicaux et maladies.", icon: "heart-outline" as const, color: "#f05261", soft: "#ffedf0" },
+              { key: "symptoms" as MainTabKey, title: "Symptômes", description: "Consulter et gérer les symptômes rapportés.", icon: "thermometer-outline" as const, color: "#13a9b1", soft: "#e8f9fa" },
+            ].map((module) => (
+              <View key={module.key} style={styles.moduleCard}>
+                <View style={[styles.moduleIcon, { backgroundColor: module.soft }]}>
+                  <Ionicons name={module.icon} size={38} color={module.color} />
+                </View>
+                <Text style={styles.moduleTitle}>{module.title}</Text>
+                <Text style={styles.moduleDescription}>{module.description}</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    router.push({
+                      pathname: "/consultation-module/[id]/[module]",
+                      params: { id: String(id), module: module.key, workspace: activeWorkspaceKey },
+                    } as any);
+                  }}
+                  style={styles.moduleButton}
+                >
+                  <Text style={styles.moduleButtonText}>Accéder</Text>
+                  <Ionicons name="chevron-forward" size={17} color={consultationTheme.colors.textOnPrimary} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+        <>
+          {!isStandalonePage && <View style={styles.moduleToolbar}>
+            <TouchableOpacity
+              onPress={() => router.replace({ pathname: "/consultation", params: { id: String(id) } } as any)}
+              style={styles.moduleBack}
+            >
+              <Ionicons name="arrow-back" size={17} color={consultationTheme.colors.primary} />
+              <Text style={styles.moduleBackText}>Modules de consultation</Text>
+            </TouchableOpacity>
+            <Text style={styles.modulePageTitle}>{MAIN_TABS.find((tab) => tab.key === activeMainTab)?.label}</Text>
+          </View>}
+          <View style={[styles.contentCard, (activeMainTab === "prescriptions" || activeMainTab === "observation" || activeMainTab === "treatment" || activeMainTab === "letters" || activeMainTab === "diagnoses" || activeMainTab === "symptoms") && styles.prescriptionContentCard]}>
           {isClosed ? (
             <View style={styles.readOnlyBanner}>
               <Ionicons name="lock-closed-outline" size={16} color={consultationTheme.colors.success} />
@@ -797,6 +929,12 @@ export default function ConsultationPage() {
               patientId={appointment?.patient?.id}
               consultationId={consultation?.id}
               currentPayload={currentObservationPayload}
+              patient={appointment?.patient}
+              doctor={doctor}
+              consultationDate={appointment?.time}
+              diagnoses={diagnosisCodes}
+              treatmentPlan={consultation?.treatment_plan}
+              followUp={consultation?.follow_up}
             />
           </View>
 
@@ -804,6 +942,10 @@ export default function ConsultationPage() {
             <TreatmentTab
               theme={consultationTheme}
               workspaceKey={activeWorkspaceKey}
+              patient={appointment?.patient}
+              doctor={doctor}
+              consultationDate={appointment?.time}
+              createSignal={treatmentCreateSignal}
             />
           </View>
 
@@ -815,6 +957,7 @@ export default function ConsultationPage() {
               patientId={appointment?.patient?.id}
               signedBy={(doctor as any)?.signature_numerique || "MÃ©decin"}
               readOnly={isClosed}
+              resetSignal={ordonnanceResetSignal}
               onSelectedPrescriptionChange={(rx) => {
                 if (!rx) return setSelectedOrdonnance(null);
                 setSelectedOrdonnance({
@@ -858,9 +1001,11 @@ export default function ConsultationPage() {
 
           {activeMainTab === "letters" && (
           <LettresTab
+            ref={lettersRef}
             theme={consultationTheme}
             patient={appointment!.patient}
             doctor={doctor}
+            consultationId={consultation?.id}
             consultationSummary={{
               observations,
               conclusion: parameters.conclusion || "",
@@ -886,7 +1031,9 @@ export default function ConsultationPage() {
             />
           )}
 
-        </View>
+          </View>
+        </>
+        )}
       </ScrollView>
     </View>
   );
@@ -898,6 +1045,60 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     page: { flex: 1 },
 
+    moduleGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 18,
+    },
+    moduleCard: {
+      flexGrow: 1,
+      flexBasis: "30%",
+      minWidth: 260,
+      minHeight: 260,
+      paddingHorizontal: 24,
+      paddingVertical: 25,
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      ...(Platform.OS === "web" ? ({ boxShadow: "0 8px 22px rgba(15,23,42,0.06)" } as any) : null),
+    },
+    moduleIcon: { width: 76, height: 76, borderRadius: 18, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+    moduleTitle: { fontSize: 18, fontWeight: "700", textAlign: "center", color: theme.colors.text },
+    moduleDescription: { marginTop: 9, minHeight: 42, maxWidth: 260, fontSize: 12, lineHeight: 19, textAlign: "center", color: theme.colors.textSecondary },
+    moduleButton: { marginTop: 16, minWidth: 122, minHeight: 40, paddingVertical: 9, paddingHorizontal: 18, borderRadius: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, backgroundColor: theme.colors.primary, ...(Platform.OS === "web" ? ({ boxShadow: "0 5px 12px rgba(37,99,235,0.2)" } as any) : null) },
+    moduleButtonText: { fontSize: 12, fontWeight: "700", color: theme.colors.textOnPrimary },
+    moduleToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
+    moduleBack: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8 },
+    moduleBackText: { color: theme.colors.primary, fontWeight: "600", fontSize: 12 },
+    modulePageTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
+    standaloneHeader: {
+      marginHorizontal: PAGE_GUTTER,
+      minHeight: 72,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 18,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    standaloneBack: { width: 48, height: 48, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, alignItems: "center", justifyContent: "center", ...(Platform.OS === "web" ? ({ boxShadow: "0 3px 10px rgba(15,23,42,0.05)" } as any) : null) },
+    standaloneTitle: { flex: 1, fontSize: 21, fontWeight: "700", color: theme.colors.text },
+    standaloneActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    standalonePrint: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 15, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 9, backgroundColor: theme.colors.surface },
+    standalonePrintText: { fontSize: 11, fontWeight: "600", color: theme.colors.text },
+    standaloneNewConsultation: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 16, borderRadius: 9, backgroundColor: theme.colors.primary },
+    standaloneMore: { width: 42, height: 42, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.colors.border, borderRadius: 9, backgroundColor: theme.colors.surface },
+    standaloneReset: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 9, borderWidth: 1, borderColor: theme.colors.warning, backgroundColor: theme.colors.surface },
+    standaloneResetText: { color: theme.colors.warning, fontSize: 11, fontWeight: "700" },
+    standaloneSync: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 9, borderWidth: 1, borderColor: "#a9c6ff", backgroundColor: theme.colors.surface },
+    standaloneSyncText: { color: theme.colors.primary, fontSize: 11, fontWeight: "700" },
+    standaloneSave: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 9, backgroundColor: theme.colors.info },
+    standaloneClose: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 9, backgroundColor: theme.colors.success },
+    standaloneSaveText: { color: theme.colors.textOnPrimary, fontSize: 11, fontWeight: "700" },
+
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -907,15 +1108,15 @@ const createStyles = (theme: any) =>
       paddingBottom: 6,
     },
     titleLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-    titleText: { fontSize: 18, fontWeight: "900", letterSpacing: 0.5 },
+    titleText: { fontSize: 18, fontWeight: "700", letterSpacing: 0.5 },
     titlePill: {
       backgroundColor: theme.colors.primary,
       paddingHorizontal: 10,
       paddingVertical: 4,
       borderRadius: 999,
     },
-    titlePillText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
-    lastVisitText: { color: theme.colors.text, opacity: 0.7, fontWeight: "800" },
+    titlePillText: { color: theme.colors.textOnPrimary, fontWeight: "700" },
+    lastVisitText: { color: theme.colors.text, opacity: 0.7, fontWeight: "600" },
 
     tabsContainer: {
       paddingHorizontal: 0,
@@ -952,7 +1153,7 @@ const createStyles = (theme: any) =>
     },
     mainTabText: {
       color: theme.colors.textSecondary,
-      fontWeight: "900",
+      fontWeight: "700",
       textAlign: "center",
     },
     mainTabTextActive: {
@@ -970,6 +1171,13 @@ const createStyles = (theme: any) =>
           } as any)
         : null),
     },
+    prescriptionContentCard: {
+      borderWidth: 0,
+      borderRadius: 0,
+      backgroundColor: "transparent",
+      padding: 0,
+      ...(Platform.OS === "web" ? ({ boxShadow: "none" } as any) : null),
+    },
     readOnlyBanner: {
       marginBottom: 12,
       borderWidth: 1,
@@ -984,7 +1192,7 @@ const createStyles = (theme: any) =>
     },
     readOnlyBannerText: {
       color: theme.colors.text,
-      fontWeight: "800",
+      fontWeight: "600",
     },
 
     backFooter: {
@@ -997,6 +1205,6 @@ const createStyles = (theme: any) =>
     },
     backFooterText: {
       color: theme.colors.primary,
-      fontWeight: "900",
+      fontWeight: "700",
     },
   });

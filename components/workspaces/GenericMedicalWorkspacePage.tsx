@@ -101,7 +101,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
 
           {workspaceTab === "treatment" && (
             <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.background, padding: 10, gap: 10 }}>
-              <Text style={{ fontWeight: "900", color: theme.colors.primary }}>Treatment</Text>
+              <Text style={{ fontWeight: "700", color: theme.colors.primary }}>Treatment</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {[
                   { key: "follow_up_treatment", label: "Follow-up treatment" },
@@ -123,7 +123,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                         paddingVertical: 8,
                       }}
                     >
-                      <Text style={{ fontWeight: "900", color: active ? theme.colors.primary : theme.colors.textSecondary, fontSize: 12 }}>
+                      <Text style={{ fontWeight: "700", color: active ? theme.colors.primary : theme.colors.textSecondary, fontSize: 12 }}>
                         {t.label}
                       </Text>
                     </TouchableOpacity>
@@ -142,7 +142,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                   }}
                   style={{ backgroundColor: theme.colors.primary, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10 }}
                 >
-                  <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 12 }}>Add treatment</Text>
+                  <Text style={{ fontWeight: "700", color: theme.colors.textOnPrimary, fontSize: 12 }}>Add treatment</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -150,11 +150,11 @@ export default function GenericMedicalWorkspacePage(props: Props) {
 
           {workspaceTab === "treatment_history" && (
             <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.background, padding: 10, gap: 8 }}>
-              <Text style={{ fontWeight: "900", color: theme.colors.text }}>Treatment History</Text>
+              <Text style={{ fontWeight: "700", color: theme.colors.text }}>Treatment History</Text>
               {treatmentHistory.length > 0 ? (
                 treatmentHistory.map((row) => (
                   <View key={row.id} style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface }}>
-                    <Text style={{ fontWeight: "900", color: theme.colors.text }}>{row.type}</Text>
+                    <Text style={{ fontWeight: "700", color: theme.colors.text }}>{row.type}</Text>
                     <Text style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>{row.createdAt}</Text>
                     {!!row.note && <Text style={{ marginTop: 6, fontWeight: "700", color: theme.colors.textSecondary }}>{row.note}</Text>}
                   </View>
@@ -164,7 +164,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
               ) : (
                 props.historyRows.map((row) => (
                   <View key={row} style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface }}>
-                    <Text style={{ fontWeight: "800", color: theme.colors.text }}>{row}</Text>
+                    <Text style={{ fontWeight: "600", color: theme.colors.text }}>{row}</Text>
                   </View>
                 ))
               )}
@@ -182,7 +182,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                       setIsEditingCurrentParams(true);
                     }}
                   >
-                    <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>EDIT PARAMETERS</Text>
+                    <Text style={{ fontWeight: "700", color: "#fff", fontSize: 12 }}>EDIT PARAMETERS</Text>
                   </TouchableOpacity>
                 ) : (
                   <View style={{ flexDirection: "row", gap: 8 }}>
@@ -194,7 +194,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                         setIsEditingCurrentParams(false);
                       }}
                     >
-                      <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>CONFIRM</Text>
+                      <Text style={{ fontWeight: "700", color: "#fff", fontSize: 12 }}>CONFIRM</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={{ backgroundColor: theme.colors.textSecondary, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 }}
@@ -203,7 +203,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                         setIsEditingCurrentParams(false);
                       }}
                     >
-                      <Text style={{ fontWeight: "900", color: "#fff", fontSize: 12 }}>CANCEL</Text>
+                      <Text style={{ fontWeight: "700", color: "#fff", fontSize: 12 }}>CANCEL</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -211,7 +211,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
 
               {!!defaultFields.length && (
                 <View style={{ marginTop: 10 }}>
-                  <Text style={{ fontWeight: "900", color: theme.colors.text }}>Default consultation criteria</Text>
+                  <Text style={{ fontWeight: "700", color: theme.colors.text }}>Default consultation criteria</Text>
                   <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
                     {defaultFields.map((f) =>
                       isEditingCurrentParams ? (
@@ -236,7 +236,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
               )}
 
               <View style={{ marginTop: 10 }}>
-                <Text style={{ fontWeight: "900", color: theme.colors.text }}>Specialty-specific criteria</Text>
+                <Text style={{ fontWeight: "700", color: theme.colors.text }}>Specialty-specific criteria</Text>
                 <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
                   {specialtyFields.map((f) =>
                   isEditingCurrentParams ? (
@@ -273,21 +273,21 @@ export default function GenericMedicalWorkspacePage(props: Props) {
                       activeOpacity={0.8}
                     >
                       <View style={{ width: 6, height: 22, borderRadius: 6, marginRight: 10, backgroundColor: expanded ? theme.colors.warning : theme.colors.border }} />
-                      <Text style={{ flex: 1, fontWeight: "900", opacity: expanded ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                      <Text style={{ flex: 1, fontWeight: "700", opacity: expanded ? 1 : 0.75 }}>{p.visitLabel}</Text>
                       <MaterialCommunityIcons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
                     </TouchableOpacity>
                     {expanded ? (
                       <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
-                        <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{p.visitLabel}</Text>
+                        <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>{p.visitLabel}</Text>
                         {!!defaultFields.length && (
                           <>
-                            <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Default consultation criteria</Text>
+                            <Text style={{ marginTop: 10, fontWeight: "700", color: theme.colors.text }}>Default consultation criteria</Text>
                             {defaultFields.map((f) => (
                               <WorkspaceReadOnlyField key={`prev-default-${p.visitLabel}-${f.key}`} theme={theme} label={`${f.label} :`} value={p.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key]} />
                             ))}
                           </>
                         )}
-                        <Text style={{ marginTop: 10, fontWeight: "900", color: theme.colors.text }}>Specialty-specific criteria</Text>
+                        <Text style={{ marginTop: 10, fontWeight: "700", color: theme.colors.text }}>Specialty-specific criteria</Text>
                         {specialtyFields.map((f) => (
                           <WorkspaceReadOnlyField key={`prev-specialty-${p.visitLabel}-${f.key}`} theme={theme} label={`${f.label} :`} value={p.values?.[f.key] ?? "-"} multiline={f.multiline} icon={FIELD_ICONS[f.key] ?? "file-document-outline"} />
                         ))}

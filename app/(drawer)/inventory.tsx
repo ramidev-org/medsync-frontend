@@ -229,7 +229,7 @@ export default function InventoryPage() {
                   </View>
                   <Text style={styles.cell}>{String(item.qty_on_hand ?? 0)}</Text>
                   <Text style={styles.cell}>{String(item.reorder_threshold ?? 0)}</Text>
-                  <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "900" }]}>
+                  <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "700" }]}>
                     {low ? "Low" : "Healthy"}
                   </Text>
                   <TouchableOpacity style={styles.rowActionBtn} onPress={() => onOpenAdjust(item)}>
@@ -321,7 +321,7 @@ function StatCard({ label, value, tone, theme }: { label: string; value: string;
   return (
     <View style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.surface, padding: 10 }}>
       <Text style={{ color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11 }}>{label}</Text>
-      <Text style={{ color: tone, fontWeight: "900", fontSize: 20, marginTop: 4 }}>{value}</Text>
+      <Text style={{ color: tone, fontWeight: "700", fontSize: 20, marginTop: 4 }}>{value}</Text>
     </View>
   );
 }
@@ -343,7 +343,7 @@ function Input({
 }) {
   return (
     <View style={{ marginTop: 10 }}>
-      <Text style={{ color: theme.colors.textSecondary, fontWeight: "800", marginBottom: 6 }}>{label}</Text>
+      <Text style={{ color: theme.colors.textSecondary, fontWeight: "600", marginBottom: 6 }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -388,7 +388,7 @@ const createStyles = (theme: any) =>
     heroEyebrow: {
       color: theme.colors.primary,
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
       textTransform: "uppercase",
       letterSpacing: 0.4,
     },
@@ -396,7 +396,7 @@ const createStyles = (theme: any) =>
       marginTop: 4,
       color: theme.colors.text,
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     banner: {
       marginBottom: 12,
@@ -406,7 +406,7 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
     },
-    bannerText: { fontWeight: "800", color: theme.colors.text },
+    bannerText: { fontWeight: "600", color: theme.colors.text },
     primaryBtn: {
       flexDirection: "row",
       alignItems: "center",
@@ -416,7 +416,7 @@ const createStyles = (theme: any) =>
       borderRadius: 10,
       backgroundColor: theme.colors.primary,
     },
-    primaryBtnText: { color: "#fff", fontWeight: "900" },
+    primaryBtnText: { color: "#fff", fontWeight: "700" },
     statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
     searchWrap: {
       flex: 1,
@@ -443,7 +443,7 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
     },
-    secondaryBtnText: { color: theme.colors.text, fontWeight: "800" },
+    secondaryBtnText: { color: theme.colors.text, fontWeight: "600" },
     listWrap: {
       flex: 1,
       minHeight: 0,
@@ -465,7 +465,7 @@ const createStyles = (theme: any) =>
       paddingVertical: 10,
       gap: 8,
     },
-    hCell: { flex: 1, color: theme.colors.textSecondary, fontWeight: "900", fontSize: 12 },
+    hCell: { flex: 1, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
     itemRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -475,7 +475,7 @@ const createStyles = (theme: any) =>
       paddingVertical: 12,
       gap: 8,
     },
-    itemTitle: { color: theme.colors.text, fontWeight: "900" },
+    itemTitle: { color: theme.colors.text, fontWeight: "700" },
     itemSub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
     cell: { flex: 1, color: theme.colors.text, fontWeight: "700" },
     rowActionBtn: {
@@ -489,7 +489,7 @@ const createStyles = (theme: any) =>
       paddingVertical: 6,
       backgroundColor: theme.colors.background,
     },
-    rowActionText: { color: theme.colors.text, fontWeight: "800", fontSize: 12 },
+    rowActionText: { color: theme.colors.text, fontWeight: "600", fontSize: 12 },
     emptyRow: { padding: 16 },
     emptyText: { color: theme.colors.textSecondary, fontWeight: "700" },
     modalBackdrop: {
@@ -508,7 +508,7 @@ const createStyles = (theme: any) =>
       borderRadius: 14,
       padding: 14,
     },
-    modalTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 17 },
+    modalTitle: { color: theme.colors.text, fontWeight: "700", fontSize: 17 },
     modalActions: { marginTop: 14, flexDirection: "row", justifyContent: "flex-end", gap: 8 },
     modalCancelBtn: {
       height: 38,
@@ -520,7 +520,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       backgroundColor: theme.colors.background,
     },
-    modalCancelText: { color: theme.colors.text, fontWeight: "800" },
+    modalCancelText: { color: theme.colors.text, fontWeight: "600" },
     modalSaveBtn: {
       height: 38,
       paddingHorizontal: 14,
@@ -529,7 +529,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       backgroundColor: theme.colors.primary,
     },
-    modalSaveText: { color: "#fff", fontWeight: "900" },
+    modalSaveText: { color: "#fff", fontWeight: "700" },
     adjustItemName: { marginTop: 6, color: theme.colors.textSecondary, fontWeight: "700" },
     adjustActions: { marginTop: 14, flexDirection: "row", gap: 8 },
     adjustBtn: {
@@ -541,5 +541,5 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       gap: 6,
     },
-    adjustBtnText: { color: "#fff", fontWeight: "900" },
+    adjustBtnText: { color: "#fff", fontWeight: "700" },
   });

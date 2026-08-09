@@ -27,7 +27,7 @@ export const createTableStyles = (theme: any) =>
     },
     headerText: {
       fontSize: 11,
-      fontWeight: "800",
+      fontWeight: "600",
       textTransform: "uppercase",
       letterSpacing: 0.4,
       color: theme.colors.textSecondary,

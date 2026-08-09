@@ -233,7 +233,7 @@ export default function ServicesPage() {
 
       {loading ? (
         <View style={{ paddingVertical: 30 }}>
-          <Text style={{ color: theme.colors.textSecondary, fontWeight: "800" }}>
+          <Text style={{ color: theme.colors.textSecondary, fontWeight: "600" }}>
             Chargement…
           </Text>
         </View>
@@ -257,7 +257,7 @@ export default function ServicesPage() {
                   }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={[tableStyles.cell, { fontWeight: "900" }]}>{s.name}</Text>
+                  <Text style={[tableStyles.cell, { fontWeight: "700" }]}>{s.name}</Text>
                   <Text style={{ color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 }}>
                     {s.code ? `Code: ${s.code}` : "—"}
                     {s.active ? "" : " • Inactif"}
@@ -391,7 +391,7 @@ function Field({
 }) {
   return (
     <View style={{ marginTop: 12 }}>
-      <Text style={{ fontWeight: "800", color: theme.colors.textSecondary }}>{label}</Text>
+      <Text style={{ fontWeight: "600", color: theme.colors.textSecondary }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -409,7 +409,7 @@ function Field({
           paddingHorizontal: 12,
           paddingVertical: Platform.OS === "web" ? 10 : 10,
           color: theme.colors.text,
-          fontWeight: "800",
+          fontWeight: "600",
         }}
       />
     </View>
@@ -430,7 +430,7 @@ const createStyles = (theme: any) =>
       height: 44,
       minWidth: 260,
     },
-    searchInput: { flex: 1, fontWeight: "800", color: theme.colors.text },
+    searchInput: { flex: 1, fontWeight: "600", color: theme.colors.text },
     searchBtn: {
       height: 44,
       paddingHorizontal: 14,
@@ -441,7 +441,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    searchBtnText: { color: theme.colors.text, fontWeight: "900" },
+    searchBtnText: { color: theme.colors.text, fontWeight: "700" },
     primaryBtn: {
       height: 44,
       paddingHorizontal: 14,
@@ -451,7 +451,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    primaryBtnText: { color: "#fff", fontWeight: "900" },
+    primaryBtnText: { color: "#fff", fontWeight: "700" },
 
     banner: {
       marginTop: 12,
@@ -464,7 +464,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 10,
     },
-    bannerText: { flex: 1, fontWeight: "800", color: theme.colors.text },
+    bannerText: { flex: 1, fontWeight: "600", color: theme.colors.text },
 
     rowBtn: {
       width: 36,
@@ -487,7 +487,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 6,
     },
-    emptyTitle: { fontWeight: "900", color: theme.colors.text },
+    emptyTitle: { fontWeight: "700", color: theme.colors.text },
     emptyText: { textAlign: "center", color: theme.colors.textSecondary, fontWeight: "700" },
 
     paginationRow: {
@@ -498,7 +498,7 @@ const createStyles = (theme: any) =>
       flexWrap: "wrap",
       gap: 10,
     },
-    paginationText: { color: theme.colors.textSecondary, fontWeight: "800" },
+    paginationText: { color: theme.colors.textSecondary, fontWeight: "600" },
     pageBtn: {
       flexDirection: "row",
       alignItems: "center",
@@ -510,7 +510,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 10,
       height: 40,
     },
-    pageBtnText: { fontWeight: "900", color: theme.colors.text },
+    pageBtnText: { fontWeight: "700", color: theme.colors.text },
 
     modalBackdrop: {
       flex: 1,
@@ -529,7 +529,7 @@ const createStyles = (theme: any) =>
       padding: 14,
       maxHeight: "86%",
     },
-    modalTitle: { fontWeight: "900", fontSize: 16, color: theme.colors.text },
+    modalTitle: { fontWeight: "700", fontSize: 16, color: theme.colors.text },
     saveBtn: {
       marginTop: 14,
       backgroundColor: theme.colors.primary,
@@ -541,5 +541,5 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       gap: 8,
     },
-    saveBtnText: { color: "#fff", fontWeight: "900" },
+    saveBtnText: { color: "#fff", fontWeight: "700" },
   });

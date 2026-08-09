@@ -3,6 +3,8 @@ import type { PrescriptionRow, PrescriptionStatus } from "@/services/backend.typ
 
 export type UpsertPrescriptionMedicationInput = {
   name: string;
+  catalogId?: string | null;
+  quantity?: number | null;
   dose?: string | null;
   frequency?: string | null;
   duration?: string | null;
@@ -49,7 +51,9 @@ export async function upsertPrescription(params: {
       p_status: params.status ?? "draft",
       p_notes: params.notes ?? null,
       p_medications: params.medications.map((item) => ({
+        catalog_id: item.catalogId ?? null,
         medicine_name: item.name,
+        quantity: item.quantity ?? 1,
         dose: item.dose ?? null,
         frequency: item.frequency ?? null,
         duration: item.duration ?? null,

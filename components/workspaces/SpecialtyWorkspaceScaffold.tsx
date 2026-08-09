@@ -116,7 +116,7 @@ const createStyles = (theme: any) =>
     title: {
       color: theme.colors.text,
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     subtitle: {
       marginTop: 3,
@@ -147,7 +147,7 @@ const createStyles = (theme: any) =>
     statValue: {
       color: "#0F172A",
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     statLabel: {
       marginTop: 2,

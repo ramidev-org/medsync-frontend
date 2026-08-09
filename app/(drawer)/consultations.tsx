@@ -177,7 +177,7 @@ export default function ConsultationsPage() {
                   },
                 ]}
               >
-                <Text style={{ color: active ? "#fff" : theme.colors.text, fontWeight: "900" }}>{label}</Text>
+                <Text style={{ color: active ? "#fff" : theme.colors.text, fontWeight: "700" }}>{label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -200,7 +200,7 @@ export default function ConsultationsPage() {
 
         {rows.map((r) => (
           <View key={r.consultation_id} style={[tableStyles.tableRow, styles.tableRowWorkspace]}>
-            <Text style={[tableStyles.cell, { flex: 2, fontWeight: "900" }]}>
+            <Text style={[tableStyles.cell, { flex: 2, fontWeight: "700" }]}>
               {r.patient_first_name} {r.patient_last_name}
             </Text>
             <Text style={[tableStyles.cell, { flex: 1.5 }]}>{r.doctor_name || "—"}</Text>
@@ -268,7 +268,7 @@ const createStyles = (theme: any) =>
       height: 44,
       minWidth: 260,
     },
-    searchInput: { flex: 1, fontWeight: "800", color: theme.colors.text },
+    searchInput: { flex: 1, fontWeight: "600", color: theme.colors.text },
     searchBtn: {
       height: 44,
       paddingHorizontal: 14,
@@ -277,7 +277,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    searchBtnText: { color: "#fff", fontWeight: "900" },
+    searchBtnText: { color: "#fff", fontWeight: "700" },
 
     statusRow: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 8 },
     chip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
@@ -294,7 +294,7 @@ const createStyles = (theme: any) =>
     openBtnDisabled: {
       opacity: 0.45,
     },
-    openBtnText: { color: "#fff", fontWeight: "900" },
+    openBtnText: { color: "#fff", fontWeight: "700" },
 
     paginationRow: {
       marginTop: 12,
@@ -304,7 +304,7 @@ const createStyles = (theme: any) =>
       flexWrap: "wrap",
       gap: 10,
     },
-    paginationText: { color: theme.colors.textSecondary, fontWeight: "800" },
+    paginationText: { color: theme.colors.textSecondary, fontWeight: "600" },
     pageBtn: {
       flexDirection: "row",
       alignItems: "center",
@@ -316,7 +316,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 10,
       height: 40,
     },
-    pageBtnText: { fontWeight: "900", color: theme.colors.text },
+    pageBtnText: { fontWeight: "700", color: theme.colors.text },
 
     loadingRow: {
       marginTop: 12,
@@ -329,7 +329,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 10,
     },
-    loadingText: { fontWeight: "800", color: theme.colors.textSecondary },
+    loadingText: { fontWeight: "600", color: theme.colors.textSecondary },
     tableHeaderWorkspace: {
       marginTop: 12,
       backgroundColor: "#DBEAFE",

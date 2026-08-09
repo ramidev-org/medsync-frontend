@@ -90,6 +90,7 @@ export default function Layout() {
       <Drawer.Screen name="settings-data" options={{ drawerItemStyle: { display: "none" } }} />
       <Drawer.Screen name="patient_medical_info" options={{ drawerItemStyle: { display: "none" } }} />
       <Drawer.Screen name="consultation/index" options={{ drawerItemStyle: { display: "none" } }} />
+      <Drawer.Screen name="consultation-module/[id]/[module]" options={{ drawerItemStyle: { display: "none" } }} />
     </Drawer>
   );
 }
@@ -113,7 +114,7 @@ function CustomDrawerContent({ expanded, setExpanded, theme, state, role, isClin
       <View style={{ paddingHorizontal: expanded ? 10 : 6, marginBottom: 14 }}>
         {expanded && (
           <>
-            <Text numberOfLines={1} style={{ fontWeight: "900", fontSize: 16, color: theme.colors.text }}>{clinicName}</Text>
+            <Text numberOfLines={1} style={{ fontWeight: "700", fontSize: 16, color: theme.colors.text }}>{clinicName}</Text>
             <Text numberOfLines={1} style={{ marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary }}>{userName}</Text>
           </>
         )}
@@ -138,7 +139,7 @@ function CustomDrawerContent({ expanded, setExpanded, theme, state, role, isClin
                 <View key={item.key} style={{ borderRadius: 14, overflow: "hidden", marginBottom: 6, backgroundColor: active ? theme.colors.primarySoft : "transparent" }}>
                   <DrawerItem
                     label={expanded ? item.label : ""}
-                    labelStyle={{ marginLeft: expanded ? -10 : -999, fontSize: 14, fontWeight: active ? "800" : "600", color: tint }}
+                    labelStyle={{ marginLeft: expanded ? -10 : -999, fontSize: 14, fontWeight: active ? "600" : "500", color: tint }}
                     icon={() => item.icon({ color: tint, size: 21 })}
                     onPress={() => router.push(item.route as any)}
                     style={styles.drawerItem}
@@ -155,5 +156,5 @@ function CustomDrawerContent({ expanded, setExpanded, theme, state, role, isClin
 
 const styles = StyleSheet.create({
   drawerItem: { borderRadius: 14 },
-  sectionTitle: { marginBottom: 6, marginTop: 4, paddingHorizontal: 10, fontSize: 12, fontWeight: "900", opacity: 0.7 },
+  sectionTitle: { marginBottom: 6, marginTop: 4, paddingHorizontal: 10, fontSize: 12, fontWeight: "700", opacity: 0.7 },
 });

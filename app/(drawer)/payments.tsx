@@ -138,7 +138,7 @@ export default function PaymentsPage() {
                     <Avatar firstName={payment.prenom} lastName={payment.nom} size={48} borderRadius={12} />
                   </View>
                   <View style={tableStyles.cell}>
-                    <Text style={[tableStyles.cellText, { color: theme.colors.primary, fontWeight: "800" }]}>#{payment.code}</Text>
+                    <Text style={[tableStyles.cellText, { color: theme.colors.primary, fontWeight: "600" }]}>#{payment.code}</Text>
                   </View>
                   <View style={tableStyles.cell}>
                     <Text style={tableStyles.cellText}>{payment.nom}</Text>
@@ -242,7 +242,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    refreshBtnText: { color: theme.colors.textOnPrimary, fontWeight: "800" },
+    refreshBtnText: { color: theme.colors.textOnPrimary, fontWeight: "600" },
     searchFieldWrap: { width: 340 },
     fieldLabelSpacer: { height: 22 },
     searchContainer: {
@@ -260,7 +260,7 @@ const createStyles = (theme: any) =>
     searchInput: { flex: 1, color: theme.colors.text, fontWeight: "700" },
     clearBtn: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     statusBadge: { borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
-    statusBadgeText: { fontWeight: "800", fontSize: 12 },
+    statusBadgeText: { fontWeight: "600", fontSize: 12 },
     paginationRight: { flexDirection: "row", alignItems: "center", gap: 10, marginLeft: "auto" },
     pageContent: { flex: 1, minHeight: 0, ...(Platform.OS === "web" ? ({ width: "100%" } as any) : null) },
     tableCard: { flex: 1, minHeight: 0 },

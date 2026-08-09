@@ -23,7 +23,7 @@ export const getDashboardStyles = (theme: any) =>
       borderColor: theme.colors.border,
       justifyContent: "center",
     },
-    welcomeTitle: { color: theme.colors.text, fontSize: 26, fontWeight: "900" },
+    welcomeTitle: { color: theme.colors.text, fontSize: 26, fontWeight: "700" },
     welcomeSubtitle: {
       color: theme.colors.textSecondary,
       marginTop: 6,
@@ -50,7 +50,7 @@ export const getDashboardStyles = (theme: any) =>
       overflow: "hidden",
       backgroundColor: theme.colors.surface,
     },
-    cardTitle: { fontWeight: "800", fontSize: 17, marginBottom: 14, color: theme.colors.text },
+    cardTitle: { fontWeight: "600", fontSize: 17, marginBottom: 14, color: theme.colors.text },
     chartPlaceholder: { alignItems: "center", width: "100%", overflow: "hidden" },
     chart: { borderRadius: 12, marginVertical: 8 },
 

@@ -149,7 +149,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    title: { fontWeight: "900", color: theme.colors.text },
+    title: { fontWeight: "700", color: theme.colors.text },
     metaRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
     metaChip: {
       flexDirection: "row",
@@ -162,7 +162,7 @@ const createStyles = (theme: any) =>
       borderRadius: 999,
       backgroundColor: theme.colors.background,
     },
-    metaText: { fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 },
+    metaText: { fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 },
     canvasWrap: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -180,6 +180,6 @@ const createStyles = (theme: any) =>
       minWidth: 42,
       alignItems: "center",
     },
-    jointChipText: { fontWeight: "900", fontSize: 11 },
+    jointChipText: { fontWeight: "700", fontSize: 11 },
   });
 

@@ -72,7 +72,7 @@ export function OrthopedicsTab({
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    title: { fontWeight: "900", color: theme.colors.primary },
+    title: { fontWeight: "700", color: theme.colors.primary },
     row: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
     panel: {
       borderWidth: 1,
@@ -82,7 +82,7 @@ const createStyles = (theme: any) =>
       padding: 12,
       gap: 10,
     },
-    panelTitle: { fontWeight: "900", color: theme.colors.text },
+    panelTitle: { fontWeight: "700", color: theme.colors.text },
     panelHint: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
     cardGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   });

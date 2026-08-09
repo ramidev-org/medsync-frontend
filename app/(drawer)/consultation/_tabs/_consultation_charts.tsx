@@ -621,7 +621,7 @@ const createStyles = (theme: any) =>
     },
     title: {
       fontSize: 18,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     subtitle: {
       fontSize: 12,
@@ -634,7 +634,7 @@ const createStyles = (theme: any) =>
     },
     metaBadgeText: {
       fontSize: 12,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     centerState: {
       minHeight: 180,
@@ -669,11 +669,11 @@ const createStyles = (theme: any) =>
     },
     metricValue: {
       fontSize: 20,
-      fontWeight: "900",
+      fontWeight: "700",
     },
     metricValueSmall: {
       fontSize: 14,
-      fontWeight: "800",
+      fontWeight: "600",
     },
     chartWrap: {
       alignItems: "center",

@@ -64,5 +64,5 @@ const createStyles = (theme: any) =>
     },
     tabInner: { flexDirection: "row", alignItems: "center", gap: 8 },
     icon: { opacity: 0.95 },
-    label: { fontWeight: "900", fontSize: 12, letterSpacing: 0.2 },
+    label: { fontWeight: "700", fontSize: 12, letterSpacing: 0.2 },
   });

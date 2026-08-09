@@ -66,7 +66,7 @@ export function DermatologyPhotoLog({
           <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primarySoft, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.colors.border }}>
             <MaterialCommunityIcons name="camera-outline" size={16} color={theme.colors.primary} />
           </View>
-          <Text style={{ fontWeight: "900", color: theme.colors.text }}>Add photo reference</Text>
+          <Text style={{ fontWeight: "700", color: theme.colors.text }}>Add photo reference</Text>
         </View>
 
         <TextField label="Photo URI" value={uri} onChangeText={setUri} prefixIcon="link-outline" placeholder="Paste a secure URL or local file reference…" />
@@ -88,23 +88,23 @@ export function DermatologyPhotoLog({
           }}
         >
           <MaterialCommunityIcons name="plus" size={16} color={theme.colors.primary} />
-          <Text style={{ fontWeight: "900", color: theme.colors.primary }}>Add photo</Text>
+          <Text style={{ fontWeight: "700", color: theme.colors.primary }}>Add photo</Text>
         </Pressable>
       </View>
 
       <View style={{ gap: 10 }}>
         <View style={{ padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.background }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
-            <Text style={{ fontWeight: "900", color: theme.colors.text }}>Filters</Text>
-            <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>{filtered.length} items</Text>
+            <Text style={{ fontWeight: "700", color: theme.colors.text }}>Filters</Text>
+            <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>{filtered.length} items</Text>
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
             <View style={{ flexDirection: "column", gap: 6 }}>
-              <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>From</Text>
+              <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>From</Text>
               <DatePickerField label="From" date={from} setDate={setFrom} />
             </View>
             <View style={{ flexDirection: "column", gap: 6 }}>
-              <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>To</Text>
+              <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>To</Text>
               <DatePickerField label="To" date={to} setDate={setTo} />
             </View>
           </View>
@@ -112,22 +112,22 @@ export function DermatologyPhotoLog({
 
         {(value || []).length === 0 ? (
           <View style={{ padding: 14, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface }}>
-            <Text style={{ fontWeight: "900", color: theme.colors.text }}>No photos logged</Text>
+            <Text style={{ fontWeight: "700", color: theme.colors.text }}>No photos logged</Text>
             <Text style={{ marginTop: 6, fontWeight: "700", color: theme.colors.textSecondary }}>Store photo links and notes for later review.</Text>
           </View>
         ) : filtered.length === 0 ? (
           <View style={{ padding: 14, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface }}>
-            <Text style={{ fontWeight: "900", color: theme.colors.text }}>No photos in range</Text>
+            <Text style={{ fontWeight: "700", color: theme.colors.text }}>No photos in range</Text>
             <Text style={{ marginTop: 6, fontWeight: "700", color: theme.colors.textSecondary }}>Adjust the date range.</Text>
           </View>
         ) : (
           filtered.map((p) => (
             <View key={p.id} style={{ padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface, gap: 6 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <Text style={{ fontWeight: "900", color: theme.colors.text, flex: 1 }} numberOfLines={1}>
+                <Text style={{ fontWeight: "700", color: theme.colors.text, flex: 1 }} numberOfLines={1}>
                   {p.uri}
                 </Text>
-                <Text style={{ fontWeight: "800", color: theme.colors.textSecondary, fontSize: 12 }}>
+                <Text style={{ fontWeight: "600", color: theme.colors.textSecondary, fontSize: 12 }}>
                   {(safeDate(p.createdAtIso) ?? new Date()).toLocaleDateString("fr-FR")}
                 </Text>
                 <Pressable
@@ -135,7 +135,7 @@ export function DermatologyPhotoLog({
                   style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: theme.colors.background, flexDirection: "row", alignItems: "center", gap: 6 }}
                 >
                   <MaterialCommunityIcons name="delete-outline" size={14} color={theme.colors.textSecondary} />
-                  <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 12 }}>Remove</Text>
+                  <Text style={{ fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>Remove</Text>
                 </Pressable>
               </View>
               {p.note ? <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>{p.note}</Text> : null}

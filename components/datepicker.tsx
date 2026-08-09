@@ -290,7 +290,7 @@ export function DateRangePickerField({
                             styles.dayText,
                             { color: inMonth ? theme.colors.text : theme.colors.textSecondary },
                             inRange && { color: theme.colors.primary },
-                            (isStart || isEnd) && { color: theme.colors.textOnPrimary, fontWeight: "800" },
+                            (isStart || isEnd) && { color: theme.colors.textOnPrimary, fontWeight: "600" },
                           ]}
                         >
                           {date.getDate()}
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     marginBottom: 6,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   dateInputWrapper: {
     flexDirection: "row",
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   topChipText: {
-    fontWeight: "800",
+    fontWeight: "600",
   },
   topChipDivider: {
     width: 1,
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerGhostBtnText: {
-    fontWeight: "800",
+    fontWeight: "600",
   },
   footerBtn: {
     minWidth: 100,
@@ -521,6 +521,6 @@ const styles = StyleSheet.create({
   },
   footerBtnText: {
     color: "#fff",
-    fontWeight: "900",
+    fontWeight: "700",
   },
 });

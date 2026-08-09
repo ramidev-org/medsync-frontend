@@ -249,13 +249,13 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                       )
                     }
                   >
-                    <Text style={{ color: theme.colors.primary, fontWeight: "800", fontSize: 12 }}>Mark all read</Text>
+                    <Text style={{ color: theme.colors.primary, fontWeight: "600", fontSize: 12 }}>Mark all read</Text>
                   </Pressable>
                 </View>
                 {notifications.map((item) => (
                   <View key={item.id} style={styles.notificationRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.notificationText, item.unread && { color: theme.colors.text, fontWeight: "800" }]}>{item.title}</Text>
+                      <Text style={[styles.notificationText, item.unread && { color: theme.colors.text, fontWeight: "600" }]}>{item.title}</Text>
                       <Text style={styles.notificationTime}>{notificationTime(item.created_at)}</Text>
                     </View>
                     <Pressable
@@ -315,7 +315,7 @@ export const TopBar: React.FC<TopBarProps> = ({ theme }) => {
                           <UserAvatar name={title} avatarColor={directMember?.avatar_color ?? null} size={38} />
                         )}
                         <View style={{ flex: 1 }}>
-                          <Text numberOfLines={1} style={[styles.notificationText, { color: theme.colors.text, fontWeight: "800" }]}>{title}</Text>
+                          <Text numberOfLines={1} style={[styles.notificationText, { color: theme.colors.text, fontWeight: "600" }]}>{title}</Text>
                           <Text numberOfLines={1} style={styles.notificationTime}>{subtitle}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
@@ -492,7 +492,7 @@ const createStyles = (theme: any) =>
       gap: 8,
     },
     notificationHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-    notificationTitle: { color: theme.colors.text, fontWeight: "900", fontSize: 14 },
+    notificationTitle: { color: theme.colors.text, fontWeight: "700", fontSize: 14 },
     notificationRow: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 10, backgroundColor: theme.colors.surface },
     notificationText: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
     notificationTime: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11, marginTop: 2 },
@@ -512,14 +512,14 @@ const createStyles = (theme: any) =>
       paddingTop: 8,
       alignItems: "flex-end",
     },
-    dropdownFooterLink: { color: theme.colors.primary, fontWeight: "900", fontSize: 12 },
+    dropdownFooterLink: { color: theme.colors.primary, fontWeight: "700", fontSize: 12 },
     menuHeader: { paddingHorizontal: 12, paddingBottom: 8 },
     menuHeaderRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
     menuAvatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: theme.colors.border },
-    menuName: { fontWeight: "900", color: theme.colors.text },
+    menuName: { fontWeight: "700", color: theme.colors.text },
     menuSub: { marginTop: 2, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
     subBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-    subBadgeText: { fontWeight: "900", fontSize: 12 },
+    subBadgeText: { fontWeight: "700", fontSize: 12 },
     metaGrid: { marginTop: 8, gap: 4, paddingHorizontal: 4 },
     metaValue: { color: theme.colors.text, fontWeight: "700", fontSize: 12 },
     avatarMenuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, marginHorizontal: 6 },

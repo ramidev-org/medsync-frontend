@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 10,
   },
-  blockTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a" },
+  blockTitle: { fontSize: 16, fontWeight: "600", color: "#0f172a" },
   blockText: { fontSize: 14, color: "#475569" },
   input: {
     borderWidth: 1,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BFDBFE",
   },
-  buttonSecondaryText: { color: "#0D6EFD", fontWeight: "800", fontSize: 15 },
+  buttonSecondaryText: { color: "#0D6EFD", fontWeight: "600", fontSize: 15 },
   linkBtn: { paddingTop: 16, alignItems: "center" },
   linkText: { color: "#0D6EFD", fontWeight: "700" },
 });

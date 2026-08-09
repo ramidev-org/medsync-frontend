@@ -49,7 +49,7 @@ export function OdontogramDialog({
                 <MaterialCommunityIcons name="tooth-outline" size={16} color={theme.colors.primary} />
               </View>
               <View style={{ flexShrink: 1 }}>
-                <Text style={{ fontWeight: "900", color: theme.colors.text }} numberOfLines={1}>
+                <Text style={{ fontWeight: "700", color: theme.colors.text }} numberOfLines={1}>
                   {title}
                 </Text>
                 {!!subtitle ? (
@@ -64,7 +64,7 @@ export function OdontogramDialog({
               style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: theme.colors.background, flexDirection: "row", alignItems: "center", gap: 6 }}
             >
               <MaterialCommunityIcons name="close" size={16} color={theme.colors.textSecondary} />
-              <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 12 }}>Close</Text>
+              <Text style={{ fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 }}>Close</Text>
             </Pressable>
           </View>
 

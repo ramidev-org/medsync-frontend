@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -142,6 +143,12 @@ export default function ObservationMedicalTab({
   patientId,
   consultationId,
   currentPayload,
+  patient,
+  doctor,
+  consultationDate,
+  diagnoses,
+  treatmentPlan,
+  followUp,
 }: any) {
   const styles = createStyles(theme);
 
@@ -341,6 +348,31 @@ export default function ObservationMedicalTab({
   }, [treatmentOptions, treatmentType]);
 
   if (workspaceMode) {
+    return (
+      <ObservationWorkspaceDashboard
+        theme={theme}
+        patient={patient}
+        doctor={doctor}
+        consultationDate={consultationDate}
+        diagnoses={diagnoses}
+        treatmentPlan={treatmentPlan}
+        followUp={followUp}
+        vitals={vitals}
+        setVitals={setVitals}
+        parameters={parameters}
+        setParameters={setParameters}
+        observations={observations}
+        setObservations={setObservations}
+        onSave={onSave}
+        workspaceKey={selectedWorkspace}
+        patientId={patientId}
+        consultationId={consultationId}
+        currentPayload={currentPayload}
+      />
+    );
+  }
+
+  if (workspaceMode) {
     const summaryCards = [
       {
         title: parameters.conclusion || "Aucun signe critique",
@@ -378,7 +410,7 @@ export default function ObservationMedicalTab({
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 20, fontWeight: "900", color: theme.colors.text }}>Observation médicale</Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.text }}>Observation médicale</Text>
               <Text style={{ marginTop: 4, color: theme.colors.textSecondary, fontSize: 13 }}>
                 Données cliniques, historique et graphiques.
               </Text>
@@ -421,7 +453,7 @@ export default function ObservationMedicalTab({
                     />
                     <Text
                       style={{
-                        fontWeight: "900",
+                        fontWeight: "700",
                         color: active ? theme.colors.primary : theme.colors.textSecondary,
                         fontSize: 14,
                       }}
@@ -450,7 +482,7 @@ export default function ObservationMedicalTab({
                         }}
                         style={{ backgroundColor: theme.colors.info, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
                       >
-                        <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 13 }}>
+                        <Text style={{ fontWeight: "700", color: theme.colors.textOnPrimary, fontSize: 13 }}>
                           Modifier la consultation
                         </Text>
                       </TouchableOpacity>
@@ -463,7 +495,7 @@ export default function ObservationMedicalTab({
                           }}
                           style={{ backgroundColor: theme.colors.surfaceVariant, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
                         >
-                          <Text style={{ fontWeight: "900", color: theme.colors.textSecondary, fontSize: 13 }}>
+                          <Text style={{ fontWeight: "700", color: theme.colors.textSecondary, fontSize: 13 }}>
                             Annuler
                           </Text>
                         </TouchableOpacity>
@@ -476,14 +508,14 @@ export default function ObservationMedicalTab({
                           }}
                           style={{ backgroundColor: theme.colors.success, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 }}
                         >
-                          <Text style={{ fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 13 }}>
+                          <Text style={{ fontWeight: "700", color: theme.colors.textOnPrimary, fontSize: 13 }}>
                             Enregistrer
                           </Text>
                         </TouchableOpacity>
                       </View>
                     )}
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: "900", color: theme.colors.text }}>Résumé clinique</Text>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.text }}>Résumé clinique</Text>
 
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
                     {summaryCards.map((card) => (
@@ -500,7 +532,7 @@ export default function ObservationMedicalTab({
                           paddingVertical: 14,
                         }}
                       >
-                        <Text style={{ color: theme.colors.text, fontWeight: "900", fontSize: 16 }}>
+                        <Text style={{ color: theme.colors.text, fontWeight: "700", fontSize: 16 }}>
                           {card.title}
                         </Text>
                         <Text style={{ color: theme.colors.textSecondary, marginTop: 6, fontWeight: "700", fontSize: 13 }}>
@@ -567,7 +599,7 @@ export default function ObservationMedicalTab({
                       padding: 16,
                     }}
                   >
-                    <Text style={{ fontWeight: "900", color: theme.colors.text, fontSize: 16 }}>
+                    <Text style={{ fontWeight: "700", color: theme.colors.text, fontSize: 16 }}>
                       Champs cliniques du workspace
                     </Text>
                     <View style={{ marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -600,7 +632,7 @@ export default function ObservationMedicalTab({
 
               {workspaceTab === "consultation_history" && (
                 <View style={{ gap: 12 }}>
-                  <Text style={{ fontSize: 18, fontWeight: "900", color: theme.colors.text }}>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.text }}>
                     Historique des consultations
                   </Text>
                   <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 16, overflow: "hidden" }}>
@@ -634,7 +666,7 @@ export default function ObservationMedicalTab({
                                 backgroundColor: active ? theme.colors.info : theme.colors.border,
                               }}
                             />
-                            <Text style={{ fontWeight: "900", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
+                            <Text style={{ fontWeight: "700", opacity: active ? 1 : 0.75 }}>{p.visitLabel}</Text>
                           </TouchableOpacity>
                           <MaterialCommunityIcons name={active ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.textSecondary} />
                           {active ? (
@@ -696,7 +728,7 @@ export default function ObservationMedicalTab({
               }}
             >
               <MaterialCommunityIcons name="stethoscope" size={14} color={theme.colors.primary} />
-              <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>
+              <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>
                 {enabledSpecialties.find((x) => x.key === selectedWorkspace)?.label ?? "Workspace"}
               </Text>
               <MaterialCommunityIcons name="chevron-down" size={16} color={theme.colors.textSecondary} />
@@ -1145,7 +1177,7 @@ export default function ObservationMedicalTab({
         <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
           <View style={{ width: "100%", maxWidth: 420, borderRadius: 12, overflow: "hidden", backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }}>
             <View style={{ paddingVertical: 12, paddingHorizontal: 14, backgroundColor: theme.colors.primary }}>
-              <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "900" }}>Choisir le workspace</Text>
+              <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "700" }}>Choisir le workspace</Text>
             </View>
             <ScrollView contentContainerStyle={{ padding: 10, gap: 6, maxHeight: 420 }}>
               {enabledSpecialties.map((item) => {
@@ -1169,7 +1201,7 @@ export default function ObservationMedicalTab({
                       justifyContent: "space-between",
                     }}
                   >
-                    <Text style={{ fontWeight: "800", color: theme.colors.text }}>{item.label}</Text>
+                    <Text style={{ fontWeight: "600", color: theme.colors.text }}>{item.label}</Text>
                     {active ? <MaterialCommunityIcons name="check-circle" size={16} color={theme.colors.primary} /> : null}
                   </TouchableOpacity>
                 );
@@ -1177,7 +1209,7 @@ export default function ObservationMedicalTab({
             </ScrollView>
             <View style={{ padding: 10, borderTopWidth: 1, borderTopColor: theme.colors.border, alignItems: "flex-end" }}>
               <TouchableOpacity onPress={() => setWorkspacePickerOpen(false)} style={{ backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 }}>
-                <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>Fermer</Text>
+                <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>Fermer</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1192,11 +1224,413 @@ export default function ObservationMedicalTab({
    Helpers for the left label screens
 ========================== */
 
+type ObservationDashboardTab = "summary" | "vitals" | "measurements" | "charts" | "documents";
+
+const IMPORTANT_SPECIALTY_FIELD_KEYS: Record<SpecialtyKey, string[]> = {
+  general_medicine: ["chief_complaint", "current_symptoms", "history_of_present_illness", "general_exam"],
+  cardiology: ["chestPain", "dyspnea", "riskFactors", "ecgSummary"],
+  dermatology: ["lesionSite", "morphology", "evolution", "dermoscopy"],
+  gynecology: ["lmpDate", "pregnancyStatus", "gestationalAgeWeeks", "ultrasoundSummary"],
+  orthopedics: ["painSite", "painScale", "rangeOfMotion", "imagingSummary"],
+  dentistry: ["treated_area", "dental_pain_scale", "oral_exam", "tooth_records_summary"],
+  pediatrics: ["birth_history", "vaccination_status", "development_notes", "pediatric_exam"],
+  endocrinology_diabetes: ["diabetes_type", "fasting_glucose", "hba1c", "foot_check"],
+  ent: ["ear_symptoms", "nose_symptoms", "throat_symptoms", "ent_exam"],
+  ophthalmology: ["visual_acuity_right", "visual_acuity_left", "intraocular_pressure", "fundus_exam"],
+  pulmonology: ["cough", "dyspnea_grade", "oxygen_saturation", "lung_auscultation"],
+  gastroenterology: ["abdominal_pain_site", "bowel_habits", "digestive_red_flags", "abdominal_exam"],
+  analyses_medicales: ["order_priority", "clinical_context", "requested_tests", "sample_type"],
+};
+
+function ObservationWorkspaceDashboard({
+  theme,
+  patient,
+  doctor,
+  consultationDate,
+  diagnoses,
+  treatmentPlan,
+  followUp,
+  vitals,
+  setVitals,
+  parameters,
+  setParameters,
+  observations,
+  setObservations,
+  onSave,
+  workspaceKey,
+  patientId,
+  consultationId,
+  currentPayload,
+}: any) {
+  const styles = React.useMemo(() => createObservationDashboardStyles(theme), [theme]);
+  const [activeTab, setActiveTab] = React.useState<ObservationDashboardTab>("summary");
+  const [selectedHistoryIndex, setSelectedHistoryIndex] = React.useState(0);
+  const [historyExpanded, setHistoryExpanded] = React.useState(false);
+  const [editing, setEditing] = React.useState(false);
+  const [period, setPeriod] = React.useState("3M");
+
+  const patientName = `${patient?.first_name ?? ""} ${patient?.last_name ?? ""}`.trim() || "Patient";
+  const initials = `${patient?.first_name?.[0] ?? "P"}${patient?.last_name?.[0] ?? ""}`.toUpperCase();
+  const doctorName = doctor?.nom_complet || doctor?.full_name || doctor?.name || "Médecin traitant";
+  const currentDate = consultationDate ? new Date(consultationDate) : new Date();
+  const currentDateLabel = Number.isNaN(currentDate.getTime())
+    ? "Date inconnue"
+    : currentDate.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const shortDateLabel = Number.isNaN(currentDate.getTime())
+    ? "—"
+    : currentDate.toLocaleDateString("fr-FR");
+  const birthDate = patient?.date_of_birth ? new Date(patient.date_of_birth) : null;
+  const birthLabel = birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate.toLocaleDateString("fr-FR") : "Non renseignée";
+  const diagnosisText = Array.isArray(diagnoses) && diagnoses.length
+    ? diagnoses.join(", ")
+    : parameters?.diagnostic || parameters?.working_diagnosis || parameters?.diagnosis || parameters?.differential || "Non renseigné";
+  const reasonText = parameters?.motif_consultation || parameters?.reason_for_visit || parameters?.reason || parameters?.chiefComplaint || parameters?.chief_dental_complaint || parameters?.chief_pediatric_complaint || "Motif non renseigné";
+  const planText = parameters?.conclusion || treatmentPlan || parameters?.plan || parameters?.assessmentPlan || parameters?.planFollowUp || parameters?.treatmentPlan || parameters?.endocrine_plan || parameters?.ent_plan || parameters?.ophtha_plan || parameters?.pulmo_plan || parameters?.gastro_plan || followUp || "Plan non renseigné";
+  const planSecondaryText = followUp && followUp !== planText ? followUp : undefined;
+  const activeWorkspace: SpecialtyKey = isSpecialtyKey(workspaceKey) ? workspaceKey : "general_medicine";
+  const consultationFields = getConsultationFields(activeWorkspace);
+  const essentialFields = IMPORTANT_SPECIALTY_FIELD_KEYS[activeWorkspace]
+    .map((key) => consultationFields.find((field) => field.key === key))
+    .filter((field): field is ParameterField => Boolean(field));
+
+  const allHistoryRows = [
+    { date: currentDateLabel, reason: reasonText },
+    ...PROTO_PREVIOUS_PARAMS.map((row) => {
+      const parts = row.visitLabel.split(" - ");
+      return { date: parts[1] || row.visitLabel, reason: row.data?.motif_consultation || "Consultation médicale" };
+    }),
+  ];
+  const historyRows = historyExpanded ? allHistoryRows : allHistoryRows.slice(0, 5);
+
+  const tabs: { key: ObservationDashboardTab; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }[] = [
+    { key: "summary", label: "Résumé", icon: "clipboard-text-outline" },
+    { key: "vitals", label: "Signes vitaux", icon: "heart-pulse" },
+    { key: "measurements", label: "Mesures", icon: "ruler" },
+    { key: "charts", label: "Graphiques", icon: "chart-line" },
+    { key: "documents", label: "Documents", icon: "file-document-outline" },
+  ];
+
+  const vitalRows = [
+    { label: "Tension artérielle (mmHg)", icon: "heart-pulse", color: theme.colors.success, values: [vitals?.tension || "—", "128/78", "135/85", "140/90"], trend: "↘" },
+    { label: "Poids (kg)", icon: "scale-bathroom", color: "#7C3AED", values: [vitals?.poids_kg || "—", "79.0", "80.2", "81.0"], trend: "↘" },
+    { label: "Taille (cm)", icon: "human-male-height", color: theme.colors.info, values: [vitals?.taille_cm || "—", "175", "175", "175"], trend: "—" },
+    { label: "IMC (kg/m²)", icon: "calculator-variant-outline", color: theme.colors.warning, values: [calculateBmi(vitals?.poids_kg, vitals?.taille_cm), "25.8", "26.2", "26.4"], trend: "↘" },
+    { label: "Température (°C)", icon: "thermometer", color: theme.colors.error, values: [vitals?.temperature_c || "—", "36.7", "36.8", "36.7"], trend: "—" },
+  ];
+
+  const saveEdits = () => {
+    setEditing(false);
+    onSave?.();
+  };
+
+  return (
+    <View style={styles.root}>
+      <View style={styles.patientCard}>
+        <View style={styles.patientIdentity}>
+          <View style={styles.patientInitials}><Text style={styles.patientInitialsText}>{initials}</Text></View>
+          <View style={styles.patientCopy}>
+            <View style={styles.patientNameRow}>
+              <Text style={styles.patientName}>{patientName}</Text>
+              <MaterialCommunityIcons name={patient?.sex === "female" ? "gender-female" : "gender-male"} size={18} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.patientMeta}>Né(e) le {birthLabel}{patient?.age ? ` (${patient.age} ans)` : ""}  •  ID: {patient?.id ? String(patient.id).slice(0, 8).toUpperCase() : "—"}</Text>
+            <View style={styles.phoneRow}><MaterialCommunityIcons name="phone-outline" size={16} color={theme.colors.textSecondary} /><Text style={styles.patientMeta}>{patient?.phone || "Téléphone non renseigné"}</Text></View>
+          </View>
+        </View>
+        <View style={styles.patientFacts}>
+          <View style={styles.patientFact}><Text style={styles.factLabel}>Dernière consultation</Text><Text style={styles.factValuePrimary}>{shortDateLabel}</Text></View>
+          <View style={styles.factDivider} />
+          <View style={styles.patientFact}><Text style={styles.factLabel}>Médecin traitant</Text><Text style={styles.factValue}>{doctorName}</Text></View>
+          <TouchableOpacity
+            style={[styles.patientEditButton, editing && styles.patientSaveButton]}
+            onPress={editing ? saveEdits : () => setEditing(true)}
+            accessibilityLabel={editing ? "Enregistrer les données cliniques" : "Modifier les données cliniques"}
+          >
+            <MaterialCommunityIcons name={editing ? "content-save-check-outline" : "pencil-outline"} size={21} color={editing ? "#fff" : theme.colors.success} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.workspaceRow}>
+        <View style={styles.historyPanel}>
+          <Text style={styles.historyTitle}>Historique des consultations</Text>
+          <ScrollView
+            style={styles.historyScroll}
+            contentContainerStyle={styles.historyList}
+            showsVerticalScrollIndicator={historyExpanded}
+            nestedScrollEnabled
+          >
+            {historyRows.map((row, index) => {
+              const active = selectedHistoryIndex === index;
+              return (
+                <TouchableOpacity key={`${row.date}-${index}`} style={[styles.historyCard, active && styles.historyCardActive]} onPress={() => setSelectedHistoryIndex(index)}>
+                  <MaterialCommunityIcons name="calendar-blank-outline" size={19} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+                  <View style={styles.historyCopy}><Text style={[styles.historyDate, active && styles.historyDateActive]}>{row.date}</Text><Text style={styles.historyReason} numberOfLines={1}>Motif : {row.reason}</Text></View>
+                  {active ? <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.primary} /> : null}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+          <TouchableOpacity style={styles.viewAllConsultations} onPress={() => setHistoryExpanded((value) => !value)}>
+            <Text style={styles.viewAllConsultationsText}>{historyExpanded ? "RÉDUIRE LA LISTE" : "VOIR TOUTES LES CONSULTATIONS"}</Text>
+            <MaterialCommunityIcons name={historyExpanded ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.mainPanel}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsRow}>
+            {tabs.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <TouchableOpacity key={tab.key} style={[styles.tabButton, active && styles.tabButtonActive]} onPress={() => setActiveTab(tab.key)}>
+                  <MaterialCommunityIcons name={tab.icon} size={18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.tabContent}>
+            {activeTab === "summary" && (
+              <View style={styles.summaryContent}>
+                <View style={styles.summaryCardsRow}>
+                  <SummaryClinicalCard
+                    theme={theme}
+                    icon="file-document-outline"
+                    tone="green"
+                    title="Motif de consultation"
+                    lines={[reasonText]}
+                    editing={editing}
+                    editValue={parameters?.motif_consultation || ""}
+                    editPlaceholder="Saisir le motif"
+                    onEdit={(value: string) => setParameters((current: any) => ({ ...current, motif_consultation: value }))}
+                  />
+                  <SummaryClinicalCard theme={theme} icon="stethoscope" tone="purple" title="Diagnostic" lines={[diagnosisText]} />
+                  <SummaryClinicalCard
+                    theme={theme}
+                    icon="medical-bag"
+                    tone="orange"
+                    title="Plan / Conduite à tenir"
+                    lines={[planText, planSecondaryText]}
+                    editing={editing}
+                    editValue={parameters?.conclusion || ""}
+                    editPlaceholder="Saisir la conclusion / conduite"
+                    onEdit={(value: string) => setParameters((current: any) => ({ ...current, conclusion: value }))}
+                  />
+                </View>
+                <View style={styles.specialtyCard}>
+                  <View style={styles.specialtyFieldsGrid}>
+                    {essentialFields.map((field) => (
+                      editing ? (
+                        <LabeledObservationInput
+                          key={field.key}
+                          theme={theme}
+                          label={field.label.replace(/\s*:\s*$/, "")}
+                          value={parameters?.[field.key] || ""}
+                          onChange={(value: string) => setParameters((current: any) => ({ ...current, [field.key]: value }))}
+                        />
+                      ) : (
+                        <View key={field.key} style={styles.specialtyField}>
+                          <View style={styles.specialtyFieldLabelRow}>
+                            <MaterialCommunityIcons name={FIELD_ICON_MAP[field.key] || "clipboard-pulse-outline"} size={21} color={theme.colors.primary} />
+                            <Text style={styles.specialtyFieldLabel}>{field.label.replace(/\s*:\s*$/, "")}</Text>
+                          </View>
+                          <Text style={[styles.specialtyFieldValue, !parameters?.[field.key] && styles.specialtyFieldEmpty]} numberOfLines={field.multiline ? 3 : 2}>
+                            {parameters?.[field.key] || "Non renseigné"}
+                          </Text>
+                        </View>
+                      )
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.notesCard}>
+                  <View style={styles.notesTitleRow}><View style={styles.notesIcon}><MaterialCommunityIcons name="doctor" size={18} color={theme.colors.primary} /></View><Text style={styles.cardTitle}>Notes cliniques</Text></View>
+                  {editing ? (
+                    <TextInput value={observations || ""} onChangeText={setObservations} multiline placeholder="Saisir les notes cliniques" placeholderTextColor={theme.colors.textSecondary} style={styles.notesInput} />
+                  ) : (
+                    <Text style={styles.notesText}>{observations || "Aucune note clinique renseignée pour cette consultation."}</Text>
+                  )}
+                </View>
+                <View style={styles.vitalsEvolutionCard}>
+                  <View style={styles.evolutionHeader}><Text style={styles.evolutionTitle}>Évolution des signes vitaux</Text><View style={styles.periodRow}>{["7J", "30J", "3M", "1A"].map((item) => <TouchableOpacity key={item} style={[styles.periodButton, period === item && styles.periodButtonActive]} onPress={() => setPeriod(item)}><Text style={[styles.periodText, period === item && styles.periodTextActive]}>{item}</Text></TouchableOpacity>)}</View></View>
+                  <VitalEvolutionTable styles={styles} theme={theme} rows={vitalRows} currentDate={shortDateLabel} />
+                </View>
+              </View>
+            )}
+
+            {activeTab === "vitals" && (
+              <View style={styles.formTab}>
+                <Text style={styles.formTitle}>Signes vitaux actuels</Text>
+                <View style={styles.formGrid}>
+                  <LabeledObservationInput theme={theme} label="Tension artérielle" value={vitals?.tension || ""} onChange={(value: string) => setVitals((current: any) => ({ ...current, tension: value }))} />
+                  <LabeledObservationInput theme={theme} label="Température (°C)" value={vitals?.temperature_c || ""} onChange={(value: string) => setVitals((current: any) => ({ ...current, temperature_c: value }))} />
+                </View>
+                <TouchableOpacity style={styles.saveClinicalButton} onPress={onSave}><MaterialCommunityIcons name="content-save-outline" size={18} color="#fff" /><Text style={styles.saveClinicalText}>ENREGISTRER</Text></TouchableOpacity>
+              </View>
+            )}
+
+            {activeTab === "measurements" && (
+              <View style={styles.formTab}>
+                <Text style={styles.formTitle}>Mesures du patient</Text>
+                <View style={styles.formGrid}>
+                  <LabeledObservationInput theme={theme} label="Poids (kg)" value={vitals?.poids_kg || ""} onChange={(value: string) => setVitals((current: any) => ({ ...current, poids_kg: value }))} />
+                  <LabeledObservationInput theme={theme} label="Taille (cm)" value={vitals?.taille_cm || ""} onChange={(value: string) => setVitals((current: any) => ({ ...current, taille_cm: value }))} />
+                  <View style={styles.bmiCard}><Text style={styles.factLabel}>IMC calculé</Text><Text style={styles.bmiValue}>{calculateBmi(vitals?.poids_kg, vitals?.taille_cm)}</Text></View>
+                </View>
+                <TouchableOpacity style={styles.saveClinicalButton} onPress={onSave}><MaterialCommunityIcons name="content-save-outline" size={18} color="#fff" /><Text style={styles.saveClinicalText}>ENREGISTRER</Text></TouchableOpacity>
+              </View>
+            )}
+
+            {activeTab === "charts" && <ConsultationChartsTab theme={theme} workspaceKey={workspaceKey} patientId={patientId} consultationId={consultationId} currentPayload={currentPayload} />}
+
+            {activeTab === "documents" && (
+              <View style={styles.emptyTab}><View style={styles.emptyTabIcon}><MaterialCommunityIcons name="file-document-multiple-outline" size={34} color={theme.colors.primary} /></View><Text style={styles.formTitle}>Documents cliniques</Text><Text style={styles.emptyTabText}>Les documents liés à cette consultation apparaîtront ici.</Text></View>
+            )}
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function calculateBmi(weightValue: unknown, heightValue: unknown) {
+  const weight = Number.parseFloat(String(weightValue || ""));
+  const heightCm = Number.parseFloat(String(heightValue || ""));
+  if (!Number.isFinite(weight) || !Number.isFinite(heightCm) || heightCm <= 0) return "—";
+  return (weight / ((heightCm / 100) ** 2)).toFixed(1);
+}
+
+function SummaryClinicalCard({ theme, icon, tone, title, lines, editing, editValue, editPlaceholder, onEdit }: any) {
+  const tones: Record<string, { background: string; color: string }> = {
+    green: { background: "#EBF9F2", color: theme.colors.success },
+    purple: { background: "#F5EDFF", color: "#9333EA" },
+    orange: { background: "#FFF5E7", color: theme.colors.warning },
+  };
+  const currentTone = tones[tone] || tones.green;
+  return (
+    <View style={{ flex: 1, minWidth: 210, minHeight: 94, padding: 13, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.surface }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><View style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 9, backgroundColor: currentTone.background }}><MaterialCommunityIcons name={icon} size={19} color={currentTone.color} /></View><Text style={{ fontSize: 13, fontWeight: "600", color: theme.colors.text }}>{title}</Text></View>
+      {editing && onEdit ? (
+        <TextInput
+          value={String(editValue ?? "")}
+          onChangeText={onEdit}
+          placeholder={editPlaceholder}
+          placeholderTextColor={theme.colors.textSecondary}
+          style={{ minHeight: 36, marginTop: 8, marginLeft: 46, paddingHorizontal: 10, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, backgroundColor: "#FCFDFF", color: theme.colors.text, fontSize: 12 }}
+        />
+      ) : (
+        lines.filter(Boolean).map((line: string, index: number) => <Text key={`${line}-${index}`} numberOfLines={1} style={{ marginTop: index ? 4 : 8, marginLeft: 46, fontSize: 12, color: theme.colors.textSecondary }}>{line}</Text>)
+      )}
+    </View>
+  );
+}
+
+function LabeledObservationInput({ theme, label, value, onChange }: any) {
+  return <View style={{ flex: 1, minWidth: 220 }}><Text style={{ marginBottom: 7, fontSize: 12, fontWeight: "500", color: theme.colors.textSecondary }}>{label}</Text><TextInput value={String(value ?? "")} onChangeText={onChange} style={{ minHeight: 44, paddingHorizontal: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 9, backgroundColor: theme.colors.surface, color: theme.colors.text }} /></View>;
+}
+
+function VitalEvolutionTable({ styles, theme, rows, currentDate }: any) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vitalTableScrollContent}>
+      <View style={styles.vitalTable}>
+        <View style={[styles.vitalTableRow, styles.vitalTableHeader]}><Text style={[styles.vitalHeaderText, styles.indicatorCell]}>Indicateur</Text><Text style={styles.valueCell}>{currentDate}</Text><Text style={styles.valueCell}>20/06/2026</Text><Text style={styles.valueCell}>07/05/2026</Text><Text style={styles.valueCell}>15/04/2026</Text><Text style={styles.trendCell}>Tendance</Text></View>
+        {rows.map((row: any) => <View key={row.label} style={styles.vitalTableRow}><View style={[styles.indicatorCell, styles.indicatorContent]}><View style={[styles.vitalIcon, { backgroundColor: `${row.color}12` }]}><MaterialCommunityIcons name={row.icon} size={21} color={row.color} /></View><Text style={styles.vitalLabel}>{row.label}</Text></View>{row.values.map((value: string, index: number) => <Text key={`${row.label}-${index}`} style={styles.valueCell}>{value}</Text>)}<Text style={[styles.trendCell, { color: row.trend === "↘" ? theme.colors.success : theme.colors.textSecondary }]}>{row.trend}</Text></View>)}
+      </View>
+    </ScrollView>
+  );
+}
+
+const createObservationDashboardStyles = (theme: any) => StyleSheet.create({
+  root: { width: "100%", gap: 14 },
+  patientCard: { minHeight: 116, paddingHorizontal: 24, paddingVertical: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 20, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface, ...(Platform.OS === "web" ? ({ boxShadow: "0 8px 22px rgba(15,23,42,0.04)" } as any) : null) },
+  patientIdentity: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 18 },
+  patientInitials: { width: 68, height: 68, borderRadius: 34, alignItems: "center", justifyContent: "center", backgroundColor: "#E8F8F2" },
+  patientInitialsText: { fontSize: 22, fontWeight: "600", color: theme.colors.success },
+  patientCopy: { flex: 1, minWidth: 0 },
+  patientNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  patientName: { fontSize: 19, fontWeight: "700", color: theme.colors.text },
+  patientMeta: { marginTop: 5, fontSize: 12, color: theme.colors.textSecondary },
+  phoneRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  patientFacts: { flexDirection: "row", alignItems: "center", gap: 24 },
+  patientFact: { minWidth: 150 },
+  factLabel: { fontSize: 11, fontWeight: "500", color: theme.colors.textSecondary },
+  factValue: { marginTop: 7, fontSize: 13, fontWeight: "600", color: theme.colors.text },
+  factValuePrimary: { marginTop: 7, fontSize: 14, fontWeight: "700", color: theme.colors.primary },
+  factDivider: { width: 1, height: 55, backgroundColor: theme.colors.border },
+  patientEditButton: { width: 42, height: 42, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#EBF9F2" },
+  patientSaveButton: { backgroundColor: theme.colors.success },
+  workspaceRow: { flexDirection: "row", alignItems: "stretch", gap: 14 },
+  historyPanel: { width: 304, minHeight: 700, padding: 16, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, backgroundColor: theme.colors.surface },
+  historyTitle: { fontSize: 15, fontWeight: "700", color: theme.colors.text },
+  historyScroll: { maxHeight: 490, marginTop: 16 },
+  historyList: { gap: 8, paddingBottom: 2 },
+  historyCard: { minHeight: 72, paddingHorizontal: 13, paddingVertical: 11, flexDirection: "row", alignItems: "flex-start", gap: 11, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: "#FCFDFF" },
+  historyCardActive: { borderColor: theme.colors.primary, backgroundColor: "#F7FAFF" },
+  historyCopy: { flex: 1, minWidth: 0 },
+  historyDate: { fontSize: 12, fontWeight: "500", color: theme.colors.textSecondary },
+  historyDateActive: { color: theme.colors.text, fontWeight: "600" },
+  historyReason: { marginTop: 7, fontSize: 11, color: theme.colors.textSecondary },
+  viewAllConsultations: { minHeight: 44, marginTop: 18, paddingHorizontal: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 9, flexDirection: "row", gap: 7, alignItems: "center", justifyContent: "center", backgroundColor: "#FBFCFF" },
+  viewAllConsultationsText: { fontSize: 11, fontWeight: "600", color: theme.colors.primary },
+  mainPanel: { flex: 1, minWidth: 0, minHeight: 700, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, overflow: "hidden", backgroundColor: theme.colors.surface },
+  tabsScroll: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  tabsRow: { minWidth: "100%", paddingHorizontal: 18 },
+  tabButton: { minWidth: 128, minHeight: 62, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, borderBottomWidth: 2, borderBottomColor: "transparent" },
+  tabButtonActive: { borderBottomColor: theme.colors.primary },
+  tabText: { fontSize: 12, fontWeight: "500", color: theme.colors.textSecondary },
+  tabTextActive: { color: theme.colors.primary, fontWeight: "600" },
+  tabContent: { padding: 18 },
+  summaryContent: { gap: 14 },
+  summaryCardsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  specialtyCard: { paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.colors.border },
+  specialtyFieldsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  specialtyField: { flex: 1, minWidth: 180, minHeight: 58, paddingHorizontal: 8, paddingVertical: 4 },
+  specialtyFieldLabelRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  specialtyFieldLabel: { flex: 1, fontSize: 11, fontWeight: "500", color: theme.colors.textSecondary },
+  specialtyFieldValue: { marginTop: 7, fontSize: 12, lineHeight: 17, fontWeight: "500", color: theme.colors.text },
+  specialtyFieldEmpty: { fontWeight: "400", color: theme.colors.textSecondary },
+  notesCard: { minHeight: 92, padding: 13, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.surface },
+  notesTitleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  notesIcon: { width: 34, height: 34, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primarySoft },
+  cardTitle: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
+  notesText: { marginTop: 13, marginLeft: 44, fontSize: 12, lineHeight: 21, color: theme.colors.textSecondary },
+  notesInput: { minHeight: 76, marginTop: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 9, backgroundColor: "#FCFDFF", color: theme.colors.text, textAlignVertical: "top" },
+  saveClinicalButton: { minHeight: 42, paddingHorizontal: 16, alignSelf: "flex-end", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 9, backgroundColor: theme.colors.primary },
+  saveClinicalText: { fontSize: 11, fontWeight: "600", color: "#fff" },
+  vitalsEvolutionCard: { overflow: "hidden", borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.surface },
+  evolutionHeader: { minHeight: 58, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  evolutionTitle: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
+  periodRow: { flexDirection: "row", gap: 8 },
+  periodButton: { width: 42, height: 34, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, backgroundColor: "#FCFDFF" },
+  periodButtonActive: { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary },
+  periodText: { fontSize: 10, fontWeight: "600", color: theme.colors.textSecondary },
+  periodTextActive: { color: "#fff" },
+  vitalTableScrollContent: { flexGrow: 1 },
+  vitalTable: { minWidth: 830, width: "100%" },
+  vitalTableRow: { width: "100%", minHeight: 48, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", borderTopWidth: 1, borderTopColor: theme.colors.border },
+  vitalTableHeader: { backgroundColor: "#F8FAFD" },
+  vitalHeaderText: { fontWeight: "600" },
+  indicatorCell: { width: 245, flexGrow: 2 },
+  indicatorContent: { flexDirection: "row", alignItems: "center", gap: 9 },
+  vitalIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  vitalLabel: { flex: 1, fontSize: 11, fontWeight: "500", color: theme.colors.text },
+  valueCell: { width: 118, flexGrow: 1, textAlign: "center", fontSize: 11, color: theme.colors.textSecondary },
+  trendCell: { width: 78, flexGrow: 0.7, textAlign: "center", fontSize: 14, fontWeight: "600" },
+  formTab: { minHeight: 520, gap: 18 },
+  formTitle: { fontSize: 17, fontWeight: "700", color: theme.colors.text },
+  formGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
+  bmiCard: { flex: 1, minWidth: 180, minHeight: 72, padding: 14, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: "#F8FAFD" },
+  bmiValue: { marginTop: 8, fontSize: 22, fontWeight: "700", color: theme.colors.primary },
+  emptyTab: { minHeight: 520, alignItems: "center", justifyContent: "center" },
+  emptyTabIcon: { width: 72, height: 72, marginBottom: 14, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.primarySoft },
+  emptyTabText: { marginTop: 8, fontSize: 12, color: theme.colors.textSecondary },
+});
+
 function InfoPair({ theme, label, value }: { theme: any; label: string; value: string }) {
   return (
     <View style={{ flex: 1, minWidth: 180 }}>
-      <Text style={{ fontWeight: "900", opacity: 0.7 }}>{label}</Text>
-      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginTop: 4 }}>{value}</Text>
+      <Text style={{ fontWeight: "700", opacity: 0.7 }}>{label}</Text>
+      <Text style={{ fontWeight: "700", color: theme.colors.primary, marginTop: 4 }}>{value}</Text>
     </View>
   );
 }
@@ -1225,10 +1659,10 @@ function TimelinePoint({
           marginBottom: 6,
         }}
       />
-      <Text style={{ fontWeight: "900", textAlign: "center", color: theme.colors.primary }}>
+      <Text style={{ fontWeight: "700", textAlign: "center", color: theme.colors.primary }}>
         {label}
       </Text>
-      <Text style={{ fontWeight: "800", opacity: 0.7, marginTop: 4 }}>{date}</Text>
+      <Text style={{ fontWeight: "600", opacity: 0.7, marginTop: 4 }}>{date}</Text>
     </View>
   );
 }
@@ -1255,10 +1689,10 @@ function BorderBox({
         flex: 1,
       }}
     >
-      <Text style={{ fontWeight: "900", color: theme.colors.primary, marginBottom: 8 }}>
+      <Text style={{ fontWeight: "700", color: theme.colors.primary, marginBottom: 8 }}>
         {title}
       </Text>
-      <Text style={{ fontWeight: "900", opacity: 0.65 }}>{value}</Text>
+      <Text style={{ fontWeight: "700", opacity: 0.65 }}>{value}</Text>
     </View>
   );
 }
@@ -1285,7 +1719,7 @@ function InlinePreviousParameters({
         paddingTop: 10,
       }}
     >
-      <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
+      <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
         {(fields ?? getConsultationFields("general_medicine")).map((field: ParameterField) => (
           <View key={`${row?.visitLabel ?? "row"}-${field.key}`} style={{ flex: 1, minWidth: field.multiline ? 320 : 230 }}>
@@ -1315,10 +1749,10 @@ function PreviousParametersModal({
       <View style={{ flex: 1, backgroundColor: theme.colors.overlay, alignItems: "center", justifyContent: "center", padding: 18 }}>
         <View style={{ width: "100%", maxWidth: 1100, maxHeight: "92%", borderRadius: 12, overflow: "hidden", backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }}>
           <View style={{ paddingVertical: 12, paddingHorizontal: 14, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.info }}>
-            <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "900", letterSpacing: 0.5 }}>PARAMETRES PRECEDENTS</Text>
+            <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "700", letterSpacing: 0.5 }}>PARAMETRES PRECEDENTS</Text>
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12, paddingTop: 12 }}>
-            <Text style={{ fontWeight: "900", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
+            <Text style={{ fontWeight: "700", color: theme.colors.textSecondary }}>{row?.visitLabel || "-"}</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
               {(fields ?? getConsultationFields("general_medicine")).map((field: ParameterField) => (
                 <View key={field.key} style={{ flex: 1, minWidth: field.multiline ? 320 : 230 }}>
@@ -1335,7 +1769,7 @@ function PreviousParametersModal({
           </ScrollView>
           <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: theme.colors.border, backgroundColor: theme.colors.surfaceVariant }}>
             <TouchableOpacity onPress={onClose} style={{ backgroundColor: theme.colors.primary, paddingVertical: 10, paddingHorizontal: 18, borderRadius: 999 }}>
-              <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "900" }}>FERMER</Text>
+              <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "700" }}>FERMER</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1449,7 +1883,7 @@ function LabelModal({
 
             {/* Observation */}
             <View style={{ marginTop: 12 }}>
-              <Text style={{ fontWeight: "900", opacity: 0.75, marginBottom: 8 }}>
+              <Text style={{ fontWeight: "700", opacity: 0.75, marginBottom: 8 }}>
                 Observation
               </Text>
               <TextInput
@@ -1597,7 +2031,7 @@ function ModalField({
 }) {
   return (
     <View style={{ flex: 1, minWidth: 240 }}>
-      <Text style={{ fontWeight: "900", opacity: 0.75, marginBottom: 8 }}>{label}</Text>
+      <Text style={{ fontWeight: "700", opacity: 0.75, marginBottom: 8 }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -1630,7 +2064,7 @@ function ModalTextarea({
 }) {
   return (
     <View style={{ flex: 1, minWidth: 240 }}>
-      <Text style={{ fontWeight: "900", opacity: 0.75, marginBottom: 8 }}>{label}</Text>
+      <Text style={{ fontWeight: "700", opacity: 0.75, marginBottom: 8 }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -1678,7 +2112,7 @@ const createStyles = (theme: any) =>
       marginBottom: 10,
       flexWrap: "wrap",
     },
-    metaLine: { fontWeight: "800", opacity: 0.75, marginTop: 2 },
+    metaLine: { fontWeight: "600", opacity: 0.75, marginTop: 2 },
 
     yellowBtn: {
       backgroundColor: theme.colors.warning,
@@ -1687,7 +2121,7 @@ const createStyles = (theme: any) =>
       borderRadius: 8,
       alignSelf: "flex-start",
     },
-    yellowBtnText: { fontWeight: "900", color: theme.colors.textOnPrimary, fontSize: 12 },
+    yellowBtnText: { fontWeight: "700", color: theme.colors.textOnPrimary, fontSize: 12 },
 
     grid2: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
     row: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
@@ -1708,7 +2142,7 @@ const createStyles = (theme: any) =>
       borderRadius: 10,
       backgroundColor: theme.colors.accent,
     },
-    labelBannerTitle: { fontWeight: "900", opacity: 0.8, marginBottom: 8 },
+    labelBannerTitle: { fontWeight: "700", opacity: 0.8, marginBottom: 8 },
     labelBannerDateRow: { flexDirection: "row", gap: 10 },
     labelBannerDateBox: {
       width: 54,
@@ -1718,7 +2152,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    labelBannerDateText: { color: theme.colors.textOnPrimary, fontWeight: "900", fontSize: 18 },
+    labelBannerDateText: { color: theme.colors.textOnPrimary, fontWeight: "700", fontSize: 18 },
 
     labelInfoRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 },
 
@@ -1728,7 +2162,7 @@ const createStyles = (theme: any) =>
       borderRadius: 10,
       backgroundColor: theme.colors.surfaceVariant,
     },
-    sectionTitle: { fontWeight: "900", textAlign: "center", marginBottom: 10, opacity: 0.75 },
+    sectionTitle: { fontWeight: "700", textAlign: "center", marginBottom: 10, opacity: 0.75 },
     timelineLine: {
       height: 2,
       backgroundColor: theme.colors.border,
@@ -1744,8 +2178,8 @@ const createStyles = (theme: any) =>
       padding: 12,
       backgroundColor: theme.colors.surfaceVariant,
     },
-    noteTitle: { fontWeight: "900", marginBottom: 6 },
-    noteText: { fontWeight: "800", opacity: 0.7, lineHeight: 18 },
+    noteTitle: { fontWeight: "700", marginBottom: 6 },
+    noteText: { fontWeight: "600", opacity: 0.7, lineHeight: 18 },
 
     antecedentsGrid: {
       flexDirection: "row",
@@ -1755,7 +2189,7 @@ const createStyles = (theme: any) =>
 
     /* ===== Table styles (Étiquettes précédentes) ===== */
     searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-    searchLabel: { fontWeight: "900", opacity: 0.75 },
+    searchLabel: { fontWeight: "700", opacity: 0.75 },
     searchInput: {
       flex: 1,
       borderWidth: 1,
@@ -1772,7 +2206,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 10,
       borderRadius: 8,
     },
-    th: { color: theme.colors.textOnPrimary, fontWeight: "900", fontSize: 12 },
+    th: { color: theme.colors.textOnPrimary, fontWeight: "700", fontSize: 12 },
 
     tableBody: {
       borderWidth: 1,
@@ -1781,7 +2215,7 @@ const createStyles = (theme: any) =>
       overflow: "hidden",
     },
     tr: { flexDirection: "row", paddingVertical: 10, paddingHorizontal: 10 },
-    td: { fontWeight: "900", opacity: 0.75, fontSize: 12 },
+    td: { fontWeight: "700", opacity: 0.75, fontSize: 12 },
 
     paginationRow: {
       marginTop: 8,
@@ -1791,10 +2225,10 @@ const createStyles = (theme: any) =>
       flexWrap: "wrap",
       gap: 10,
     },
-    paginationLeft: { fontWeight: "800", opacity: 0.7 },
+    paginationLeft: { fontWeight: "600", opacity: 0.7 },
     paginationRight: { flexDirection: "row", alignItems: "center", gap: 10 },
     pageBtn: { paddingVertical: 6, paddingHorizontal: 10 },
-    pageBtnText: { fontWeight: "900", opacity: 0.75 },
+    pageBtnText: { fontWeight: "700", opacity: 0.75 },
     pageCircle: {
       width: 28,
       height: 28,
@@ -1804,7 +2238,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    pageCircleText: { fontWeight: "900", color: theme.colors.primary },
+    pageCircleText: { fontWeight: "700", color: theme.colors.primary },
 
     /* ===== Previous parameters list ===== */
     prevList: {
@@ -1827,7 +2261,7 @@ const createStyles = (theme: any) =>
     },
     prevBar: { width: 6, height: 22, borderRadius: 6, marginRight: 10 },
     prevMainBtn: { flex: 1, flexDirection: "row", alignItems: "center" },
-    prevItemText: { fontWeight: "900", opacity: 0.75 },
+    prevItemText: { fontWeight: "700", opacity: 0.75 },
     prevItemTextActive: { opacity: 1 },
     viewBtn: { marginLeft: "auto", paddingHorizontal: 8, paddingVertical: 6 },
 
@@ -1841,7 +2275,7 @@ const createStyles = (theme: any) =>
       justifyContent: "center",
       gap: 8,
     },
-    primaryBtnText: { color: theme.colors.textOnPrimary, fontWeight: "900", letterSpacing: 0.5 },
+    primaryBtnText: { color: theme.colors.textOnPrimary, fontWeight: "700", letterSpacing: 0.5 },
 
     /* ===== Modal ===== */
     modalBackdrop: {
@@ -1866,12 +2300,12 @@ const createStyles = (theme: any) =>
     },
     modalHeaderText: {
       color: theme.colors.textOnPrimary,
-      fontWeight: "900",
+      fontWeight: "700",
       letterSpacing: 0.5,
     },
     modalRow: { flexDirection: "row", gap: 14, flexWrap: "wrap" },
     modalSection: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.colors.border },
-    modalSectionTitle: { fontWeight: "900", color: theme.colors.warning, marginBottom: 10 },
+    modalSectionTitle: { fontWeight: "700", color: theme.colors.warning, marginBottom: 10 },
 
     modalTextarea: {
       borderWidth: 1,
@@ -1893,7 +2327,7 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.surfaceVariant,
     },
     modalFooterBtnGhost: { paddingVertical: 10, paddingHorizontal: 10 },
-    modalFooterBtnGhostText: { fontWeight: "900", opacity: 0.8 },
+    modalFooterBtnGhostText: { fontWeight: "700", opacity: 0.8 },
     modalFooterBtnGreen: {
       backgroundColor: theme.colors.success,
       paddingVertical: 12,
@@ -1902,7 +2336,7 @@ const createStyles = (theme: any) =>
       minWidth: 220,
       alignItems: "center",
     },
-    modalFooterBtnGreenText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
+    modalFooterBtnGreenText: { color: theme.colors.textOnPrimary, fontWeight: "700" },
     workspaceDialogCard: {
       width: "100%",
       maxHeight: "92%",

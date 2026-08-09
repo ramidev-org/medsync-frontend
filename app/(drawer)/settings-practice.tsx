@@ -34,7 +34,7 @@ function Section({ icon, title, theme }: { icon: any; title: string; theme: any 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
       <Ionicons name={icon} size={18} color={theme.colors.primary} />
-      <Text style={{ color: theme.colors.text, fontWeight: "900", fontSize: 16 }}>{title}</Text>
+      <Text style={{ color: theme.colors.text, fontWeight: "700", fontSize: 16 }}>{title}</Text>
     </View>
   );
 }
@@ -42,7 +42,7 @@ function Section({ icon, title, theme }: { icon: any; title: string; theme: any 
 function Field({ label, value, theme, multiline }: { label: string; value: string; theme: any; multiline?: boolean }) {
   return (
     <View style={{ marginTop: 10 }}>
-      <Text style={{ color: theme.colors.textSecondary, fontWeight: "800", marginBottom: 6 }}>{label}</Text>
+      <Text style={{ color: theme.colors.textSecondary, fontWeight: "600", marginBottom: 6 }}>{label}</Text>
       <TextInput
         value={value}
         editable={false}

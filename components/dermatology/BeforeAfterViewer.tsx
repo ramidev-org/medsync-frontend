@@ -113,7 +113,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    title: { fontWeight: "900", color: theme.colors.text },
+    title: { fontWeight: "700", color: theme.colors.text },
     row: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "center" },
     input: {
       borderWidth: 1,
@@ -122,7 +122,7 @@ const createStyles = (theme: any) =>
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 10,
-      fontWeight: "800",
+      fontWeight: "600",
       color: theme.colors.text,
     },
     viewerWrap: {
@@ -136,9 +136,9 @@ const createStyles = (theme: any) =>
     },
     badgeRow: { position: "absolute", top: 10, left: 10, right: 10, flexDirection: "row", justifyContent: "space-between" },
     badge: { borderWidth: 1, borderColor: `${theme.colors.border}`, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: `${theme.colors.surface}dd` as any },
-    badgeText: { fontWeight: "900", color: theme.colors.text, fontSize: 11 },
+    badgeText: { fontWeight: "700", color: theme.colors.text, fontSize: 11 },
     percentBubble: { position: "absolute", top: 42, width: 56, height: 24, borderRadius: 12, backgroundColor: `${theme.colors.surface}f0` as any, borderWidth: 1, borderColor: theme.colors.border, alignItems: "center", justifyContent: "center" },
-    percentText: { fontWeight: "900", color: theme.colors.text, fontSize: 11 },
+    percentText: { fontWeight: "700", color: theme.colors.text, fontSize: 11 },
     handleLine: { position: "absolute", top: 0, bottom: 0, width: 2, backgroundColor: theme.colors.primary },
     handleDot: {
       position: "absolute",

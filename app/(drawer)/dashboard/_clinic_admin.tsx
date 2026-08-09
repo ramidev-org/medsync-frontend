@@ -286,7 +286,7 @@ export default function ClinicAdminDashboardPage() {
                     createSpecialityId === item.id && { borderColor: theme.colors.primary },
                   ]}
                 >
-                  <Text style={{ fontWeight: "800", color: theme.colors.text }}>{item.name}</Text>
+                  <Text style={{ fontWeight: "600", color: theme.colors.text }}>{item.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -301,7 +301,7 @@ export default function ClinicAdminDashboardPage() {
                   createDoctorId == null && { borderColor: theme.colors.primary },
                 ]}
               >
-                <Text style={{ fontWeight: "800", color: theme.colors.text }}>None</Text>
+                <Text style={{ fontWeight: "600", color: theme.colors.text }}>None</Text>
               </TouchableOpacity>
               {doctors.slice(0, 8).map((entry) => (
                 <TouchableOpacity
@@ -313,14 +313,14 @@ export default function ClinicAdminDashboardPage() {
                     createDoctorId === entry.id && { borderColor: theme.colors.primary },
                   ]}
                 >
-                  <Text style={{ fontWeight: "800", color: theme.colors.text }}>{(entry.full_name || entry.email || "Doctor").split(" ")[0]}</Text>
+                  <Text style={{ fontWeight: "600", color: theme.colors.text }}>{(entry.full_name || entry.email || "Doctor").split(" ")[0]}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <TouchableOpacity onPress={() => setCreateActive((value) => !value)} style={[localStyles.toggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
               <Ionicons name={createActive ? "checkmark-circle" : "ellipse-outline"} size={18} color={createActive ? theme.colors.primary : theme.colors.textSecondary} />
-              <Text style={{ color: theme.colors.text, fontWeight: "800" }}>Activate immediately</Text>
+              <Text style={{ color: theme.colors.text, fontWeight: "600" }}>Activate immediately</Text>
             </TouchableOpacity>
 
             {!!createError ? <Text style={{ color: theme.colors.error, fontWeight: "700" }}>{createError}</Text> : null}
@@ -437,7 +437,7 @@ const localStyles = StyleSheet.create({
   heroPillText: {
     color: "#1D4ED8",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   heroInfoGrid: {
     flexDirection: "row",
@@ -456,13 +456,13 @@ const localStyles = StyleSheet.create({
   infoChipLabel: {
     color: "#64748B",
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   infoChipValue: {
     marginTop: 5,
     color: "#0F172A",
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   metricCard: {
     flex: 1,
@@ -482,12 +482,12 @@ const localStyles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 28,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   metricTitle: {
     marginTop: 4,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   sectionCard: {
     gap: 12,
@@ -516,7 +516,7 @@ const localStyles = StyleSheet.create({
   },
   primaryActionText: {
     color: "#FFFFFF",
-    fontWeight: "900",
+    fontWeight: "700",
   },
   secondaryAction: {
     paddingHorizontal: 14,
@@ -526,7 +526,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   secondaryActionText: {
-    fontWeight: "900",
+    fontWeight: "700",
   },
   virtualClinicList: {
     gap: 10,
@@ -551,12 +551,12 @@ const localStyles = StyleSheet.create({
   },
   virtualClinicIconText: {
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   virtualClinicTitle: {
     color: "#0F172A",
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   virtualClinicMeta: {
     marginTop: 4,
@@ -580,7 +580,7 @@ const localStyles = StyleSheet.create({
   },
   stateBadgeText: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   stateBadgeTextActive: {
     color: "#047857",
@@ -596,11 +596,11 @@ const localStyles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   rowValue: {
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   progressBar: {
     height: 9,
@@ -644,11 +644,11 @@ const localStyles = StyleSheet.create({
   teamTitle: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   teamValue: {
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   summaryStack: {
     gap: 10,
@@ -664,12 +664,12 @@ const localStyles = StyleSheet.create({
   summaryLabel: {
     color: "#64748B",
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   summaryValue: {
     color: "#0F172A",
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   emptyText: {
     color: "#64748B",
@@ -689,10 +689,10 @@ const localStyles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   modalLabel: {
-    fontWeight: "800",
+    fontWeight: "600",
     fontSize: 12,
   },
   pillsRow: {

@@ -119,6 +119,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   label: {
-    fontWeight: "900",
+    fontWeight: "700",
   },
 });

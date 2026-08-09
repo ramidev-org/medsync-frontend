@@ -287,7 +287,7 @@ function ActivityItem({ title, time, icon, theme }: any) {
         <Ionicons name={icon} size={16} color={theme.colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: "800", fontSize: 14, color: theme.colors.text }}>{title}</Text>
+        <Text style={{ fontWeight: "600", fontSize: 14, color: theme.colors.text }}>{title}</Text>
         <Text style={{ fontSize: 12, marginTop: 2, color: theme.colors.muted }}>{time}</Text>
       </View>
     </View>
@@ -339,7 +339,7 @@ const localStyles = StyleSheet.create({
   heroBadgeText: {
     color: "#1D4ED8",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   heroActions: {
     flexDirection: "row",
@@ -357,7 +357,7 @@ const localStyles = StyleSheet.create({
     borderColor: "#DCE7F5",
   },
   softActionChipText: {
-    fontWeight: "900",
+    fontWeight: "700",
     fontSize: 13,
   },
   statCard: {
@@ -378,12 +378,12 @@ const localStyles = StyleSheet.create({
   },
   statValue: {
     fontSize: 28,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   statTitle: {
     marginTop: 4,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   sectionCard: {
     gap: 12,
@@ -407,7 +407,7 @@ const localStyles = StyleSheet.create({
   inlineLinkText: {
     color: "#2563EB",
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   agendaList: {
     gap: 10,
@@ -432,12 +432,12 @@ const localStyles = StyleSheet.create({
   },
   agendaAvatarText: {
     fontSize: 17,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   agendaName: {
     color: "#0F172A",
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   agendaMeta: {
     marginTop: 4,
@@ -456,7 +456,7 @@ const localStyles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   profileCard: {
     backgroundColor: "#FFFFFF",
@@ -473,12 +473,12 @@ const localStyles = StyleSheet.create({
   },
   miniStatLabel: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
   },
   miniStatValue: {
     marginTop: 4,
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   progressTop: {
     flexDirection: "row",
@@ -517,7 +517,7 @@ const localStyles = StyleSheet.create({
   },
   priorityTitle: {
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   priorityHint: {
     marginTop: 3,
@@ -526,7 +526,7 @@ const localStyles = StyleSheet.create({
   },
   priorityValue: {
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "700",
   },
   activityIcon: {
     width: 36,

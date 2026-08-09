@@ -101,7 +101,7 @@ const createStyles = (theme: any) =>
       gap: 12,
       flexWrap: "wrap",
     },
-    title: { fontSize: 24, fontWeight: "900", color: theme.colors.text },
+    title: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
     subtitle: { marginTop: 4, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
     actions: { flexDirection: "row", gap: 10, flexWrap: "wrap", alignItems: "center" },
   });

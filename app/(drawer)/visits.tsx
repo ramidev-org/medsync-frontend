@@ -1,7 +1,5 @@
 ﻿import DatePickerField from "@/components/datepicker";
-import { ThemedCard } from "@/components/default_card";
 import { Dropdown } from "@/components/input_fields";
-import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
@@ -14,13 +12,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ViewStyle,
 } from "react-native";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -153,6 +151,8 @@ export default function VisitsPage() {
 
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const [patientOptions, setPatientOptions] = useState<{ id: string; label: string }[]>([]);
@@ -266,7 +266,10 @@ export default function VisitsPage() {
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((a) => {
-      const matchesStatus = filter === "all" || a.status === filter;
+      const matchesStatus = filter === "all" ||
+        (filter === "waiting_room"
+          ? a.status === "pending" || a.status === "confirmed" || a.status === "in_consultation"
+          : a.status === filter);
       const fullName = `${a.patient?.first_name ?? ""} ${a.patient?.last_name ?? ""}`.toLowerCase();
       const doctorName = String(a.doctor_name ?? "").toLowerCase();
       const matchesSearch =
@@ -276,6 +279,17 @@ export default function VisitsPage() {
       return matchesStatus && matchesSearch;
     });
   }, [appointments, filter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAppointments.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const visibleAppointments = useMemo(
+    () => filteredAppointments.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredAppointments, pageSize],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter, search, pageSize]);
 
   const waitingRoomAppointments = useMemo(
     () => appointments.filter((a) => a.status === "pending" || a.status === "confirmed" || a.status === "in_consultation"),
@@ -473,154 +487,123 @@ export default function VisitsPage() {
   };
 
   const styles = createStyles(theme);
-  const TABLE_FIXED_HEIGHT = 560;
-  const RIGHT_CARD_HEIGHT = TABLE_FIXED_HEIGHT + 126;
-
   return (
     <View style={[styles.page, { backgroundColor: theme.colors.background }]}>
       <TopBar theme={theme} />
 
       <View style={styles.container}>
-        <View style={styles.row}>
-          <View style={styles.left}>
-          <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+        <View style={styles.mainGrid}>
+          <View style={styles.leftPanel}>
             <View style={styles.filterSection}>
-              <View style={styles.searchFieldWrap}>
-                <View style={styles.fieldLabelSpacer} />
-                <View style={styles.searchBox}>
-                  <Ionicons name="search" size={20} color="#9ca3af" />
-                  <TextInput
-                    placeholder="Rechercher patient, medecin, type..."
-                    value={search}
-                    onChangeText={setSearch}
-                    style={styles.searchInput}
-                  />
-                  {search ? (
-                    <TouchableOpacity
-                      onPress={() => setSearch("")}
-                      style={styles.searchClearButton}
-                      hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
-                    >
-                      <Ionicons name="close-circle" size={18} color="#9ca3af" />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+              <View style={styles.searchBox}>
+                <Ionicons name="search-outline" size={23} color={theme.colors.textSecondary} />
+                <TextInput
+                  placeholder="Rechercher patient, médecin, type..."
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={search}
+                  onChangeText={setSearch}
+                  style={styles.searchInput}
+                />
+                {!!search && <TouchableOpacity onPress={() => setSearch("")} style={styles.searchClearButton}><Ionicons name="close-circle" size={18} color={theme.colors.muted} /></TouchableOpacity>}
               </View>
-
               <TouchableOpacity style={styles.primaryButton} onPress={openCreateForm}>
-                <Ionicons name="add" size={16} color="#fff" />
+                <Ionicons name="add" size={22} color="#fff" />
                 <Text style={styles.primaryButtonText}>Nouveau RDV</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.tabs, { backgroundColor: theme.colors.surfaceVariant }]}> 
+            <View style={styles.tabs}>
               {[
                 { key: "all", label: "Tous" },
                 { key: "pending", label: "En attente" },
-                { key: "confirmed", label: "Confirmes" },
-                { key: "completed", label: "Termine" },
-                { key: "cancelled", label: "Annule" },
+                { key: "confirmed", label: "Confirmés" },
+                { key: "completed", label: "Terminés" },
+                { key: "cancelled", label: "Annulés" },
                 { key: "no_show", label: "Absents" },
               ].map((tab) => (
-                <TouchableOpacity
-                  key={tab.key}
-                  onPress={() => setFilter(tab.key)}
-                  style={[styles.tab, filter === tab.key && { backgroundColor: theme.colors.primary }]}
-                >
-                  <Text style={[styles.tabText, filter === tab.key && { color: "#fff" }]}>{tab.label}</Text>
+                <TouchableOpacity key={tab.key} onPress={() => setFilter(tab.key)} style={[styles.tab, filter === tab.key && styles.tabActive]}>
+                  <Text style={[styles.tabText, filter === tab.key && styles.tabTextActive]}>{tab.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <View style={[styles.tableContainer, { height: TABLE_FIXED_HEIGHT }]}>
+            <View style={styles.tableContainer}>
               <View style={[styles.tableRow, styles.header]}>
-                <Text style={[styles.cell, { flex: 0.6 }]}>Avatar</Text>
-                <Text style={[styles.cell, { flex: 1.2 }]}>Patient</Text>
-                <Text style={[styles.cell, { flex: 1.2 }]}>Medecin</Text>
-                <Text style={[styles.cell, { flex: 0.9 }]}>Heure</Text>
-                <Text style={[styles.cell, { flex: 0.9 }]}>Type</Text>
-                <Text style={[styles.cell, { flex: 1, textAlign: "center" }]}>Status</Text>
-                <Text style={{ flex: 1.25, textAlign: "center" }}>Actions</Text>
+                <Text style={[styles.headerCell, styles.timeCell]}>Heure  ↕</Text>
+                <Text style={[styles.headerCell, styles.patientCell]}>Patient</Text>
+                <Text style={[styles.headerCell, styles.doctorCell]}>Médecin</Text>
+                <Text style={[styles.headerCell, styles.typeCell]}>Type</Text>
+                <Text style={[styles.headerCell, styles.statusCell]}>Statut</Text>
+                <Text style={[styles.headerCell, styles.actionsCell]}>Actions</Text>
               </View>
 
-              <ScrollView style={{ maxHeight: TABLE_FIXED_HEIGHT - 68 }}>
-                {filteredAppointments.map((a) => (
-                  <View key={a.id} style={styles.tableRow}>
-                    <View style={{ flex: 0.6 }}>
-                      <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={48} borderRadius={12} />
-                    </View>
-
-                    <Text style={[styles.cell, { flex: 1.2 }]}>{a.patient?.first_name} {a.patient?.last_name}</Text>
-                    <Text style={[styles.cell, { flex: 1.2 }]} numberOfLines={1}>{a.doctor_name || "-"}</Text>
-                    <Text style={[styles.cell, { flex: 0.9 }]}>
-                      {new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </Text>
-                    <Text style={[styles.cell, { flex: 0.9 }]}>{a.type}</Text>
-
-                    <View style={{ flex: 1 }}>
-                      <View style={[styles.status, statusColor(a.status)]}>
-                        <Text style={styles.statusText}>{STATUS_LABELS[a.status]}</Text>
+              <ScrollView style={styles.tableScroll} showsVerticalScrollIndicator={false}>
+                {visibleAppointments.map((a) => {
+                  const meta = appointmentStatusMeta(a.status);
+                  return (
+                    <View key={a.id} style={styles.tableRow}>
+                      <View style={[styles.timeCell, styles.timeWrap]}>
+                        <View style={[styles.timeDot, { backgroundColor: a.status === "pending" || a.status === "confirmed" ? theme.colors.success : theme.colors.border }]} />
+                        <Text style={styles.timeText}>{new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+                      </View>
+                      <View style={[styles.patientCell, styles.patientWrap]}>
+                        <VisitAvatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={38} />
+                        <View style={styles.patientCopy}>
+                          <Text numberOfLines={1} style={styles.patientName}>{a.patient?.first_name} {a.patient?.last_name}</Text>
+                          <Text numberOfLines={1} style={styles.patientId}>ID: {String(a.patient_id || "—").slice(0, 13)}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.cellText, styles.doctorCell]} numberOfLines={1}>{a.doctor_name || "-"}</Text>
+                      <View style={[styles.typeCell, styles.typeWrap]}>
+                        <Ionicons name={a.type === "follow_up" ? "pulse-outline" : "person-circle-outline"} size={17} color={theme.colors.textSecondary} />
+                        <Text numberOfLines={1} style={styles.cellText}>{appointmentTypeLabel(a.type)}</Text>
+                      </View>
+                      <View style={styles.statusCell}><View style={[styles.status, { backgroundColor: meta.soft }]}><Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text></View></View>
+                      <View style={[styles.actionsCell, styles.actionsWrap]}>
+                        <TouchableOpacity accessibilityLabel="Démarrer la consultation" style={styles.actionBtn} onPress={() => startConsultation(a)}><CalendarPlusIcon color={theme.colors.primary} /></TouchableOpacity>
+                        <TouchableOpacity accessibilityLabel="Plus d’actions" style={styles.moreBtn} onPress={() => openRowActions(a)}><Ionicons name="ellipsis-vertical" size={19} color={theme.colors.textSecondary} /></TouchableOpacity>
                       </View>
                     </View>
-
-                    <View style={[styles.row, { flex: 1.25, justifyContent: "center", gap: 8 }]}>
-                      <TouchableOpacity style={[styles.actionBtn, styles.primaryActionBtn]} onPress={() => startConsultation(a)}>
-                        <Ionicons name="medkit-outline" size={16} color="#fff" />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => openRowActions(a)}>
-                        <Ionicons name="ellipsis-horizontal" size={16} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-
-                {filteredAppointments.length === 0 && (
-                  <View style={{ padding: 20 }}>
-                    <Text style={{ color: theme.colors.textSecondary }}>Aucun rendez-vous pour ce filtre.</Text>
-                  </View>
-                )}
+                  );
+                })}
+                {filteredAppointments.length === 0 && <View style={styles.emptyTable}><Ionicons name="calendar-clear-outline" size={28} color={theme.colors.muted} /><Text style={styles.emptyText}>Aucun rendez-vous pour ce filtre.</Text></View>}
               </ScrollView>
+
+              <View style={styles.tableFooter}>
+                <Text style={styles.footerSummary}>Affichage {filteredAppointments.length ? (currentPage - 1) * pageSize + 1 : 0} – {Math.min(currentPage * pageSize, filteredAppointments.length)} sur {filteredAppointments.length} rendez-vous</Text>
+                <View style={styles.pagination}>
+                  <TouchableOpacity disabled={currentPage === 1} onPress={() => setPage((value) => Math.max(1, value - 1))} style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}><Ionicons name="chevron-back" size={17} color={theme.colors.text} /></TouchableOpacity>
+                  {Array.from({ length: Math.min(totalPages, 3) }, (_, index) => index + 1).map((value) => <TouchableOpacity key={value} onPress={() => setPage(value)} style={[styles.pageButton, currentPage === value && styles.pageButtonActive]}><Text style={[styles.pageButtonText, currentPage === value && styles.pageButtonTextActive]}>{value}</Text></TouchableOpacity>)}
+                  <TouchableOpacity disabled={currentPage === totalPages} onPress={() => setPage((value) => Math.min(totalPages, value + 1))} style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}><Ionicons name="chevron-forward" size={17} color={theme.colors.text} /></TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => setPageSize((value) => value === 8 ? 12 : value === 12 ? 24 : 8)} style={styles.pageSizeButton}><Text style={styles.pageSizeText}>{pageSize} par page</Text><Ionicons name="chevron-down" size={15} color={theme.colors.text} /></TouchableOpacity>
+              </View>
             </View>
-          </ScrollView>
           </View>
 
-          <View style={styles.right}>
-            <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            <ThemedCard style={{ height: RIGHT_CARD_HEIGHT }}>
-              <View style={styles.waitingProgressTop}>
-                <View>
-                  <Text style={styles.progressTitle}>Etat d&apos;avancement</Text>
-                  <Text style={styles.progressText}>{completedCount} sur {appointments.length} patients traites</Text>
-                </View>
-                <Text style={[styles.waitingProgressValue, { color: theme.colors.primary }]}>{progress}%</Text>
-              </View>
-              <View style={[styles.progressBg, { backgroundColor: theme.colors.border, marginBottom: 14 }]}> 
-                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary }]} />
-              </View>
-
-              <Text style={styles.waitingTitle}>Salle d&apos;attente</Text>
-              <Text style={styles.waitingSubtitle}>Patients en attente ou en consultation</Text>
-              <ScrollView style={{ marginTop: 16 }} contentContainerStyle={{ paddingBottom: 8 }}>
-                {waitingRoomAppointments.map((a) => (
-                  <View key={a.id} style={styles.waitingCard}>
-                    <Avatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={60} borderRadius={14} />
-                    <View style={{ marginLeft: 12 }}>
-                      <Text style={{ fontWeight: "600" }}>{a.patient?.first_name} {a.patient?.last_name}</Text>
-                      <Text style={{ fontSize: 12, color: "#6b7280" }}>
-                        {new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: "#6b7280" }}>{a.doctor_name || "-"}</Text>
-                    </View>
+          <View style={styles.rightPanel}>
+            <View style={styles.overviewHeader}>
+              <View><Text style={styles.progressTitle}>Vue d’ensemble</Text><Text style={styles.progressText}>{completedCount} sur {appointments.length} patients traités aujourd’hui</Text></View>
+              <Text style={styles.waitingProgressValue}>{progress}%</Text>
+            </View>
+            <View style={styles.progressBg}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View>
+            <View style={styles.sideDivider} />
+            <Text style={styles.waitingTitle}>Salle d’attente</Text>
+            <Text style={styles.waitingSubtitle}>Patients en attente ou en consultation</Text>
+            <ScrollView style={styles.waitingList} contentContainerStyle={styles.waitingListContent} showsVerticalScrollIndicator={false}>
+              {waitingRoomAppointments.map((a) => (
+                <TouchableOpacity key={a.id} onPress={() => openRowActions(a)} style={styles.waitingCard}>
+                  <VisitAvatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={50} />
+                  <View style={styles.waitingCopy}>
+                    <Text numberOfLines={1} style={styles.waitingPatientName}>{a.patient?.first_name} {a.patient?.last_name}</Text>
+                    <Text style={styles.waitingMeta}>{new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+                    <Text numberOfLines={1} style={styles.waitingMeta}>{a.doctor_name || "-"}</Text>
                   </View>
-                ))}
-
-                {waitingRoomAppointments.length === 0 && (
-                  <Text style={{ color: theme.colors.textSecondary }}>Aucun patient en attente.</Text>
-                )}
-              </ScrollView>
-            </ThemedCard>
+                </TouchableOpacity>
+              ))}
+              {waitingRoomAppointments.length === 0 && <Text style={styles.emptyText}>Aucun patient en attente.</Text>}
             </ScrollView>
+            <TouchableOpacity onPress={() => setFilter("waiting_room")} style={styles.waitingRoomButton}><Ionicons name="people-outline" size={18} color={theme.colors.primary} /><Text style={styles.waitingRoomButtonText}>Voir toute la salle d’attente</Text></TouchableOpacity>
           </View>
         </View>
       </View>
@@ -783,148 +766,128 @@ export default function VisitsPage() {
   );
 }
 
-function statusColor(status: string): ViewStyle {
+function appointmentStatusMeta(status: AppointmentStatus) {
   switch (status) {
-    case "completed":
-      return { backgroundColor: "#22c55e" };
-    case "pending":
-      return { backgroundColor: "#60a5fa" };
-    case "confirmed":
-      return { backgroundColor: "#38bdf8" };
-    case "cancelled":
-      return { backgroundColor: "#9ca3af" };
-    case "no_show":
-      return { backgroundColor: "#f59e0b" };
-    case "in_consultation":
-      return { backgroundColor: "#38bdf8" };
-    default:
-      return {};
+    case "completed": return { label: "Terminé", color: "#15803D", soft: "#DCFCE7" };
+    case "pending": return { label: "En attente", color: "#2563EB", soft: "#E6EFFF" };
+    case "confirmed": return { label: "Confirmé", color: "#15803D", soft: "#DCFCE7" };
+    case "cancelled": return { label: "Annulé", color: "#64748B", soft: "#EEF2F7" };
+    case "no_show": return { label: "Absent", color: "#B45309", soft: "#FFF3DA" };
+    case "in_consultation": return { label: "En consultation", color: "#6D28D9", soft: "#F0E9FF" };
+    default: return { label: STATUS_LABELS[status] || status, color: "#64748B", soft: "#EEF2F7" };
   }
 }
 
-const createStyles = (theme: any) =>
-  StyleSheet.create({
+const AVATAR_TONES = [
+  { background: "#FAD8E9", foreground: "#B52266" },
+  { background: "#DDF4E9", foreground: "#168054" },
+  { background: "#FFF0DD", foreground: "#B66317" },
+  { background: "#EEE7FF", foreground: "#6842B8" },
+  { background: "#E2EEFF", foreground: "#2563C7" },
+];
+
+function VisitAvatar({ firstName, lastName, size }: { firstName: string; lastName: string; size: number }) {
+  const initials = `${firstName.trim().charAt(0) || "P"}${lastName.trim().charAt(0) || ""}`.toUpperCase();
+  const seed = `${firstName}${lastName}`.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+  const tone = AVATAR_TONES[seed % AVATAR_TONES.length];
+  return (
+    <View style={{ width: size, height: size, borderRadius: Math.round(size * 0.22), backgroundColor: tone.background, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ color: tone.foreground, fontSize: Math.round(size * 0.34), fontWeight: "700" }}>{initials}</Text>
+    </View>
+  );
+}
+
+function CalendarPlusIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 23, height: 23, alignItems: "center", justifyContent: "center" }}>
+      <Ionicons name="calendar-outline" size={23} color={color} />
+      <View style={{ position: "absolute", top: 8, left: 7, width: 9, height: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
+        <Ionicons name="add" size={11} color={color} />
+      </View>
+    </View>
+  );
+}
+
+function appointmentTypeLabel(type: AppointmentType) {
+  if (type === "follow_up") return "Suivi";
+  if (type === "emergency") return "Urgence";
+  if (type === "procedure") return "Procédure";
+  return "Consultation";
+}
+
+const webShadow = Platform.OS === "web" ? ({ boxShadow: "0 5px 18px rgba(15,23,42,0.055)" } as any) : null;
+
+const createStyles = (theme: any) => StyleSheet.create({
     page: { flex: 1 },
-    container: {
-      paddingHorizontal: PAGE_GUTTER,
-      paddingTop: 18,
-      paddingBottom: 30,
-      ...getWebContainerFill(),
-    },
-    row: { flexDirection: "row", gap: 18 },
-    left: { flex: 2.25, padding: 0 },
-    right: { flex: 1, padding: 0 },
-
-    filterSection: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      gap: 12,
-      marginBottom: 16,
-    },
-    searchFieldWrap: {
-      flex: 1.45,
-      minWidth: 340,
-    },
-    fieldLabelSpacer: {
-      height: 22,
-    },
-    searchBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: "#fff",
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      minHeight: 42,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    searchInput: { flex: 1, paddingVertical: 12, paddingHorizontal: 10, fontSize: 14 },
-    searchClearButton: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    primaryButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      backgroundColor: theme.colors.primary,
-      borderRadius: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      minHeight: 42,
-    },
-    primaryButtonText: { color: "#fff", fontWeight: "700" },
-
-    tabs: { flexDirection: "row", borderRadius: 12, padding: 6, marginBottom: 16 },
-    tab: { flex: 1, padding: 10, borderRadius: 10, alignItems: "center" },
-    tabText: { fontWeight: "600" },
-
-    progressHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
-    progressTitle: { fontWeight: "600" },
-    progressValue: { fontSize: 24, fontWeight: "700" },
-    progressBg: { height: 10, borderRadius: 10 },
-    progressFill: { height: 10, borderRadius: 10 },
-    progressText: { marginTop: 12, fontSize: 13, color: "#6b7280" },
-
-    tableContainer: { backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
-    tableRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      padding: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: "#e5e7eb",
-    },
-    cell: { fontSize: 13 },
-    header: { backgroundColor: "#f3f4f6" },
-    status: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
-      marginHorizontal: 10,
-      alignItems: "center",
-    },
-    statusText: { color: "#fff", fontSize: 12, fontWeight: "500", textAlign: "center" },
-
-    actionBtn: {
-      width: 30,
-      height: 30,
-      borderRadius: 8,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-    },
-    primaryActionBtn: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-    },
-
-    waitingTitle: { fontSize: 16, fontWeight: "700" },
-    waitingSubtitle: { fontSize: 13, color: "#6b7280" },
-    waitingProgressTop: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      justifyContent: "space-between",
-      marginBottom: 8,
-    },
-    waitingProgressValue: {
-      fontSize: 24,
-      fontWeight: "800",
-    },
-    waitingCard: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: "#f0f8fd",
-      padding: 12,
-      borderRadius: 12,
-      marginBottom: 10,
-    },
-
+    container: { flex: 1, minHeight: 0, paddingHorizontal: PAGE_GUTTER, paddingTop: 24, paddingBottom: 24, ...getWebContainerFill() },
+    mainGrid: { flex: 1, minHeight: 0, flexDirection: "row", gap: 22, flexWrap: "wrap" },
+    leftPanel: { flex: 3, minWidth: 680, minHeight: 0 },
+    rightPanel: { flex: 1, minWidth: 280, minHeight: 560, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.surface, padding: 20, ...webShadow },
+    filterSection: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 20 },
+    searchBox: { flex: 1, height: 50, flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.surface, borderRadius: 9, paddingHorizontal: 18, borderWidth: 1, borderColor: theme.colors.border, gap: 10, ...webShadow },
+    searchInput: { flex: 1, color: theme.colors.text, fontSize: 14, outlineStyle: "none" } as any,
+    searchClearButton: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+    primaryButton: { height: 50, minWidth: 170, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, backgroundColor: theme.colors.primary, borderRadius: 9, paddingHorizontal: 20, ...webShadow },
+    primaryButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+    tabs: { height: 52, flexDirection: "row", alignItems: "center", paddingHorizontal: 10, marginBottom: 16, borderRadius: 8, backgroundColor: theme.colors.surface },
+    tab: { flex: 1, height: 36, borderRadius: 7, alignItems: "center", justifyContent: "center" },
+    tabActive: { backgroundColor: theme.colors.primary },
+    tabText: { color: theme.colors.text, fontWeight: "600", fontSize: 12 },
+    tabTextActive: { color: "#fff" },
+    tableContainer: { flex: 1, minHeight: 510, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, overflow: "hidden", ...webShadow },
+    tableScroll: { flex: 1, minHeight: 0 },
+    tableRow: { minHeight: 72, flexDirection: "row", alignItems: "center", paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    header: { minHeight: 52, backgroundColor: theme.colors.backgroundAlt || theme.colors.background },
+    headerCell: { color: theme.colors.text, fontSize: 11, fontWeight: "700" },
+    cellText: { color: theme.colors.text, fontSize: 11 },
+    timeCell: { width: 105 },
+    patientCell: { flex: 1.55, minWidth: 190 },
+    doctorCell: { flex: 1.2, minWidth: 135 },
+    typeCell: { flex: 0.9, minWidth: 105 },
+    statusCell: { flex: 0.85, minWidth: 90 },
+    actionsCell: { width: 82 },
+    timeWrap: { flexDirection: "row", alignItems: "center", gap: 9 },
+    timeDot: { width: 8, height: 8, borderRadius: 4 },
+    timeText: { color: theme.colors.text, fontSize: 11, fontWeight: "700" },
+    patientWrap: { flexDirection: "row", alignItems: "center", gap: 12 },
+    patientCopy: { flex: 1, minWidth: 0 },
+    patientName: { color: theme.colors.text, fontSize: 11, fontWeight: "700" },
+    patientId: { color: theme.colors.textSecondary, fontSize: 10, marginTop: 4 },
+    typeWrap: { flexDirection: "row", alignItems: "center", gap: 7 },
+    status: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignItems: "center" },
+    statusText: { fontSize: 10, fontWeight: "600", textAlign: "center" },
+    actionsWrap: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8 },
+    actionBtn: { width: 36, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+    moreBtn: { width: 24, height: 34, alignItems: "center", justifyContent: "center" },
+    emptyTable: { minHeight: 260, alignItems: "center", justifyContent: "center", gap: 8 },
+    emptyText: { color: theme.colors.textSecondary, fontSize: 12 },
+    tableFooter: { minHeight: 70, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" },
+    footerSummary: { flex: 1, minWidth: 220, color: theme.colors.text, fontSize: 11 },
+    pagination: { flexDirection: "row", gap: 7 },
+    pageButton: { width: 36, height: 36, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.surface },
+    pageButtonActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+    pageButtonDisabled: { opacity: 0.4 },
+    pageButtonText: { color: theme.colors.text, fontSize: 12, fontWeight: "600" },
+    pageButtonTextActive: { color: "#fff" },
+    pageSizeButton: { height: 40, paddingHorizontal: 13, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 10 },
+    pageSizeText: { color: theme.colors.text, fontSize: 11 },
+    overviewHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+    progressTitle: { color: theme.colors.text, fontSize: 16, fontWeight: "700" },
+    progressText: { marginTop: 12, fontSize: 12, color: theme.colors.textSecondary },
+    waitingProgressValue: { color: theme.colors.primary, fontSize: 25, fontWeight: "700" },
+    progressBg: { height: 10, borderRadius: 5, backgroundColor: theme.colors.border, marginTop: 16, overflow: "hidden" },
+    progressFill: { height: 10, borderRadius: 5, backgroundColor: theme.colors.primary },
+    sideDivider: { height: 1, backgroundColor: theme.colors.border, marginVertical: 30 },
+    waitingTitle: { color: theme.colors.text, fontSize: 16, fontWeight: "700" },
+    waitingSubtitle: { marginTop: 10, fontSize: 12, color: theme.colors.textSecondary },
+    waitingList: { flex: 1, minHeight: 0, marginTop: 18 },
+    waitingListContent: { gap: 10, paddingBottom: 12 },
+    waitingCard: { minHeight: 88, flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.primarySoft, padding: 11, borderRadius: 10 },
+    waitingCopy: { flex: 1, minWidth: 0, marginLeft: 12 },
+    waitingPatientName: { color: theme.colors.text, fontSize: 12, fontWeight: "700" },
+    waitingMeta: { marginTop: 4, color: theme.colors.textSecondary, fontSize: 11 },
+    waitingRoomButton: { height: 48, borderWidth: 1, borderColor: theme.colors.primary, borderRadius: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+    waitingRoomButtonText: { color: theme.colors.primary, fontSize: 12, fontWeight: "700" },
     modalBackdrop: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.35)",
@@ -950,7 +913,7 @@ const createStyles = (theme: any) =>
       justifyContent: "space-between",
       alignItems: "center",
     },
-    modalTitle: { fontWeight: "900", color: theme.colors.text },
+    modalTitle: { fontWeight: "700", color: theme.colors.text },
     modalFooter: {
       padding: 14,
       borderTopWidth: 1,

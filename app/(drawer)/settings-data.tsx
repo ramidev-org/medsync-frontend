@@ -34,6 +34,6 @@ const createStyles = (theme: any) =>
   StyleSheet.create({
     grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
     card: { padding: 16, flex: 1, minWidth: 230 },
-    title: { marginTop: 10, color: theme.colors.text, fontWeight: "900", fontSize: 16 },
+    title: { marginTop: 10, color: theme.colors.text, fontWeight: "700", fontSize: 16 },
     copy: { marginTop: 6, color: theme.colors.textSecondary, fontWeight: "700", lineHeight: 20 },
   });

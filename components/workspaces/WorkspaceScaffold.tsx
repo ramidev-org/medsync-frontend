@@ -98,12 +98,12 @@ const createStyles = (theme: any) =>
     badgeIcon: { opacity: 0.95 },
     badgeText: {
       color: theme.colors.primary,
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 11,
       letterSpacing: 0.3,
       textTransform: "uppercase",
     },
-    title: { fontSize: 29, fontWeight: "900", color: theme.colors.text, letterSpacing: 0.2 },
+    title: { fontSize: 29, fontWeight: "700", color: theme.colors.text, letterSpacing: 0.2 },
     subtitle: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
 
     surface: {
@@ -119,6 +119,6 @@ const createStyles = (theme: any) =>
           } as any)
         : null),
     },
-    surfaceTitle: { fontWeight: "900", color: theme.colors.text, fontSize: 18 },
+    surfaceTitle: { fontWeight: "700", color: theme.colors.text, fontSize: 18 },
     surfaceSubtitle: { marginTop: 4, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12 },
   });

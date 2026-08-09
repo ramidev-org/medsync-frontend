@@ -109,7 +109,9 @@ create index if not exists prescriptions_consultation_idx
 create table if not exists public.prescription_medication_rows (
   id uuid primary key default gen_random_uuid(),
   prescription_id uuid not null references public.prescriptions(id) on delete cascade,
+  catalog_id text null,
   medicine_name text not null,
+  quantity integer not null default 1,
   dose text null,
   frequency text null,
   duration text null,
@@ -119,7 +121,9 @@ create table if not exists public.prescription_medication_rows (
 
 alter table public.prescription_medication_rows
   add column if not exists prescription_id uuid null references public.prescriptions(id) on delete cascade,
+  add column if not exists catalog_id text null,
   add column if not exists medicine_name text null,
+  add column if not exists quantity integer not null default 1,
   add column if not exists dose text null,
   add column if not exists frequency text null,
   add column if not exists duration text null,
@@ -180,7 +184,9 @@ begin
         from (
           select
             pm.id,
+            pm.catalog_id,
             pm.medicine_name,
+            pm.quantity,
             pm.dose,
             pm.frequency,
             pm.duration,
@@ -337,7 +343,9 @@ begin
   loop
     insert into public.prescription_medication_rows (
       prescription_id,
+      catalog_id,
       medicine_name,
+      quantity,
       dose,
       frequency,
       duration,
@@ -346,7 +354,9 @@ begin
     )
     values (
       v_prescription_id,
+      nullif(v_item->>'catalog_id', ''),
       coalesce(nullif(btrim(v_item->>'medicine_name'), ''), 'Medication'),
+      greatest(coalesce((v_item->>'quantity')::integer, 1), 1),
       nullif(v_item->>'dose', ''),
       nullif(v_item->>'frequency', ''),
       nullif(v_item->>'duration', ''),
@@ -376,7 +386,9 @@ begin
         from (
           select
             pm.id,
+            pm.catalog_id,
             pm.medicine_name,
+            pm.quantity,
             pm.dose,
             pm.frequency,
             pm.duration,

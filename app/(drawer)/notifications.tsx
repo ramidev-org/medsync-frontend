@@ -122,7 +122,7 @@ export default function NotificationsPage() {
       }
     >
       <ThemedCard style={{ padding: 16 }}>
-        <Text style={{ fontWeight: "900", color: theme.colors.text }}>
+        <Text style={{ fontWeight: "700", color: theme.colors.text }}>
           Live clinic feed
         </Text>
         <Text
@@ -234,7 +234,7 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 12,
       height: 40,
     },
-    actionBtnText: { fontWeight: "900", color: theme.colors.text },
+    actionBtnText: { fontWeight: "700", color: theme.colors.text },
     loadingBox: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -246,7 +246,7 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.surface,
       marginBottom: 10,
     },
-    loadingText: { color: theme.colors.textSecondary, fontWeight: "800" },
+    loadingText: { color: theme.colors.textSecondary, fontWeight: "600" },
     errorBox: {
       borderWidth: 1,
       borderColor: `${theme.colors.error}33`,
@@ -258,7 +258,7 @@ const createStyles = (theme: any) =>
       backgroundColor: `${theme.colors.error}10`,
       marginBottom: 10,
     },
-    errorText: { color: theme.colors.error, fontWeight: "800" },
+    errorText: { color: theme.colors.error, fontWeight: "600" },
     emptyState: {
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -268,7 +268,7 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 6,
     },
-    emptyTitle: { color: theme.colors.text, fontWeight: "900" },
+    emptyTitle: { color: theme.colors.text, fontWeight: "700" },
     emptyText: {
       color: theme.colors.textSecondary,
       fontWeight: "700",
@@ -295,7 +295,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    title: { fontWeight: "900", color: theme.colors.text },
+    title: { fontWeight: "700", color: theme.colors.text },
     desc: { marginTop: 3, color: theme.colors.textSecondary, fontWeight: "700" },
     meta: { marginTop: 6, color: theme.colors.muted, fontWeight: "700", fontSize: 12 },
     dot: { width: 8, height: 8, borderRadius: 4 },

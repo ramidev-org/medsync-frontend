@@ -1,6 +1,6 @@
 ﻿import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   theme: any;
@@ -9,9 +9,13 @@ type Props = {
   onBack?: () => void;
   patientName?: string;
   patientMeta?: string;
+  patientBirthDate?: string;
+  patientPhone?: string;
+  patientId?: string;
+  doctorName?: string;
   visitMeta?: string;
   workspaceLabel?: string;
-  workspaceOptions?: Array<{ key: string; label: string }>;
+  workspaceOptions?: { key: string; label: string }[];
   onWorkspaceChange?: (key: string) => void;
   status?: "open" | "in_consultation" | "closed" | "cancelled";
   onLastVisit?: () => void;
@@ -46,6 +50,10 @@ export default function ConsultationHeader({
   onBack,
   patientName,
   patientMeta,
+  patientBirthDate,
+  patientPhone,
+  patientId,
+  doctorName,
   visitMeta,
   workspaceLabel,
   workspaceOptions = [],
@@ -60,6 +68,17 @@ export default function ConsultationHeader({
   const s = createStyles(theme);
   const st = statusUi(status);
   const [workspacePickerOpen, setWorkspacePickerOpen] = React.useState(false);
+  const initials = (patientName || "Patient")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const birthDate = patientBirthDate ? new Date(patientBirthDate) : null;
+  const birthLabel = birthDate && !Number.isNaN(birthDate.getTime())
+    ? birthDate.toLocaleDateString("fr-FR")
+    : "Non renseignée";
 
   return (
     <View style={s.wrap}>
@@ -104,62 +123,62 @@ export default function ConsultationHeader({
 
       {(patientName || patientMeta || visitMeta) && (
         <View style={s.patientStrip}>
-          <View style={s.patientTopRow}>
-            <View style={s.patientIdentityWrap}>
-              <View style={s.patientIconBox}>
-                <Ionicons name="person-outline" size={18} color={theme.colors.primary} />
-              </View>
-              <View style={{ minWidth: 180 }}>
-                <Text style={s.patientName}>{patientName || "Patient"}</Text>
-                <Text style={s.patientMeta}>{patientMeta || "-"}</Text>
-              </View>
+          <View style={s.patientIdentityWrap}>
+            <View style={s.patientInitials}>
+              <Text style={s.patientInitialsText}>{initials}</Text>
             </View>
-
-            <View style={s.patientActionsTopRight}>
-              {!!onWorkspaceChange && (
-                <View style={s.workspaceDropdownWrap}>
-                  <TouchableOpacity onPress={() => setWorkspacePickerOpen((v) => !v)} style={s.workspaceBtn}>
-                    <Ionicons name="medkit-outline" size={16} color={theme.colors.primary} />
-                    <Text style={s.workspaceBtnText}>{workspaceLabel || "Workspace"}</Text>
-                    <Ionicons name="chevron-down-outline" size={14} color={theme.colors.textSecondary} />
-                  </TouchableOpacity>
-
-                  {workspacePickerOpen && (
-                    <View style={s.workspaceMenu}>
-                      <ScrollView style={s.workspaceMenuScroll} nestedScrollEnabled showsVerticalScrollIndicator>
-                        {workspaceOptions.map((w) => (
-                          <TouchableOpacity
-                            key={w.key}
-                            onPress={() => {
-                              onWorkspaceChange(w.key);
-                              setWorkspacePickerOpen(false);
-                            }}
-                            style={s.workspaceMenuItem}
-                          >
-                            <Text style={s.workspaceMenuText}>{w.label}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-                </View>
-              )}
+            <View style={s.patientCopy}>
+              <View style={s.patientNameRow}>
+                <Text style={s.patientName}>{patientName || "Patient"}</Text>
+                <Ionicons name="person-circle-outline" size={19} color={theme.colors.primary} />
+              </View>
+              <Text style={s.patientMeta}>Né(e) le {birthLabel}{patientMeta ? `  •  ${patientMeta}` : ""}  •  ID: {patientId ? patientId.slice(0, 8).toUpperCase() : "—"}</Text>
+              <View style={s.phoneRow}>
+                <Ionicons name="call-outline" size={15} color={theme.colors.textSecondary} />
+                <Text style={s.patientMeta}>{patientPhone || "Téléphone non renseigné"}</Text>
+              </View>
             </View>
           </View>
 
-          <View style={s.statsRowInline}>
-            <View style={[s.statCard, s.statBlue]}>
-              <Text style={s.statValue}>{consultationStats?.statusLabel || st.label}</Text>
-              <Text style={s.statLabel}>Statut</Text>
+          <View style={s.patientFacts}>
+            <View style={s.patientFact}>
+              <Text style={s.factLabel}>Dernière consultation</Text>
+              <Text style={s.factValuePrimary}>{consultationStats?.visitLabel || visitMeta || "—"}</Text>
             </View>
-            <View style={[s.statCard, s.statGreen]}>
-              <Text style={s.statValue}>{consultationStats?.specialtyLabel || (workspaceLabel || "Workspace")}</Text>
-              <Text style={s.statLabel}>Specialite</Text>
+            <View style={s.factDivider} />
+            <View style={s.patientFact}>
+              <Text style={s.factLabel}>Médecin traitant</Text>
+              <Text numberOfLines={1} style={s.factValue}>{doctorName || "Médecin traitant"}</Text>
             </View>
-            <View style={[s.statCard, s.statOrange]}>
-              <Text style={s.statValue}>{consultationStats?.visitLabel || (visitMeta || "-")}</Text>
-              <Text style={s.statLabel}>Visite</Text>
+            <View style={s.factDivider} />
+            <View style={s.patientFactCompact}>
+              <Text style={s.factLabel}>Statut</Text>
+              <View style={[s.statusBadge, status === "closed" ? s.statusBadgeClosed : s.statusBadgeOpen]}>
+                <View style={[s.statusDot, { backgroundColor: status === "closed" ? theme.colors.success : theme.colors.warning }]} />
+                <Text style={[s.statusBadgeText, { color: status === "closed" ? theme.colors.success : "#b76400" }]}>{consultationStats?.statusLabel || st.label}</Text>
+              </View>
             </View>
+            {!!onWorkspaceChange && (
+              <View style={s.workspaceDropdownWrap}>
+                <Text style={s.workspaceLabel}>Spécialité</Text>
+                <TouchableOpacity onPress={() => setWorkspacePickerOpen((v) => !v)} style={s.workspaceBtn}>
+                  <Ionicons name="medkit-outline" size={17} color={theme.colors.primary} />
+                  <Text numberOfLines={1} style={s.workspaceBtnText}>{workspaceLabel || "Workspace"}</Text>
+                  <Ionicons name="chevron-down-outline" size={14} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+                {workspacePickerOpen && (
+                  <View style={s.workspaceMenu}>
+                    <ScrollView style={s.workspaceMenuScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+                      {workspaceOptions.map((w) => (
+                        <TouchableOpacity key={w.key} onPress={() => { onWorkspaceChange(w.key); setWorkspacePickerOpen(false); }} style={s.workspaceMenuItem}>
+                          <Text style={s.workspaceMenuText}>{w.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -203,14 +222,14 @@ const createStyles = (theme: any) =>
         ? ({ boxShadow: "0 8px 18px rgba(37,99,235,0.12)" } as any)
         : null),
     },
-    title: { fontSize: 18, fontWeight: "900", letterSpacing: 0.5 },
+    title: { fontSize: 18, fontWeight: "700", letterSpacing: 0.5 },
     pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-    pillText: { color: theme.colors.textOnPrimary, fontWeight: "900" },
+    pillText: { color: theme.colors.textOnPrimary, fontWeight: "700" },
     statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-    statusText: { color: theme.colors.textOnPrimary, fontWeight: "900", fontSize: 12 },
+    statusText: { color: theme.colors.textOnPrimary, fontWeight: "700", fontSize: 12 },
     rightTop: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
     linkBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 6 },
-    linkText: { fontWeight: "800", opacity: 0.75, color: theme.colors.text },
+    linkText: { fontWeight: "600", opacity: 0.75, color: theme.colors.text },
     iconAction: {
       width: 38,
       height: 38,
@@ -227,56 +246,57 @@ const createStyles = (theme: any) =>
       alignItems: "center",
       gap: 8,
     },
-    actionText: { color: theme.colors.textOnPrimary, fontWeight: "900", fontSize: 12 },
+    actionText: { color: theme.colors.textOnPrimary, fontWeight: "700", fontSize: 12 },
     patientStrip: {
       marginTop: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      borderRadius: 12,
+      minHeight: 116,
+      paddingHorizontal: 24,
+      paddingVertical: 18,
+      borderRadius: 14,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
+      justifyContent: "space-between",
+      gap: 20,
       flexWrap: "wrap",
       zIndex: 70,
       ...(typeof window !== "undefined" ? ({ overflow: "visible" } as any) : null),
     },
-    patientTopRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
-      flexWrap: "wrap",
-      zIndex: 200,
-      elevation: 20,
-    },
     patientIdentityWrap: {
+      flex: 1,
+      minWidth: 260,
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
-      minWidth: 240,
-      flexShrink: 0,
+      gap: 18,
     },
-    patientActionsTopRight: {
-      flexShrink: 0,
-      alignItems: "flex-end",
-      justifyContent: "flex-start",
-      marginLeft: 8,
-    },
-    patientIconBox: {
-      width: 42,
-      height: 42,
-      borderRadius: 14,
+    patientInitials: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: theme.colors.primarySoft,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      backgroundColor: "#E8F8F2",
     },
-    patientName: { fontWeight: "900", fontSize: 18 },
-    patientMeta: { fontWeight: "700", color: theme.colors.textSecondary, marginTop: 2 },
+    patientInitialsText: { fontSize: 22, fontWeight: "600", color: theme.colors.success },
+    patientCopy: { flex: 1, minWidth: 0 },
+    patientNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    patientName: { fontWeight: "700", fontSize: 19, color: theme.colors.text },
+    patientMeta: { marginTop: 5, fontSize: 12, color: theme.colors.textSecondary },
+    phoneRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    patientFacts: { flexDirection: "row", alignItems: "center", gap: 20, flexWrap: "wrap", zIndex: 200, elevation: 20 },
+    patientFact: { minWidth: 135, maxWidth: 180 },
+    patientFactCompact: { minWidth: 86 },
+    factLabel: { marginBottom: 7, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.45, color: theme.colors.textSecondary },
+    factValue: { fontSize: 13, fontWeight: "700", color: theme.colors.text },
+    factValuePrimary: { fontSize: 13, fontWeight: "700", color: theme.colors.primary },
+    factDivider: { width: 1, height: 42, backgroundColor: theme.colors.border },
+    statusBadge: { alignSelf: "flex-start", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 6 },
+    statusBadgeOpen: { backgroundColor: theme.colors.warningSoft },
+    statusBadgeClosed: { backgroundColor: theme.colors.successSoft },
+    statusDot: { width: 6, height: 6, borderRadius: 3 },
+    statusBadgeText: { fontSize: 10, fontWeight: "800" },
     visitBox: {
       flexDirection: "row",
       alignItems: "center",
@@ -288,7 +308,7 @@ const createStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    visitText: { fontWeight: "900", color: theme.colors.primary },
+    visitText: { fontWeight: "700", color: theme.colors.primary },
     statsRowInline: {
       marginTop: 12,
       flexDirection: "row",
@@ -310,7 +330,7 @@ const createStyles = (theme: any) =>
     statGreen: { backgroundColor: theme.colors.successSoft },
     statOrange: { backgroundColor: theme.colors.warningSoft },
     statValue: {
-      fontWeight: "900",
+      fontWeight: "700",
       fontSize: 18,
       color: theme.colors.text,
     },
@@ -331,7 +351,15 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
     },
-    workspaceBtnText: { fontWeight: "900", color: theme.colors.textSecondary },
+    workspaceBtnText: { fontWeight: "700", color: theme.colors.textSecondary },
+    workspaceLabel: {
+      marginBottom: 7,
+      fontSize: 10,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.45,
+      color: theme.colors.textSecondary,
+    },
     workspaceDropdownWrap: {
       position: "relative",
       zIndex: 99999,
@@ -362,7 +390,7 @@ const createStyles = (theme: any) =>
       borderBottomColor: theme.colors.border,
     },
     workspaceMenuText: {
-      fontWeight: "800",
+      fontWeight: "600",
       color: theme.colors.text,
     },
   });
