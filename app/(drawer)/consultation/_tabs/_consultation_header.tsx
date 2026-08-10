@@ -1,5 +1,6 @@
 ﻿import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { Avatar } from "@/components/patient_avatar";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
@@ -68,13 +69,6 @@ export default function ConsultationHeader({
   const s = createStyles(theme);
   const st = statusUi(status);
   const [workspacePickerOpen, setWorkspacePickerOpen] = React.useState(false);
-  const initials = (patientName || "Patient")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
   const birthDate = patientBirthDate ? new Date(patientBirthDate) : null;
   const birthLabel = birthDate && !Number.isNaN(birthDate.getTime())
     ? birthDate.toLocaleDateString("fr-FR")
@@ -124,9 +118,7 @@ export default function ConsultationHeader({
       {(patientName || patientMeta || visitMeta) && (
         <View style={s.patientStrip}>
           <View style={s.patientIdentityWrap}>
-            <View style={s.patientInitials}>
-              <Text style={s.patientInitialsText}>{initials}</Text>
-            </View>
+            <Avatar name={patientName || "Patient"} size={54} />
             <View style={s.patientCopy}>
               <View style={s.patientNameRow}>
                 <Text style={s.patientName}>{patientName || "Patient"}</Text>

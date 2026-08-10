@@ -145,9 +145,9 @@ export default function DoctorDashboardPage() {
             </View>
 
             <View style={styles.statsRow}>
-              <StatCard title="Patients" value={String(counts?.patients ?? 0)} icon="personal-injury" color="#8b5cf6" iconFamily="material" theme={theme} />
-              <StatCard title="Appointments" value={String(counts?.appointments_total ?? 0)} icon="eye" color="#f59e0b" iconFamily="fontAwesome5" theme={theme} />
-              <StatCard title="Completed visits" value={String(counts?.appointments_completed ?? 0)} icon="check-decagram" color="#16a34a" iconFamily="materialCommunity" theme={theme} />
+              <StatCard title="Patients" value={String(counts?.patients ?? 0)} trend={counts?.patients_change_month ?? counts?.patients_this_month ?? 0} icon="personal-injury" color="#8b5cf6" iconFamily="material" theme={theme} />
+              <StatCard title="Appointments" value={String(counts?.appointments_total ?? 0)} trend={counts?.appointments_change_month ?? counts?.appointments_this_month ?? 0} icon="calendar" color="#f59e0b" iconFamily="ion" theme={theme} />
+              <StatCard title="Completed visits" value={String(counts?.appointments_completed ?? 0)} trend={counts?.completed_change_month ?? counts?.completed_this_month ?? 0} icon="check-decagram" color="#16a34a" iconFamily="materialCommunity" theme={theme} />
             </View>
 
             <Animated.View
@@ -163,8 +163,9 @@ export default function DoctorDashboardPage() {
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Patient Flow</Text>
-                <TouchableOpacity onPress={() => router.push("/statistiques")} style={{ paddingVertical: 4 }}>
-                  <Text style={{ color: theme.colors.primary, fontWeight: "700", fontSize: 12, textDecorationLine: "underline" }}>View more data</Text>
+                <TouchableOpacity onPress={() => router.push("/statistiques")} style={styles.rangeButton}>
+                  <Text style={{ color: theme.colors.text, fontWeight: "700", fontSize: 12 }}>Last 7 days</Text>
+                  <Ionicons name="chevron-down" size={14} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
               <View
@@ -174,6 +175,15 @@ export default function DoctorDashboardPage() {
                 <EChart option={chartOption as any} width={chartWidth} height={250} />
               </View>
             </Animated.View>
+
+            <View style={[styles.quickCard, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Quick insights</Text>
+              <View style={styles.quickRow}>
+                <QuickInsight icon="people-outline" color={theme.colors.primary} title="Patient activity" detail="Review today's visits" theme={theme} />
+                <QuickInsight icon="calendar-outline" color="#f59e0b" title="Upcoming schedule" detail={`${counts?.appointments_total ?? 0} appointments`} theme={theme} />
+                <QuickInsight icon="checkmark-circle-outline" color={theme.colors.success} title="Completed today" detail={`${counts?.appointments_completed ?? 0} completed visits`} theme={theme} />
+              </View>
+            </View>
           </View>
 
           <View style={styles.rightColumn}>
@@ -227,18 +237,19 @@ export default function DoctorDashboardPage() {
 interface StatCardProps {
   title: string;
   value: string | number;
+  trend: string | number;
   icon: string;
   iconFamily?: IconFamily;
   color: string;
-  theme: { colors: { surface: string; border: string; text: string; textSecondary: string } };
+  theme: { colors: { surface: string; background: string; border: string; text: string; textSecondary: string } };
 }
 
-const StatCard = ({ title, value, icon, iconFamily = "ion", color, theme }: StatCardProps) => {
+const StatCard = ({ title, value, trend, icon, iconFamily = "ion", color, theme }: StatCardProps) => {
   const IconComponent = ICON_FAMILIES[iconFamily];
   const cardStyles = StyleSheet.create({
     statCard: {
       backgroundColor: theme.colors.surface,
-      padding: 20,
+      padding: 18,
       borderRadius: 16,
       flex: 1,
       minWidth: 180,
@@ -252,18 +263,20 @@ const StatCard = ({ title, value, icon, iconFamily = "ion", color, theme }: Stat
       position: "relative",
       overflow: "hidden",
     },
-    contentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+    contentRow: { flexDirection: "row", alignItems: "center", gap: 14 },
     textColumn: { flex: 1, minWidth: 0 },
     iconContainer: {
-      width: 56,
-      height: 56,
+      width: 62,
+      height: 62,
       borderRadius: 12,
       backgroundColor: color,
       alignItems: "center",
       justifyContent: "center",
     },
-    statValue: { fontSize: 28, fontWeight: "600", marginBottom: 2, color: theme.colors.text },
+    statValue: { fontSize: 29, fontWeight: "700", marginBottom: 2, color: theme.colors.text },
     statTitle: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary },
+    trendRow: { marginTop: 14, minHeight: 34, borderRadius: 10, backgroundColor: theme.colors.background, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+    trendText: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: "700" },
   });
   return (
     <View style={cardStyles.statCard}>
@@ -276,9 +289,25 @@ const StatCard = ({ title, value, icon, iconFamily = "ion", color, theme }: Stat
           <Text style={cardStyles.statTitle} numberOfLines={2}>{title}</Text>
         </View>
       </View>
+      <View style={cardStyles.trendRow}>
+        <Ionicons name="arrow-up" size={18} color={color} />
+        <Text style={cardStyles.trendText}>+{trend} this month</Text>
+      </View>
     </View>
   );
 };
+
+const QuickInsight = ({ icon, color, title, detail, theme }: any) => (
+  <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minWidth: 180 }}>
+    <View style={{ width: 52, height: 52, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: `${color}14` }}>
+      <Ionicons name={icon} size={27} color={color} />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={{ color: theme.colors.text, fontSize: 12, fontWeight: "700" }}>{title}</Text>
+      <Text style={{ color: theme.colors.muted, fontSize: 11, marginTop: 3 }}>{detail}</Text>
+    </View>
+  </View>
+);
 
 const DoctorStat = ({ label, value, theme, progress }: any) => {
   const statStyles = StyleSheet.create({

@@ -52,7 +52,7 @@ export function OrthopedicsTab({
             />
           ))}
         </View>
-        <Text style={styles.panelHint}>Choix rapide sans widgets pour l'axe de prise en charge.</Text>
+        <Text style={styles.panelHint}>Choix rapide sans widgets pour l{"'"}axe de prise en charge.</Text>
       </View>
 
       <BlueField theme={theme} label="Mecanisme (trauma / douleur chronique)" value={value.mechanism ?? ""} onChange={(v: string) => set({ mechanism: v })} minHeight={56} />

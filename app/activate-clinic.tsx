@@ -138,7 +138,7 @@ export default function ActivateClinicPage() {
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
 
-  const canSubmit = !submitting && !!token.trim() && !isBlocked(tokenState.status);
+  const canSubmit = !submitting && !!token.trim() && tokenState.status === "valid";
 
   const handleSubmit = async () => {
     setError("");
@@ -150,8 +150,8 @@ export default function ActivateClinicPage() {
     if (!form.full_name.trim()) return setError("Full name is required.");
     if (!form.clinic_name.trim()) return setError("Clinic name is required.");
 
-    if (isBlocked(tokenState.status)) {
-      return setError("This activation link cannot be used.");
+    if (tokenState.status !== "valid") {
+      return setError("Validate this activation link before continuing.");
     }
 
     setSubmitting(true);

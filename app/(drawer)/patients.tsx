@@ -3,29 +3,13 @@ import PatientFormWithMedical from "@/components/new_patient";
 import { Avatar } from "@/components/patient_avatar";
 import { PageShell } from "@/components/page_shell";
 import { useAuth } from "@/contexts/auth_context";
-import { callRpc } from "@/services/backend";
+import { getPatients, type PatientListRow } from "@/services/patients.services";
 import { createTableStyles } from "@/theme/table_styles";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-
-interface Patient {
-  id: string;
-  code?: string | null;
-  first_name: string;
-  last_name: string;
-  age: number;
-  sex: "male" | "female";
-  phone: string;
-  address_city?: string;
-}
-
-type RpcGetPatientsResponse = {
-  patients: Patient[];
-  total: number;
-};
 
 export default function PatientsPage() {
   const { user } = useAuth();
@@ -37,9 +21,10 @@ export default function PatientsPage() {
   const [toDate, setToDate] = useState(new Date(new Date().getFullYear(), 11, 31, 23, 59));
   const [searchInput, setSearchInput] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
-  const [rows, setRows] = useState<Patient[]>([]);
+  const [rows, setRows] = useState<PatientListRow[]>([]);
   const [total, setTotal] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
 
   const resetDateRange = useCallback(() => {
@@ -48,23 +33,29 @@ export default function PatientsPage() {
   }, []);
 
   const fetchRows = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || !user.clinic_id) return;
     setRefreshing(true);
+    setError("");
     try {
-      const data = await callRpc<RpcGetPatientsResponse, Record<string, unknown>>("rpc_get_patients", {
-        p_requester_id: user.id,
-        p_search: globalSearch.trim() ? globalSearch.trim() : null,
-        p_start_date: fromDate.toISOString(),
-        p_end_date: toDate.toISOString(),
-        p_page: 1,
-        p_items_per_page: 50,
+      const data = await getPatients({
+        requesterId: user.id,
+        clinicId: user.clinic_id,
+        search: globalSearch,
+        startDate: fromDate.toISOString(),
+        endDate: toDate.toISOString(),
+        page: 1,
+        itemsPerPage: 50,
       });
       setRows(data?.patients ?? []);
       setTotal(data?.total ?? 0);
+    } catch (loadError) {
+      setRows([]);
+      setTotal(0);
+      setError(loadError instanceof Error ? loadError.message : "Unable to load patients.");
     } finally {
       setRefreshing(false);
     }
-  }, [user?.id, globalSearch, fromDate, toDate]);
+  }, [user?.id, user?.clinic_id, globalSearch, fromDate, toDate]);
 
   useEffect(() => {
     fetchRows();
@@ -124,7 +115,15 @@ export default function PatientsPage() {
             ))}
           </View>
           <ScrollView style={styles.tableScroller} contentContainerStyle={styles.tableScrollerContent}>
-            {rows.map((patient, index) => (
+            {error ? (
+              <View style={tableStyles.emptyState}>
+                <Text style={tableStyles.emptyText}>{error}</Text>
+              </View>
+            ) : rows.length === 0 && !refreshing ? (
+              <View style={tableStyles.emptyState}>
+                <Text style={tableStyles.emptyText}>No patients found</Text>
+              </View>
+            ) : rows.map((patient, index) => (
               <View key={patient.id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
                 <View style={tableStyles.cell}>
                   <Avatar firstName={patient.first_name} lastName={patient.last_name} size={48} borderRadius={12} />

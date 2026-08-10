@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { db } from "@/database/database_conn";
 
 export type CallMode = "audio" | "video";
 
@@ -64,9 +65,18 @@ export function getCallConfigEndpoint() {
 }
 
 export async function fetchCallConfig() {
+  const { data } = await db.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) {
+    throw new Error("Sign in before starting a call.");
+  }
+
   const response = await fetch(getCallConfigEndpoint(), {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 
   const payload = await response.json().catch(() => null);

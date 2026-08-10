@@ -1,15 +1,47 @@
 const http = require("node:http");
+const { createClient } = require("@supabase/supabase-js");
 
 const PORT = Number(process.env.CALL_SERVER_PORT || 3001);
 
-function sendJson(res, statusCode, body) {
+function sendJson(req, res, statusCode, body) {
+  const allowedOrigins = String(
+    process.env.CALL_ALLOWED_ORIGINS || "http://localhost:8081,http://127.0.0.1:8081",
+  )
+    .split(",")
+    .map((value) => value.trim());
+  const origin = String(req.headers.origin || "");
   res.writeHead(statusCode, {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "content-type",
+    ...(origin && allowedOrigins.includes(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
+    "Access-Control-Allow-Headers": "authorization, content-type",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Cache-Control": "no-store",
     "Content-Type": "application/json",
   });
   res.end(JSON.stringify(body));
+}
+
+async function authorize(req) {
+  const token = String(req.headers.authorization || "").match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) return false;
+
+  const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new Error("Supabase authentication is not configured.");
+
+  const client = createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: authData, error: authError } = await client.auth.getUser(token);
+  if (authError || !authData.user) return false;
+
+  const { data: member, error: memberError } = await client
+    .from("users_metadata")
+    .select("id, clinic_id")
+    .eq("id", authData.user.id)
+    .eq("active", true)
+    .maybeSingle();
+  return !memberError && !!member?.clinic_id;
 }
 
 function readIceServersFromEnv() {
@@ -45,28 +77,33 @@ function readIceServersFromEnv() {
   return iceServers;
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
-    sendJson(res, 204, {});
+    sendJson(req, res, 204, {});
     return;
   }
 
   if (req.url !== "/api/call-config" || req.method !== "GET") {
-    sendJson(res, 404, { error: "Not found." });
+    sendJson(req, res, 404, { error: "Not found." });
     return;
   }
 
   try {
-    const iceServers = readIceServersFromEnv();
-    if (!iceServers.length) {
-      sendJson(res, 500, { error: "No ICE servers configured." });
+    if (!(await authorize(req))) {
+      sendJson(req, res, 401, { error: "Unauthorized." });
       return;
     }
 
-    sendJson(res, 200, { iceServers });
+    const iceServers = readIceServersFromEnv();
+    if (!iceServers.length) {
+      sendJson(req, res, 500, { error: "No ICE servers configured." });
+      return;
+    }
+
+    sendJson(req, res, 200, { iceServers });
   } catch (error) {
     console.error("[calling-server] failed:", error);
-    sendJson(res, 500, {
+    sendJson(req, res, 500, {
       error: error?.message || "Unable to load call configuration.",
     });
   }

@@ -1,7 +1,8 @@
 import { TopBar } from "@/components/top_bar";
+import { Avatar } from "@/components/patient_avatar";
 import { useAuth } from "@/contexts/auth_context";
-import { callRpc } from "@/services/backend";
 import { createLabOrder, getLabOrders, saveLabResults } from "@/services/lab.services";
+import { getPatients } from "@/services/patients.services";
 import type { LabOrderRow, LabPriority, LabResultItemRow, LabSourceType } from "@/services/backend.types";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -77,18 +78,6 @@ type ResultDraftState = {
   rows: ResultRow[];
   conclusion: string;
   doctorNote: string;
-};
-
-type RpcPatientRow = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  age: number;
-};
-
-type RpcGetPatientsResponse = {
-  patients: RpcPatientRow[];
-  total: number;
 };
 
 const commonTests = [
@@ -481,16 +470,17 @@ export default function LabWorkspaceScreen() {
   const doctorName = String((user as any)?.fullname || "Medecin");
 
   const loadData = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !user.clinic_id) return;
     setLoading(true);
     setError("");
     try {
       const [labOrders, patientRes] = await Promise.all([
         getLabOrders({ requesterId: user.id, limit: 100 }),
-        callRpc<RpcGetPatientsResponse, Record<string, unknown>>("rpc_get_patients", {
-          p_requester_id: user.id,
-          p_page: 1,
-          p_items_per_page: 100,
+        getPatients({
+          requesterId: user.id,
+          clinicId: user.clinic_id,
+          page: 1,
+          itemsPerPage: 100,
         }).catch(() => ({ patients: [], total: 0 })),
       ]);
 
@@ -812,9 +802,7 @@ export default function LabWorkspaceScreen() {
                 {filteredRequests.map((request) => (
                   <View key={request.id} style={[styles.requestItem, isWideDesktop && styles.requestItemDesktop]}>
                     <View style={styles.requestLeft}>
-                      <View style={styles.avatarBox}>
-                        <Ionicons name="person-outline" size={22} color="#475569" />
-                      </View>
+                      <Avatar name={request.patient} size={46} />
                       <View style={styles.requestInfo}>
                         <View style={styles.requestTitleRow}>
                           <Text style={styles.requestName}>{request.patient}</Text>
@@ -1097,7 +1085,7 @@ function ManualModal({
       onClose={onClose}
     >
       {!request ? (
-        <Text style={styles.emptyStateText}>Selectionnez d'abord une demande d'analyse.</Text>
+        <Text style={styles.emptyStateText}>Selectionnez d{"'"}abord une demande d{"'"}analyse.</Text>
       ) : (
         <>
           <View style={styles.formGrid}>
@@ -1310,7 +1298,7 @@ function ReportModal({
             <View style={styles.reportHeader}>
               <View>
                 <Text style={styles.reportClinic}>MedSync Clinic</Text>
-                <Text style={styles.reportSubtitle}>Rapport d'analyses medicales</Text>
+                <Text style={styles.reportSubtitle}>Rapport d{"'"}analyses medicales</Text>
               </View>
               <MaterialCommunityIcons name="flask-outline" size={32} color="#2563EB" />
             </View>

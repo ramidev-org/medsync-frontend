@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/auth_context";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   ScrollView,
@@ -19,6 +20,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     Animated.timing(fade, {
@@ -29,11 +31,15 @@ export default function Login() {
   }, [fade]);
 
   const handleLogin = async () => {
+    if (submitting) return;
+    setError("");
+    setSubmitting(true);
     try {
       await login(email, password);
-      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -96,8 +102,16 @@ export default function Login() {
               />
             </View>
 
-            <Pressable style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Sign In</Text>
+            <Pressable
+              style={[styles.button, submitting && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
             </Pressable>
 
             <View style={styles.divider}>
@@ -232,6 +246,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     fontSize: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   divider: {
     flexDirection: "row",

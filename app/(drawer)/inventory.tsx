@@ -41,6 +41,8 @@ export default function InventoryPage() {
   const [migrationMissing, setMigrationMissing] = React.useState(false);
   const [items, setItems] = React.useState<InventoryItemRow[]>([]);
   const [search, setSearch] = React.useState("");
+  const [stockFilter, setStockFilter] = React.useState<"all" | "low">("all");
+  const [sortBy, setSortBy] = React.useState<"name" | "stock">("name");
 
   const [addOpen, setAddOpen] = React.useState(false);
   const [addSaving, setAddSaving] = React.useState(false);
@@ -90,6 +92,16 @@ export default function InventoryPage() {
     const healthy = totalItems - lowStock;
     return { totalItems, lowStock, healthy };
   }, [items]);
+
+  const visibleItems = React.useMemo(() => {
+    const filtered = stockFilter === "low"
+      ? items.filter((item) => Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0))
+      : items;
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "stock") return Number(b.qty_on_hand ?? 0) - Number(a.qty_on_hand ?? 0);
+      return String(a.name ?? "").localeCompare(String(b.name ?? ""));
+    });
+  }, [items, sortBy, stockFilter]);
 
   const onOpenAdjust = (item: InventoryItemRow) => {
     setSelected(item);
@@ -172,13 +184,15 @@ export default function InventoryPage() {
   );
 
   return (
-    <PageShell
-      title="Clinic Inventory"
-      subtitle="Stock control, reorder safety, and item-level adjustments."
-      actions={headerActions}
-      scrollable={false}
-    >
+    <PageShell scrollable={false}>
       <View style={styles.pageContent}>
+        <View style={styles.headerArea}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.pageTitle}>Clinic Inventory</Text>
+            <Text style={styles.pageSubtitle}>Track, monitor, and manage clinic stock and supplies.</Text>
+          </View>
+          <View style={styles.headerActions}>{headerActions}</View>
+        </View>
         {migrationMissing && (
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
@@ -187,27 +201,35 @@ export default function InventoryPage() {
           </View>
         )}
 
-        <View style={styles.heroCard}>
-          <View style={styles.heroHeader}>
-            <View style={styles.heroIntro}>
-              <Text style={styles.heroEyebrow}>Inventory desk</Text>
-              <Text style={styles.heroTitle}>Search, stock review, and item actions in one place.</Text>
-            </View>
-          </View>
+        <View style={styles.statsRow}>
+          <StatCard icon="cube-outline" label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
+          <StatCard icon="alert-circle-outline" label="Low stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
+          <StatCard icon="shield-checkmark-outline" label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
+        </View>
 
-          <View style={styles.statsRow}>
-            <StatCard label="Items" value={String(stats.totalItems)} tone={theme.colors.primary} theme={theme} />
-            <StatCard label="Low Stock" value={String(stats.lowStock)} tone={theme.colors.error} theme={theme} />
-            <StatCard label="Healthy" value={String(stats.healthy)} tone={theme.colors.success} theme={theme} />
+        <View style={styles.tableToolbar}>
+          <Text style={styles.resultsText}>{visibleItems.length} items</Text>
+          <View style={styles.toolbarActions}>
+            <TouchableOpacity style={styles.toolbarBtn} onPress={() => setStockFilter((value) => value === "all" ? "low" : "all")}>
+              <Ionicons name="options-outline" size={16} color={theme.colors.text} />
+              <Text style={styles.toolbarBtnText}>{stockFilter === "low" ? "Low stock" : "Filter"}</Text>
+              <Ionicons name="chevron-down" size={14} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.toolbarBtn} onPress={() => setSortBy((value) => value === "name" ? "stock" : "name")}>
+              <Ionicons name="swap-vertical-outline" size={16} color={theme.colors.text} />
+              <Text style={styles.toolbarBtnText}>Sort: {sortBy === "name" ? "Name (A-Z)" : "Stock"}</Text>
+              <Ionicons name="chevron-down" size={14} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.listWrap}>
           <View style={styles.headerRow}>
-            <Text style={styles.hCell}>Item</Text>
-            <Text style={styles.hCell}>Stock</Text>
+            <Text style={[styles.hCell, styles.itemColumn]}>Item</Text>
+            <Text style={[styles.hCell, styles.skuColumn]}>SKU</Text>
+            <Text style={styles.hCell}>In Stock</Text>
             <Text style={styles.hCell}>Threshold</Text>
-            <Text style={styles.hCell}>State</Text>
+            <Text style={styles.hCell}>Status</Text>
             <Text style={styles.hCell}>Actions</Text>
           </View>
 
@@ -217,21 +239,23 @@ export default function InventoryPage() {
                 <Text style={styles.emptyText}>No inventory items found.</Text>
               </View>
             )}
-            {items.map((item) => {
+            {visibleItems.map((item) => {
               const low = Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0);
               return (
                 <View key={item.id} style={styles.itemRow}>
-                  <View style={{ flex: 1 }}>
+                  <View style={styles.itemCell}>
+                    <View style={styles.itemIcon}>
+                      <Ionicons name="cube-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
                     <Text style={styles.itemTitle}>{item.name}</Text>
-                    <Text style={styles.itemSub}>
-                      {(item.sku && `SKU: ${item.sku}`) || "No SKU"}{item.unit ? ` - Unit: ${item.unit}` : ""}
-                    </Text>
+                    <Text style={styles.itemSub}>{item.unit ? `Unit: ${item.unit}` : "No unit"}</Text>
+                    </View>
                   </View>
+                  <Text style={[styles.cell, styles.skuColumn]}>{item.sku || "-"}</Text>
                   <Text style={styles.cell}>{String(item.qty_on_hand ?? 0)}</Text>
                   <Text style={styles.cell}>{String(item.reorder_threshold ?? 0)}</Text>
-                  <Text style={[styles.cell, { color: low ? theme.colors.error : theme.colors.success, fontWeight: "700" }]}>
-                    {low ? "Low" : "Healthy"}
-                  </Text>
+                  <View style={styles.cell}><View style={[styles.statusBadge, { backgroundColor: low ? "#fff1f2" : "#effaf4", borderColor: low ? "#fecdd3" : "#cceedd" }]}><Text style={{ color: low ? theme.colors.error : theme.colors.success, fontWeight: "700", fontSize: 12 }}>{low ? "Low stock" : "Healthy"}</Text></View></View>
                   <TouchableOpacity style={styles.rowActionBtn} onPress={() => onOpenAdjust(item)}>
                     <Ionicons name="swap-horizontal-outline" size={16} color={theme.colors.text} />
                     <Text style={styles.rowActionText}>Adjust</Text>
@@ -317,14 +341,25 @@ function toNumOrNull(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function StatCard({ label, value, tone, theme }: { label: string; value: string; tone: string; theme: any }) {
+function StatCard({ icon, label, value, tone, theme }: { icon: any; label: string; value: string; tone: string; theme: any }) {
   return (
-    <View style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, backgroundColor: theme.colors.surface, padding: 10 }}>
-      <Text style={{ color: theme.colors.textSecondary, fontWeight: "700", fontSize: 11 }}>{label}</Text>
-      <Text style={{ color: tone, fontWeight: "700", fontSize: 20, marginTop: 4 }}>{value}</Text>
+    <View style={statStyles.stat}>
+      <View style={[statStyles.icon, { backgroundColor: `${tone}12` }]}>
+        <Ionicons name={icon} size={32} color={tone} />
+      </View>
+      <View>
+        <Text style={{ color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 }}>{label}</Text>
+        <Text style={{ color: tone, fontWeight: "800", fontSize: 28, marginTop: 2 }}>{value}</Text>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 12, marginTop: 4 }}>{label === "Items" ? "All inventory items" : label === "Low stock" ? "Reorder soon" : "Well stocked"}</Text>
+      </View>
     </View>
   );
 }
+
+const statStyles = StyleSheet.create({
+  stat: { flex: 1, flexDirection: "row", alignItems: "center", gap: 16, paddingVertical: 0 },
+  icon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+});
 
 function Input({
   label,
@@ -369,35 +404,12 @@ function Input({
 const createStyles = (theme: any) =>
   StyleSheet.create({
     pageContent: { flex: 1, minHeight: 0 },
-    heroCard: {
-      marginBottom: 12,
-      padding: 14,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-      gap: 12,
-    },
-    heroHeader: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-    },
-    heroIntro: {
-      flex: 1,
-    },
-    heroEyebrow: {
-      color: theme.colors.primary,
-      fontSize: 12,
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    heroTitle: {
-      marginTop: 4,
-      color: theme.colors.text,
-      fontSize: 18,
-      fontWeight: "700",
-    },
+    headerArea: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 18, flexWrap: "wrap", marginBottom: 28 },
+    headerCopy: { flex: 1, minWidth: 260 },
+    pageTitle: { color: theme.colors.text, fontSize: 27, fontWeight: "800" },
+    pageSubtitle: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: "600", marginTop: 6 },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
+    statsRow: { flexDirection: "row", gap: 16, marginBottom: 30, flexWrap: "wrap" },
     banner: {
       marginBottom: 12,
       padding: 12,
@@ -417,7 +429,11 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.primary,
     },
     primaryBtnText: { color: "#fff", fontWeight: "700" },
-    statsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+    tableToolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 10, flexWrap: "wrap" },
+    resultsText: { color: theme.colors.textSecondary, fontWeight: "700", fontSize: 13 },
+    toolbarActions: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+    toolbarBtn: { height: 38, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 9, backgroundColor: theme.colors.surface },
+    toolbarBtnText: { color: theme.colors.text, fontWeight: "700", fontSize: 12 },
     searchWrap: {
       flex: 1,
       minWidth: 220,
@@ -447,10 +463,6 @@ const createStyles = (theme: any) =>
     listWrap: {
       flex: 1,
       minHeight: 0,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 14,
-      backgroundColor: theme.colors.surface,
       overflow: "hidden",
     },
     listScroller: { flex: 1 },
@@ -458,36 +470,36 @@ const createStyles = (theme: any) =>
     headerRow: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: theme.colors.surfaceVariant,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      borderBottomWidth: 2,
+      borderBottomColor: theme.colors.primary,
       paddingHorizontal: 12,
-      paddingVertical: 10,
+      paddingVertical: 12,
       gap: 8,
     },
     hCell: { flex: 1, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
+    itemColumn: { flex: 2 },
+    skuColumn: { flex: 1.15 },
     itemRow: {
       flexDirection: "row",
       alignItems: "center",
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       paddingHorizontal: 12,
-      paddingVertical: 12,
+      paddingVertical: 14,
       gap: 8,
     },
+    itemCell: { flex: 2, minWidth: 220, flexDirection: "row", alignItems: "center", gap: 10 },
+    itemIcon: { width: 38, height: 38, borderRadius: 9, backgroundColor: `${theme.colors.primary}0d`, alignItems: "center", justifyContent: "center" },
     itemTitle: { color: theme.colors.text, fontWeight: "700" },
     itemSub: { marginTop: 2, color: theme.colors.textSecondary, fontWeight: "700", fontSize: 12 },
-    cell: { flex: 1, color: theme.colors.text, fontWeight: "700" },
+    cell: { flex: 1, color: theme.colors.text, fontWeight: "700", minWidth: 90 },
+    statusBadge: { alignSelf: "flex-start", borderWidth: 1, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
     rowActionBtn: {
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 8,
       paddingHorizontal: 8,
       paddingVertical: 6,
-      backgroundColor: theme.colors.background,
     },
     rowActionText: { color: theme.colors.text, fontWeight: "600", fontSize: 12 },
     emptyRow: { padding: 16 },

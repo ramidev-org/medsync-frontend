@@ -5,6 +5,7 @@ import { SpecialtyWorkspaceScaffold } from "@/components/workspaces/SpecialtyWor
 import { normalizeSpeciality } from "@/config/speciality";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
+import { Avatar } from "@/components/patient_avatar";
 import {
   Modal,
   Platform,
@@ -1270,7 +1271,6 @@ function ObservationWorkspaceDashboard({
   const [period, setPeriod] = React.useState("3M");
 
   const patientName = `${patient?.first_name ?? ""} ${patient?.last_name ?? ""}`.trim() || "Patient";
-  const initials = `${patient?.first_name?.[0] ?? "P"}${patient?.last_name?.[0] ?? ""}`.toUpperCase();
   const doctorName = doctor?.nom_complet || doctor?.full_name || doctor?.name || "Médecin traitant";
   const currentDate = consultationDate ? new Date(consultationDate) : new Date();
   const currentDateLabel = Number.isNaN(currentDate.getTime())
@@ -1327,7 +1327,7 @@ function ObservationWorkspaceDashboard({
     <View style={styles.root}>
       <View style={styles.patientCard}>
         <View style={styles.patientIdentity}>
-          <View style={styles.patientInitials}><Text style={styles.patientInitialsText}>{initials}</Text></View>
+          <Avatar firstName={patient?.first_name} lastName={patient?.last_name} size={64} />
           <View style={styles.patientCopy}>
             <View style={styles.patientNameRow}>
               <Text style={styles.patientName}>{patientName}</Text>

@@ -78,7 +78,7 @@ export function UserAvatar({
   textStyle?: StyleProp<TextStyle>;
 }) {
   const activePalette = palette ?? getUserAvatarPalette(avatarColor);
-  const borderRadius = square ? Math.max(11, size * 0.36) : size / 2;
+  const borderRadius = Math.max(8, size * 0.22);
   const initials = getUserAvatarInitials(name);
 
   return (

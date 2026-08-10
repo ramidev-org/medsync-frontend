@@ -1,5 +1,5 @@
 import "@/theme/global_typography";
-import { AppDataProvider } from "@/contexts/appData_context";
+import { AppDataProvider, useAppData } from "@/contexts/appData_context";
 import { AuthProvider, useAuth } from "@/contexts/auth_context";
 import { TasksProvider } from "@/contexts/tasks_context";
 import { OfflineSyncProvider } from "@/contexts/offline_sync_context";
@@ -27,13 +27,16 @@ import {
 } from "@expo-google-fonts/inter";
 import { ActivityIndicator, Platform, View } from "react-native";
 
+const DEV_SUBSCRIPTION_BYPASS = typeof __DEV__ !== "undefined" && __DEV__;
+
 function AuthGateWrapper() {
   const { user, loading } = useAuth();
+  const { subscription, loading: appDataLoading } = useAppData();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || (!!user && appDataLoading)) return;
 
     if (Platform.OS === "web" && typeof window !== "undefined") {
       const lockedCallUrl = window.sessionStorage.getItem("medsync_call_lock_url") || "";
@@ -46,6 +49,8 @@ function AuthGateWrapper() {
 
     const inDrawerGroup = segments[0] === "(drawer)";
     const inCallScreen = segments[0] === "call";
+    const inSubscriptionScreen =
+      segments[0] === "(drawer)" && segments[1] === "settings-subscription";
     const inAuthScreen =
       segments[0] === "login" ||
       segments[0] === "signup" ||
@@ -58,6 +63,15 @@ function AuthGateWrapper() {
       return;
     }
 
+    const subscriptionBlocked =
+      !DEV_SUBSCRIPTION_BYPASS &&
+      (subscription.status === "expired" || subscription.status === "revoked");
+
+    if (user && subscriptionBlocked && !inSubscriptionScreen) {
+      router.replace("/settings-subscription");
+      return;
+    }
+
     if (user && (!inDrawerGroup && !inCallScreen && !inAuthScreen)) {
       router.replace("/dashboard");
       return;
@@ -67,10 +81,10 @@ function AuthGateWrapper() {
       router.replace("/dashboard");
       return;
     }
-  }, [user, segments, loading, router]);
+  }, [user, segments, loading, appDataLoading, subscription.status, router]);
 
   // Web-friendly loading UI
-  if (loading) {
+  if (loading || (!!user && appDataLoading)) {
     return (
       <div
         style={{
@@ -99,13 +113,10 @@ function AuthGateWrapper() {
     </Stack>
   );
 
-  // AppDataProvider must always wrap the navigation stack so drawer layouts can safely use useAppData()
   return (
-    <AppDataProvider>
-      <OfflineSyncProvider>
-        <TasksProvider>{stack}</TasksProvider>
-      </OfflineSyncProvider>
-    </AppDataProvider>
+    <OfflineSyncProvider>
+      <TasksProvider>{stack}</TasksProvider>
+    </OfflineSyncProvider>
   );
 }
 
@@ -138,7 +149,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <LocalizationProvider>
           <AuthProvider>
-            <AuthGateWrapper />
+            <AppDataProvider>
+              <AuthGateWrapper />
+            </AppDataProvider>
           </AuthProvider>
         </LocalizationProvider>
       </ThemeProvider>

@@ -1,5 +1,8 @@
+import { createClient } from "@supabase/supabase-js";
+
 type RequestLike = {
   method?: string;
+  headers: Record<string, string | string[] | undefined>;
 };
 
 type ResponseLike = {
@@ -16,6 +19,33 @@ type IceServer = {
 
 function jsonResponse(res: ResponseLike, statusCode: number, body: unknown) {
   res.status(statusCode).json(body);
+}
+
+async function authorize(req: RequestLike) {
+  const authorization = req.headers.authorization;
+  const value = Array.isArray(authorization) ? authorization[0] : authorization;
+  const token = value?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) return false;
+
+  const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new Error("Supabase authentication is not configured.");
+
+  const client = createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: authData, error: authError } = await client.auth.getUser(token);
+  if (authError || !authData.user) return false;
+
+  const { data: member, error: memberError } = await client
+    .from("users_metadata")
+    .select("id, clinic_id")
+    .eq("id", authData.user.id)
+    .eq("active", true)
+    .maybeSingle();
+
+  return !memberError && !!member?.clinic_id;
 }
 
 function readIceServersFromEnv() {
@@ -56,9 +86,11 @@ function readIceServersFromEnv() {
 }
 
 export default async function handler(req: RequestLike, res: ResponseLike) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "content-type");
+  const allowedOrigin = (process.env.CALL_ALLOWED_ORIGIN || "").trim();
+  if (allowedOrigin) res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Allow-Headers", "authorization, content-type");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "OPTIONS") {
     jsonResponse(res, 204, {});
@@ -71,6 +103,11 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
   }
 
   try {
+    if (!(await authorize(req))) {
+      jsonResponse(res, 401, { error: "Unauthorized." });
+      return;
+    }
+
     const iceServers = readIceServersFromEnv();
     if (iceServers.length === 0) {
       jsonResponse(res, 500, { error: "No ICE servers configured." });

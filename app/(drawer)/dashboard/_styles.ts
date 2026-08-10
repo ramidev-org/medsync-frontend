@@ -15,6 +15,7 @@ export const getDashboardStyles = (theme: any) =>
     rightColumn: { flex: 1, minWidth: 320 },
 
     welcomeCard: {
+      display: "none",
       backgroundColor: theme.colors.surface,
       padding: 22,
       minHeight: 174,
@@ -33,6 +34,18 @@ export const getDashboardStyles = (theme: any) =>
 
     statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 14, flexWrap: "wrap" },
 
+    rangeButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 9,
+      backgroundColor: theme.colors.surface,
+    },
+
     tabs: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
     tab: {
       paddingHorizontal: 18,
@@ -44,7 +57,7 @@ export const getDashboardStyles = (theme: any) =>
 
     chartCard: {
       borderRadius: 16,
-      padding: 18,
+      padding: 20,
       borderWidth: 1,
       borderColor: theme.colors.border,
       overflow: "hidden",
@@ -55,7 +68,7 @@ export const getDashboardStyles = (theme: any) =>
     chart: { borderRadius: 12, marginVertical: 8 },
 
     doctorCard: {
-      padding: 18,
+      padding: 20,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -76,6 +89,13 @@ export const getDashboardStyles = (theme: any) =>
 
     sectionTitle: { fontWeight: "700", fontSize: 15, marginBottom: 16 },
     activityList: { gap: 12 },
+    quickCard: {
+      borderRadius: 16,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    quickRow: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
   });
 
 // This file is imported as a helper module, but it's also under `app/` so expo-router

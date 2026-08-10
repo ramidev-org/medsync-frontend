@@ -3,7 +3,7 @@ import { db } from "@/database/database_conn";
 import { User } from "@/models/User";
 import { makeRedirectUri } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 
 type AuthContextType = {
   user: User | null;
@@ -16,17 +16,10 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// CRITICAL: Move these OUTSIDE the component to survive remounts
-let globalLoadedUserId: string | null = null;
-let globalAuthListener: any = null;
-
 export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Track if this instance has already initialized
-  const hasInitialized = useRef(false);
 
   // Google login (kept for real mode)
   Google.useAuthRequest({
@@ -36,11 +29,10 @@ export const AuthProvider = ({ children }: any) => {
   });
 
   const loadUser = async (id: string) => {
-    if (!id || globalLoadedUserId === id) {
+    if (!id) {
       setLoading(false);
       return;
     }
-    globalLoadedUserId = id;
 
     try {
       const { data: meta, error: metaError } = await db
@@ -52,7 +44,6 @@ export const AuthProvider = ({ children }: any) => {
       if (metaError || !meta) {
         setUser(null);
         await db.auth.signOut();
-        globalLoadedUserId = null;
         return;
       }
 
@@ -89,22 +80,12 @@ export const AuthProvider = ({ children }: any) => {
       );
     } catch {
       setUser(null);
-      globalLoadedUserId = null;
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Prevent duplicate initialization
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    // Clean up any existing listener
-    if (globalAuthListener) {
-      globalAuthListener.subscription.unsubscribe();
-    }
-
     const setupAuth = async () => {
       // Get initial session
       const {
@@ -127,20 +108,24 @@ export const AuthProvider = ({ children }: any) => {
             await loadUser(newSession.user.id);
           } else {
             setUser(null);
-            globalLoadedUserId = null;
             setLoading(false);
           }
         },
       );
 
-      globalAuthListener = listener;
+      return listener;
     };
 
-    setupAuth();
+    let listener: Awaited<ReturnType<typeof setupAuth>> | null = null;
+    let cancelled = false;
+    setupAuth().then((nextListener) => {
+      if (cancelled) nextListener.subscription.unsubscribe();
+      else listener = nextListener;
+    });
 
-    // Only cleanup on actual unmount
     return () => {
-      // Intentionally do not unsubscribe global listener.
+      cancelled = true;
+      listener?.subscription.unsubscribe();
     };
   }, []);
 
@@ -152,13 +137,11 @@ export const AuthProvider = ({ children }: any) => {
   const logout = async () => {
     await db.auth.signOut();
     setUser(null);
-    globalLoadedUserId = null;
   };
 
   const refreshUser = async () => {
     const sessionUserId = session?.user?.id;
     if (!sessionUserId) return;
-    globalLoadedUserId = null;
     setLoading(true);
     await loadUser(sessionUserId);
   };

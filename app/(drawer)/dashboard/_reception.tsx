@@ -1,4 +1,5 @@
 import { TopBar } from "@/components/top_bar";
+import { Avatar } from "@/components/patient_avatar";
 import { UserAvatar } from "@/components/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
@@ -129,14 +130,12 @@ export default function ReceptionDashboardPage() {
               </View>
 
               <View style={localStyles.agendaList}>
-                {agenda.slice(0, 6).map((item, index) => {
+                {agenda.slice(0, 6).map((item) => {
                   const patientName = `${item.patient_first_name ?? ""} ${item.patient_last_name ?? ""}`.trim() || "Patient";
                   const status = statusChip(String(item.status), theme);
                   return (
                     <View key={item.id} style={localStyles.agendaRow}>
-                      <View style={[localStyles.agendaAvatar, { backgroundColor: avatarTone(index).backgroundColor, borderColor: avatarTone(index).borderColor }]}>
-                        <Text style={[localStyles.agendaAvatarText, { color: avatarTone(index).color }]}>{patientName.split(" ").filter(Boolean).slice(0, 2).map((value) => value[0]?.toUpperCase()).join("") || "P"}</Text>
-                      </View>
+                      <Avatar firstName={item.patient_first_name} lastName={item.patient_last_name} size={42} />
 
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={localStyles.agendaName} numberOfLines={1}>{patientName}</Text>
@@ -292,16 +291,6 @@ function ActivityItem({ title, time, icon, theme }: any) {
       </View>
     </View>
   );
-}
-
-function avatarTone(index: number) {
-  const tones = [
-    { backgroundColor: "#EDF5FF", borderColor: "#CCDBF1", color: "#1D4ED8" },
-    { backgroundColor: "#EAFBF4", borderColor: "#BCEBD6", color: "#047857" },
-    { backgroundColor: "#FFF7ED", borderColor: "#FED7AA", color: "#EA580C" },
-    { backgroundColor: "#F3EDFF", borderColor: "#DED2FF", color: "#7C3AED" },
-  ];
-  return tones[index % tones.length];
 }
 
 function statusChip(status: string, theme: any) {

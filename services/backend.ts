@@ -9,6 +9,7 @@ export type RpcName =
   | "rpc_create_staff_invite"
   | "rpc_create_patient"
   | "rpc_get_patients"
+  | "rpc_get_payments"
   | "rpc_get_patient_medical"
   | "rpc_update_patient_medical"
   | "rpc_add_patient_measurement"

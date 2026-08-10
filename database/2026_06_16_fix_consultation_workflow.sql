@@ -34,6 +34,10 @@ declare
   v_clinic_id uuid;
   v_appointment_id uuid;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -110,6 +114,10 @@ as $function$
 declare
   v_clinic_id uuid;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -179,6 +187,10 @@ as $function$
 declare
   v_clinic_id uuid;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -222,6 +234,10 @@ declare
   v_speciality_key text;
   v_result jsonb;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -352,20 +368,44 @@ set search_path to 'public'
 as $function$
 declare
   v_case record;
+  v_requester_clinic_id uuid;
   v_first_consultation_id uuid;
   v_previous_consultation_id uuid;
   v_previous_root_id uuid;
   v_next_session_number integer;
   v_new_consultation_id uuid;
 begin
+  select clinic_id
+  into v_requester_clinic_id
+  from public.users_metadata
+  where id = auth.uid()
+    and active = true
+  limit 1;
+
+  if v_requester_clinic_id is null then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select *
   into v_case
   from public.treatment_cases
   where id = p_treatment_case_id
+    and clinic_id = v_requester_clinic_id
   limit 1;
 
   if v_case.id is null then
-    raise exception 'Treatment case not found';
+    raise exception 'Treatment case not found or access denied';
+  end if;
+
+  if p_doctor_id is not null and not exists (
+    select 1
+    from public.users_metadata
+    where id = p_doctor_id
+      and clinic_id = v_requester_clinic_id
+      and user_type = 'doctor'::public.user_type_enum
+      and active = true
+  ) then
+    raise exception 'Doctor not found or access denied';
   end if;
 
   select id, root_consultation_id
@@ -464,6 +504,10 @@ declare
   v_clinic_id uuid;
   v_row record;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata

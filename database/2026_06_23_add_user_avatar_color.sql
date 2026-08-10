@@ -31,6 +31,10 @@ declare
   v_user_type public.user_type_enum;
   v_clinic_id uuid;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select user_type, clinic_id
   into v_user_type, v_clinic_id
   from public.users_metadata
@@ -120,6 +124,10 @@ declare
   v_total integer;
   v_rows jsonb;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id into v_clinic_id
   from public.users_metadata
   where id = p_requester_id and active = true
@@ -205,6 +213,10 @@ declare
   v_clinic_id uuid;
   v_staff jsonb;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata

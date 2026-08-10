@@ -137,7 +137,7 @@ export async function getClinicAnalytics(params: {
           p_items_per_page: 250,
         },
       ).catch(() => ({ consultations: [] })),
-      getPayments(),
+      getPayments({ requesterId: params.requesterId }),
       callRpc<RpcGetExpensesResponse, Record<string, unknown>>(
         "rpc_get_expenses",
         {

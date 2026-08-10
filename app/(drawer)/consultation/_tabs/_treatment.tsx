@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
+import { Avatar } from "@/components/patient_avatar";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import {
@@ -134,7 +135,6 @@ export default function TreatmentTab({
   const displayFields = getImportantTreatmentFields(selectedRow.workspace);
   const workspaceLabel = SPECIALTY_TABS.find((item) => item.key === selectedRow.workspace)?.label || selectedRow.workspace.replaceAll("_", " ");
   const patientName = `${patient?.first_name || ""} ${patient?.last_name || ""}`.trim() || "Patient";
-  const initials = `${patient?.first_name?.[0] || "P"}${patient?.last_name?.[0] || ""}`.toUpperCase();
   const birthDate = patient?.date_of_birth ? new Date(patient.date_of_birth) : null;
   const birthLabel = birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate.toLocaleDateString("fr-FR") : "Non renseignée";
   const doctorName = doctor?.nom_complet || doctor?.full_name || doctor?.name || "Médecin traitant";
@@ -161,7 +161,7 @@ export default function TreatmentTab({
     <View style={styles.root}>
       <View style={styles.patientCard}>
         <View style={styles.patientIdentity}>
-          <View style={styles.initials}><Text style={styles.initialsText}>{initials}</Text></View>
+          <Avatar firstName={patient?.first_name} lastName={patient?.last_name} size={70} />
           <View style={styles.patientCopy}>
             <View style={styles.patientNameRow}><Text style={styles.patientName}>{patientName}</Text><MaterialCommunityIcons name={patient?.sex === "female" ? "gender-female" : "gender-male"} size={19} color={theme.colors.primary} /></View>
             <Text style={styles.patientMeta}>Né(e) le {birthLabel}{patient?.age ? ` (${patient.age} ans)` : ""} · ID: {patient?.id ? String(patient.id).slice(0, 8).toUpperCase() : "—"}</Text>

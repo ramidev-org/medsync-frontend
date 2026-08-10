@@ -112,6 +112,10 @@ as $function$
 declare
   v_membership_exists boolean;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select exists(
     select 1
     from public.clinic_conversation_members cm

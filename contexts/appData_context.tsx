@@ -24,15 +24,11 @@ type AppData = {
 };
 
 const AppDataContext = createContext<AppData | null>(null);
-
+const DEV_SUBSCRIPTION_BYPASS = typeof __DEV__ !== "undefined" && __DEV__;
 const diffDays = (iso: string) => {
-  try {
-    const d = new Date(iso).getTime();
-    const now = Date.now();
-    return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
-  } catch {
-    return null;
-  }
+  const expiresAt = new Date(iso).getTime();
+  if (!Number.isFinite(expiresAt)) return null;
+  return Math.max(0, Math.floor((expiresAt - Date.now()) / (1000 * 60 * 60 * 24)));
 };
 
 const DEFAULT_SUBSCRIPTION: SubscriptionInfo = {
@@ -45,6 +41,12 @@ const DEFAULT_SUBSCRIPTION: SubscriptionInfo = {
   max_assistants: null,
   current_doctors: null,
   current_assistants: null,
+};
+
+const DEV_TEST_SUBSCRIPTION: SubscriptionInfo = {
+  ...DEFAULT_SUBSCRIPTION,
+  status: "active",
+  tier_plan: "dev-test",
 };
 
 export const AppDataProvider = ({ children }: any) => {
@@ -100,11 +102,11 @@ export const AppDataProvider = ({ children }: any) => {
             user?.user_type === "doctor" &&
             doctorsCount === 1;
 
-          let status: SubscriptionStatus = "missing";
+          let status: SubscriptionStatus = DEV_SUBSCRIPTION_BYPASS ? "active" : "missing";
           let expires_at: string | null = null;
           let days_left: number | null = null;
 
-          if (license_id) {
+          if (license_id && !DEV_SUBSCRIPTION_BYPASS) {
             const { data: licenseData } = await db
               .from("licenses")
               .select("revoked, expires_at")
@@ -116,7 +118,8 @@ export const AppDataProvider = ({ children }: any) => {
             days_left = expires_at ? diffDays(expires_at) : null;
 
             if (revoked) status = "revoked";
-            else if (expires_at && typeof days_left === "number" && days_left < 0) status = "expired";
+            else if (expires_at && new Date(expires_at).getTime() <= Date.now()) status = "expired";
+            else if (expires_at && days_left === null) status = "expired";
             else status = "active";
           }
 
@@ -141,7 +144,7 @@ export const AppDataProvider = ({ children }: any) => {
             setIsClinicAdmin(
               !!clinicData?.admin_id && String(clinicData.admin_id) === String(user?.id ?? ""),
             );
-            setSubscription(DEFAULT_SUBSCRIPTION);
+            setSubscription(DEV_SUBSCRIPTION_BYPASS ? DEV_TEST_SUBSCRIPTION : DEFAULT_SUBSCRIPTION);
           }
         }
 

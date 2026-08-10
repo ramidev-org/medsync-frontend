@@ -1,9 +1,11 @@
 ﻿import DatePickerField from "@/components/datepicker";
 import { Dropdown } from "@/components/input_fields";
+import { Avatar } from "@/components/patient_avatar";
 import { TopBar } from "@/components/top_bar";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
 import { callRpc } from "@/services/backend";
+import { getPatients } from "@/services/patients.services";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -85,17 +87,6 @@ type RpcGetAppointmentsResponse = {
   total: number;
   page: number;
   itemsPerPage: number;
-};
-
-type RpcGetPatientsResponse = {
-  patients: {
-    id: string;
-    code?: string | null;
-    first_name: string;
-    last_name: string;
-    phone?: string | null;
-  }[];
-  total: number;
 };
 
 type StaffRow = {
@@ -185,7 +176,7 @@ export default function VisitsPage() {
 
   const fetchAppointments = useCallback(async () => {
     try {
-      if (!user?.id) return;
+      if (!user?.id || !user.clinic_id) return;
 
       const data = await callRpc<RpcGetAppointmentsResponse, Record<string, unknown>>(
         "rpc_get_appointments",
@@ -223,17 +214,18 @@ export default function VisitsPage() {
       setAppointments([]);
       Alert.alert("Erreur", e?.message || "Impossible de charger les rendez-vous");
     }
-  }, [user?.id]);
+  }, [user?.clinic_id, user?.id]);
 
   const fetchFormOptions = useCallback(async () => {
     try {
-      if (!user?.id) return;
+      if (!user?.id || !user.clinic_id) return;
 
       const [patientsResult, staffResult] = await Promise.all([
-        callRpc<RpcGetPatientsResponse, Record<string, unknown>>("rpc_get_patients", {
-          p_requester_id: user.id,
-          p_page: 1,
-          p_items_per_page: 300,
+        getPatients({
+          requesterId: user.id,
+          clinicId: user.clinic_id,
+          page: 1,
+          itemsPerPage: 300,
         }),
         callRpc<StaffRow[], Record<string, unknown>>("rpc_get_clinic_staff", {
           p_requester_id: user.id,
@@ -254,7 +246,7 @@ export default function VisitsPage() {
     } catch (e) {
       console.error("Load options error:", e);
     }
-  }, [user?.id]);
+  }, [user?.clinic_id, user?.id]);
 
   useEffect(() => {
     fetchAppointments();
@@ -547,7 +539,7 @@ export default function VisitsPage() {
                         <Text style={styles.timeText}>{new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
                       </View>
                       <View style={[styles.patientCell, styles.patientWrap]}>
-                        <VisitAvatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={38} />
+                        <Avatar firstName={a.patient?.first_name} lastName={a.patient?.last_name} size={38} />
                         <View style={styles.patientCopy}>
                           <Text numberOfLines={1} style={styles.patientName}>{a.patient?.first_name} {a.patient?.last_name}</Text>
                           <Text numberOfLines={1} style={styles.patientId}>ID: {String(a.patient_id || "—").slice(0, 13)}</Text>
@@ -593,7 +585,7 @@ export default function VisitsPage() {
             <ScrollView style={styles.waitingList} contentContainerStyle={styles.waitingListContent} showsVerticalScrollIndicator={false}>
               {waitingRoomAppointments.map((a) => (
                 <TouchableOpacity key={a.id} onPress={() => openRowActions(a)} style={styles.waitingCard}>
-                  <VisitAvatar firstName={a.patient?.first_name || "P"} lastName={a.patient?.last_name || "-"} size={50} />
+                  <Avatar firstName={a.patient?.first_name} lastName={a.patient?.last_name} size={50} />
                   <View style={styles.waitingCopy}>
                     <Text numberOfLines={1} style={styles.waitingPatientName}>{a.patient?.first_name} {a.patient?.last_name}</Text>
                     <Text style={styles.waitingMeta}>{new Date(a.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
@@ -776,25 +768,6 @@ function appointmentStatusMeta(status: AppointmentStatus) {
     case "in_consultation": return { label: "En consultation", color: "#6D28D9", soft: "#F0E9FF" };
     default: return { label: STATUS_LABELS[status] || status, color: "#64748B", soft: "#EEF2F7" };
   }
-}
-
-const AVATAR_TONES = [
-  { background: "#FAD8E9", foreground: "#B52266" },
-  { background: "#DDF4E9", foreground: "#168054" },
-  { background: "#FFF0DD", foreground: "#B66317" },
-  { background: "#EEE7FF", foreground: "#6842B8" },
-  { background: "#E2EEFF", foreground: "#2563C7" },
-];
-
-function VisitAvatar({ firstName, lastName, size }: { firstName: string; lastName: string; size: number }) {
-  const initials = `${firstName.trim().charAt(0) || "P"}${lastName.trim().charAt(0) || ""}`.toUpperCase();
-  const seed = `${firstName}${lastName}`.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
-  const tone = AVATAR_TONES[seed % AVATAR_TONES.length];
-  return (
-    <View style={{ width: size, height: size, borderRadius: Math.round(size * 0.22), backgroundColor: tone.background, alignItems: "center", justifyContent: "center" }}>
-      <Text style={{ color: tone.foreground, fontSize: Math.round(size * 0.34), fontWeight: "700" }}>{initials}</Text>
-    </View>
-  );
 }
 
 function CalendarPlusIcon({ color }: { color: string }) {

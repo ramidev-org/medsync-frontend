@@ -21,6 +21,10 @@ declare
   v_total integer;
   v_rows jsonb;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -156,6 +160,10 @@ declare
   v_clinic_id uuid;
   v_rows jsonb;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -211,6 +219,10 @@ declare
   v_clinic_id uuid;
   v_row public.clinic_tasks%rowtype;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata
@@ -287,6 +299,10 @@ declare
   v_clinic_id uuid;
   v_row public.clinic_tasks%rowtype;
 begin
+  if auth.uid() is null or auth.uid() <> p_requester_id then
+    raise exception 'Unauthorized requester' using errcode = '42501';
+  end if;
+
   select clinic_id
   into v_clinic_id
   from public.users_metadata

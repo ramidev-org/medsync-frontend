@@ -1,6 +1,7 @@
 import { DateRangePickerField } from "@/components/datepicker";
 import { PageShell } from "@/components/page_shell";
 import { Avatar } from "@/components/patient_avatar";
+import { useAuth } from "@/contexts/auth_context";
 import { getPayments } from "@/services/payments.services";
 import type { Payment } from "@/services/payments.services";
 import { createTableStyles } from "@/theme/table_styles";
@@ -10,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function PaymentsPage() {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const tableStyles = createTableStyles(theme);
@@ -31,14 +33,15 @@ export default function PaymentsPage() {
     setLoading(true);
     setError(null);
     try {
-      setPayments(await getPayments());
+      if (!user?.id || !user.clinic_id) throw new Error("Your account is not connected to a clinic.");
+      setPayments(await getPayments({ requesterId: user.id, clinicId: user.clinic_id }));
     } catch (err) {
       setPayments([]);
       setError(err instanceof Error ? err.message : "Impossible de charger les paiements");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.clinic_id, user?.id]);
 
   useEffect(() => {
     loadPayments();
