@@ -4,7 +4,7 @@ import {
   NumberField,
   PhoneField,
   TextField,
-} from "@/components/input_fields";
+} from "@/components/common/input_fields";
 import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";

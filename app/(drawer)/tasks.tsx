@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { TaskPriority, TaskRow, TaskStatus, useTasks } from "@/contexts/tasks_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -96,7 +96,7 @@ export default function TasksPage() {
       <View style={styles.pageContent}>
         <View style={styles.pageHeading}>
           <View style={styles.headingCopy}>
-            <Text style={styles.pageTitle}>Task Workflow</Text>
+            <Text style={styles.pageTitle}>Tasks</Text>
             <Text style={styles.pageSubtitle}>Operations board for clinical and admin coordination.</Text>
           </View>
           <View style={styles.headingActions}>
@@ -180,7 +180,7 @@ export default function TasksPage() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Create Task</Text>
-                <Text style={styles.modalSubtitle}>Add a task to the clinic workflow.</Text>
+                <Text style={styles.modalSubtitle}>Add a task to the clinic task list.</Text>
               </View>
               <TouchableOpacity accessibilityLabel="Close" onPress={() => setOpen(false)} style={styles.modalClose}>
                 <Ionicons name="close" size={20} color={theme.colors.textSecondary} />

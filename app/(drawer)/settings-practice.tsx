@@ -1,5 +1,5 @@
-import { ThemedCard } from "@/components/default_card";
-import { PageShell } from "@/components/page_shell";
+import { ThemedCard } from "@/components/common/default_card";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAppData } from "@/contexts/appData_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,7 +12,7 @@ export default function PracticeSettingsPage() {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
   return (
-    <PageShell title="Practice Profile" subtitle="Solo doctor cabinet details used across documents and daily workflow.">
+    <PageShell title="Practice Profile" subtitle="Solo doctor cabinet details used across documents and daily operations.">
       <ThemedCard style={styles.card}>
         <Section icon="business-outline" title="Cabinet identity" theme={theme} />
         <Field label="Cabinet name" value={String(clinic?.name || "")} theme={theme} />

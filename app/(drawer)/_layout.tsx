@@ -29,7 +29,6 @@ const NAV: NavItem[] = [
   { key: "medical_analyses_workspace", label: "Analyses medicales", route: "/analyses-medicales-workspace", section: "main", icon: ({ color, size }) => <MaterialCommunityIcons name="flask-outline" size={size} color={color} /> },
 
   { key: "payments", label: "Billing", route: "/payments", section: "management", icon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} /> },
-  { key: "services", label: "Services", route: "/services", section: "management", icon: ({ color, size }) => <MaterialIcons name="medical-services" size={size} color={color} /> },
   { key: "reports", label: "Reports", route: "/reports", section: "management", icon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> },
   { key: "statistiques", label: "Statistiques", route: "/statistiques", section: "management", icon: ({ color, size }) => <Ionicons name="stats-chart-outline" size={size} color={color} /> },
   { key: "tasks", label: "Tasks", route: "/tasks", section: "management", icon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} /> },
@@ -74,7 +73,6 @@ export default function Layout() {
       <Drawer.Screen name="consultations" options={{ drawerLabel: "Consultations" }} />
       <Drawer.Screen name="analyses-medicales-workspace" options={{ drawerLabel: "Analyses medicales" }} />
       <Drawer.Screen name="payments" options={{ drawerLabel: "Billing" }} />
-      <Drawer.Screen name="services" options={{ drawerLabel: "Services" }} />
       <Drawer.Screen name="reports" options={{ drawerLabel: "Reports" }} />
       <Drawer.Screen name="statistiques" options={{ drawerLabel: "Statistiques" }} />
       <Drawer.Screen name="tasks" options={{ drawerLabel: "Tasks" }} />

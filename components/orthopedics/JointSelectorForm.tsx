@@ -1,7 +1,7 @@
 import React from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import { Dropdown, TextArea } from "@/components/input_fields";
+import { Dropdown, TextArea } from "@/components/common/input_fields";
 import type { OrthoJoint } from "./types";
 
 const JOINTS: { id: OrthoJoint; label: string }[] = [

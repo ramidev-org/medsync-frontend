@@ -1,5 +1,5 @@
-import PatientForm from "@/components/new_patient";
-import { UserAvatar } from "@/components/user_avatar";
+import PatientForm from "@/components/patient/new_patient";
+import { UserAvatar } from "@/components/common/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { getConversations } from "@/services/chats.services";

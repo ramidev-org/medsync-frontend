@@ -1,5 +1,5 @@
-import { PageShell } from "@/components/page_shell";
-import { ChatAvatar, getChatAvatarTone } from "@/components/chat_avatar";
+import { PageShell } from "@/components/layout/page_shell";
+import { ChatAvatar, getChatAvatarTone } from "@/components/common/chat_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { getConversationReadAt, getConversations } from "@/services/chats.services";
 import type { ConversationRow } from "@/services/backend.types";

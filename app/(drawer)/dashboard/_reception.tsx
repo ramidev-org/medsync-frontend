@@ -1,6 +1,6 @@
-import { TopBar } from "@/components/top_bar";
-import { Avatar } from "@/components/patient_avatar";
-import { UserAvatar } from "@/components/user_avatar";
+import { TopBar } from "@/components/layout/top_bar";
+import { Avatar } from "@/components/common/patient_avatar";
+import { UserAvatar } from "@/components/common/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { useTasks } from "@/contexts/tasks_context";
@@ -9,7 +9,7 @@ import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getDashboardStyles } from "./_styles";
 
 type VisitStatus = "pending" | "in_consultation" | "completed" | "cancelled";
@@ -199,18 +199,26 @@ export default function ReceptionDashboardPage() {
               </View>
 
               <View style={styles.activityList}>
-                {!tasksLoading && recentTasks.map((task) => (
-                  <ActivityItem
-                    key={task.id}
-                    title={task.title}
-                    time={`${task.dueText || "Not set"} • ${task.status.replace("_", " ")}`}
-                    icon={task.status === "done" ? "checkmark-done-outline" : task.status === "in_progress" ? "time-outline" : "clipboard-outline"}
-                    theme={theme}
-                  />
-                ))}
-                {!tasksLoading && recentTasks.length === 0 ? (
-                  <Text style={localStyles.emptyText}>No recent tasks yet.</Text>
-                ) : null}
+                {tasksLoading ? (
+                  <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  </View>
+                ) : (
+                  <>
+                    {recentTasks.map((task) => (
+                      <ActivityItem
+                        key={task.id}
+                        title={task.title}
+                        time={`${task.dueText || "Not set"} • ${task.status.replace("_", " ")}`}
+                        icon={task.status === "done" ? "checkmark-done-outline" : task.status === "in_progress" ? "time-outline" : "clipboard-outline"}
+                        theme={theme}
+                      />
+                    ))}
+                    {recentTasks.length === 0 ? (
+                      <Text style={localStyles.emptyText}>No recent tasks yet.</Text>
+                    ) : null}
+                  </>
+                )}
               </View>
             </View>
           </View>

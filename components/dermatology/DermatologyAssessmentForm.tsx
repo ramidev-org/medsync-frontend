@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { TextArea, TextField } from "@/components/input_fields";
+import { TextArea, TextField } from "@/components/common/input_fields";
 
 export function DermatologyAssessmentForm({
   theme,

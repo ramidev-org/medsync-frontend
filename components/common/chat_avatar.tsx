@@ -1,5 +1,5 @@
 import React from "react";
-import { UserAvatar, type UserAvatarPalette } from "@/components/user_avatar";
+import { UserAvatar, type UserAvatarPalette } from "@/components/common/user_avatar";
 
 const TONES = [
   { backgroundColor: "#EDF5FF", borderColor: "#CCDBF1", color: "#1D4ED8" },

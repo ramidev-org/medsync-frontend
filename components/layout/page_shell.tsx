@@ -1,6 +1,6 @@
 import React, { type ReactNode } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View, type ScrollViewProps, type ViewStyle } from "react-native";
-import { TopBar } from "@/components/top_bar";
+import { TopBar } from "@/components/layout/top_bar";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 

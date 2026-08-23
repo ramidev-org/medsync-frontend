@@ -1,5 +1,5 @@
-import { PageShell } from "@/components/page_shell";
-import { ThemedCard } from "@/components/default_card";
+import { PageShell } from "@/components/layout/page_shell";
+import { ThemedCard } from "@/components/common/default_card";
 import { useAuth } from "@/contexts/auth_context";
 import {
   getNotifications,

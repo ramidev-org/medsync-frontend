@@ -1,5 +1,5 @@
-﻿// app/(drawer)/consultation/index.tsx
-import { TopBar } from "@/components/top_bar";
+// app/(drawer)/consultation/index.tsx
+import { TopBar } from "@/components/layout/top_bar";
 import { PAGE_GUTTER, getWebContainerFill } from "@/theme/layout";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,7 +27,6 @@ import ObservationMedicalTab from "./_tabs/_observation";
 import OrdonnancesTab from "./_tabs/_ordonnance";
 import SymptomesTab from "./_tabs/_symptomes";
 import TreatmentTab from "./_tabs/_treatment";
-import { normalizeSpeciality } from "@/config/speciality";
 
 
 

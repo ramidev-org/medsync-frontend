@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
 import { buildCallChannelName, fetchCallConfig } from "@/services/calling";
@@ -316,7 +316,7 @@ export default function CallSessionPage() {
   }, [conversationId, router]);
 
   const localDeviceBadges = React.useMemo(() => {
-    const badges: Array<{ label: string; tone: "default" | "warning" }> = [];
+    const badges: { label: string; tone: "default" | "warning" }[] = [];
     badges.push({
       label: localHasMicrophone ? (microphoneEnabled ? "Microphone on" : "Microphone muted") : "Microphone missing",
       tone: localHasMicrophone ? "default" : "warning",
@@ -475,7 +475,7 @@ function CallMediaTile({
 }
 
 async function acquireLocalMedia() {
-  const attempts: Array<{ constraints: MediaStreamConstraints; fallbackNotice?: string }> = [
+  const attempts: { constraints: MediaStreamConstraints; fallbackNotice?: string }[] = [
     { constraints: { audio: true, video: false } },
     { constraints: { audio: false, video: false }, fallbackNotice: "Microphone not found. Joining in receive-only mode." },
   ];

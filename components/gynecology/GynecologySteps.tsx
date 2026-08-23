@@ -1,8 +1,8 @@
 import React from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import DatePickerField from "@/components/datepicker";
-import { Dropdown, TextArea, TextField } from "@/components/input_fields";
+import DatePickerField from "@/components/common/datepicker";
+import { Dropdown, TextArea, TextField } from "@/components/common/input_fields";
 
 type StepKey = "triage" | "history" | "exam" | "pregnancy" | "tests" | "assessment" | "plan";
 

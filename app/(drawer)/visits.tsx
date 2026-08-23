@@ -1,7 +1,7 @@
-﻿import DatePickerField from "@/components/datepicker";
-import { Dropdown } from "@/components/input_fields";
-import { Avatar } from "@/components/patient_avatar";
-import { TopBar } from "@/components/top_bar";
+import DatePickerField from "@/components/common/datepicker";
+import { Dropdown } from "@/components/common/input_fields";
+import { Avatar } from "@/components/common/patient_avatar";
+import { TopBar } from "@/components/layout/top_bar";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
 import { callRpc } from "@/services/backend";

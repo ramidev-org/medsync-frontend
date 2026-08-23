@@ -1,6 +1,6 @@
-import { ThemedCard } from "@/components/default_card";
-import { PageShell } from "@/components/page_shell";
-import { DEFAULT_AVATAR_COLOR, UserAvatar, normalizeAvatarColor } from "@/components/user_avatar";
+import { ThemedCard } from "@/components/common/default_card";
+import { PageShell } from "@/components/layout/page_shell";
+import { DEFAULT_AVATAR_COLOR, UserAvatar, normalizeAvatarColor } from "@/components/common/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";

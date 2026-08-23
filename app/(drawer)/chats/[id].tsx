@@ -1,5 +1,5 @@
-import { PageShell } from "@/components/page_shell";
-import { ChatAvatar, getChatAvatarTone } from "@/components/chat_avatar";
+import { PageShell } from "@/components/layout/page_shell";
+import { ChatAvatar, getChatAvatarTone } from "@/components/common/chat_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
 import {
@@ -231,6 +231,8 @@ export default function ChatConversationPage() {
     };
   }, []);
 
+  const latestVisibleMessageId = visibleRows.length > 0 ? visibleRows[visibleRows.length - 1].id : null;
+
   React.useEffect(() => {
     if (!user?.id || !conversationId || visibleRows.length === 0) return;
     const latestVisibleMessage = visibleRows[visibleRows.length - 1];
@@ -260,7 +262,8 @@ export default function ChatConversationPage() {
           }
         : prev,
     );
-  }, [conversationId, user?.id, visibleRows]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the last message id, not the array reference, so polling refreshes don't re-fire this on every tick
+  }, [conversationId, user?.id, latestVisibleMessageId]);
 
   React.useEffect(() => {
     if (!user?.id || !user?.clinic_id) return;
@@ -1215,10 +1218,10 @@ function normalizeCallMode(value: unknown): CallMode {
 }
 
 async function acquireLocalMedia(mode: CallMode) {
-  const attempts: Array<{
+  const attempts: {
     constraints: MediaStreamConstraints;
     fallbackNotice?: string;
-  }> =
+  }[] =
     mode === "video"
       ? [
           { constraints: { audio: true, video: true } },

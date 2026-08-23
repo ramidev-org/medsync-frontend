@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import { getClinicAnalytics } from "@/services/analytics.services";
 import { useTheme } from "@/theme/theme_provider";
@@ -147,7 +147,7 @@ export default function ReportsPage() {
 
         <View style={styles.heroTop}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>A reporting desk tied to the real workflow.</Text>
+            <Text style={styles.heroTitle}>A reporting desk tied to real clinic activity.</Text>
             <Text style={styles.heroDescription}>
               Revenue, consultations, open tasks, and stock pressure now come from the live
               clinic data instead of placeholder widgets.

@@ -338,21 +338,6 @@ export type ClinicSpecialityToolRow = {
   updated_at: string;
 };
 
-export type ClinicServiceRow = {
-  id: string;
-  clinic_id: string;
-  code: string | null;
-  name: string;
-  category: string | null;
-  color: string | null;
-  duration_minutes: number | null;
-  price: number | null;
-  cost: number | null;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
 export type ClinicInvoiceRow = {
   id: string;
   clinic_id: string;

@@ -1,6 +1,6 @@
-import { TopBar } from "@/components/top_bar";
+import { TopBar } from "@/components/layout/top_bar";
 import { EChart } from "@/components/charts/echart";
-import { UserAvatar } from "@/components/user_avatar";
+import { UserAvatar } from "@/components/common/user_avatar";
 import { normalizeSpeciality, specialityLabelFr } from "@/config/speciality";
 import { useAuth } from "@/contexts/auth_context";
 import { TaskPriority, TaskStatus, useTasks } from "@/contexts/tasks_context";
@@ -10,7 +10,7 @@ import { useTheme } from "@/theme/theme_provider";
 import { FontAwesome5, FontAwesome6, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getDashboardStyles } from "./_styles";
 
 const ICON_FAMILIES = {
@@ -210,21 +210,29 @@ export default function DoctorDashboardPage() {
                 </TouchableOpacity>
               </View>
               <View style={styles.activityList}>
-                {!tasksLoading && recentTasks.map((task) => (
-                  <ActivityItem
-                    key={task.id}
-                    title={task.title}
-                    time={`${task.dueText || "Not set"} - ${taskStatusLabel(task.status)}`}
-                    icon={taskIcon(task.status)}
-                    priority={task.priority}
-                    theme={theme}
-                  />
-                ))}
-                {!tasksLoading && recentTasks.length === 0 ? (
-                  <Text style={{ color: theme.colors.muted, fontWeight: "700" }}>
-                    No recent tasks yet.
-                  </Text>
-                ) : null}
+                {tasksLoading ? (
+                  <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  </View>
+                ) : (
+                  <>
+                    {recentTasks.map((task) => (
+                      <ActivityItem
+                        key={task.id}
+                        title={task.title}
+                        time={`${task.dueText || "Not set"} - ${taskStatusLabel(task.status)}`}
+                        icon={taskIcon(task.status)}
+                        priority={task.priority}
+                        theme={theme}
+                      />
+                    ))}
+                    {recentTasks.length === 0 ? (
+                      <Text style={{ color: theme.colors.muted, fontWeight: "700" }}>
+                        No recent tasks yet.
+                      </Text>
+                    ) : null}
+                  </>
+                )}
               </View>
             </View>
           </View>
@@ -309,29 +317,6 @@ const QuickInsight = ({ icon, color, title, detail, theme }: any) => (
   </View>
 );
 
-const DoctorStat = ({ label, value, theme, progress }: any) => {
-  const statStyles = StyleSheet.create({
-    doctorStat: { marginBottom: 16 },
-    doctorStatLabel: { fontSize: 13, marginBottom: 4, fontWeight: "600", color: theme.colors.muted },
-    doctorStatRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-    doctorStatValue: { fontWeight: "700", fontSize: 18, color: theme.colors.text },
-    progressBar: { flex: 1, height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: theme.colors.border },
-    progressFill: { height: "100%", borderRadius: 4, backgroundColor: theme.colors.success },
-  });
-  return (
-    <View style={statStyles.doctorStat}>
-      <Text style={statStyles.doctorStatLabel}>{label}</Text>
-      <View style={statStyles.doctorStatRow}>
-        <Text style={statStyles.doctorStatValue}>{value}</Text>
-        {progress !== undefined && (
-          <View style={statStyles.progressBar}>
-            <View style={[statStyles.progressFill, { width: `${progress}%` }]} />
-          </View>
-        )}
-      </View>
-    </View>
-  );
-};
 
 const DoctorInlineStat = ({ label, value, theme }: any) => (
   <View style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 10, backgroundColor: theme.colors.background }}>

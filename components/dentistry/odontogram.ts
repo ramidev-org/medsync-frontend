@@ -35,7 +35,7 @@ export type OdontogramState = Partial<Record<ToothId, ToothChart>>;
 
 export const ALL_SURFACES: ToothSurface[] = ["B", "L", "M", "D", "O"];
 
-export const PROCEDURES: Array<{ key: ProcedureKey; label: string; color: string }> = [
+export const PROCEDURES: { key: ProcedureKey; label: string; color: string }[] = [
   { key: "healthy", label: "Healthy", color: "#16A34A" },
   { key: "caries", label: "Caries", color: "#DC2626" },
   { key: "filling", label: "Filling", color: "#2563EB" },

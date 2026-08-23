@@ -1,5 +1,5 @@
-import { ThemedCard } from "@/components/default_card";
-import { PageShell } from "@/components/page_shell";
+import { ThemedCard } from "@/components/common/default_card";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAppData } from "@/contexts/appData_context";
 import { useTheme } from "@/theme/theme_provider";
 import React from "react";
@@ -22,7 +22,7 @@ export default function SubscriptionSettingsPage() {
       </ThemedCard>
 
       <ThemedCard style={styles.card}>
-        <Text style={styles.title}>Payment workflow</Text>
+        <Text style={styles.title}>Payment options</Text>
         <Text style={styles.copy}>For Algeria launch, keep manual bank transfer or cash invoice active first. Add CIB/Edahabia gateway later after pilots validate pricing.</Text>
       </ThemedCard>
     </PageShell>

@@ -1,6 +1,6 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Avatar } from "@/components/patient_avatar";
+import { Avatar } from "@/components/common/patient_avatar";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {

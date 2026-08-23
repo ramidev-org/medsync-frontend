@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { createTableStyles } from "@/theme/table_styles";

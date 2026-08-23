@@ -1,6 +1,6 @@
-﻿// pages/PatientMedicalDocument.tsx
-import { Avatar } from "@/components/patient_avatar";
-import { TopBar } from "@/components/top_bar";
+// pages/PatientMedicalDocument.tsx
+import { Avatar } from "@/components/common/patient_avatar";
+import { TopBar } from "@/components/layout/top_bar";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";

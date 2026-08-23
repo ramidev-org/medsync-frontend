@@ -1,8 +1,8 @@
 import React from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import { Dropdown, NumberField, TextArea, TextField } from "@/components/input_fields";
-import DatePickerField from "@/components/datepicker";
+import { Dropdown, NumberField, TextArea, TextField } from "@/components/common/input_fields";
+import DatePickerField from "@/components/common/datepicker";
 import type { BodySide, DermatologyLesionEntry } from "./types";
 
 const MORPHOLOGY = [

@@ -1,4 +1,4 @@
-import { TopBar } from "@/components/top_bar";
+import { TopBar } from "@/components/layout/top_bar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
@@ -173,12 +173,19 @@ export default function ClinicAdminDashboardPage() {
               </View>
             </View>
 
-            <View style={styles.statsRow}>
-              <MetricCard title="Patients" value={counts.patients ?? 0} icon="people-outline" tone="#2563EB" theme={theme} />
-              <MetricCard title="Doctors" value={counts.doctors ?? 0} icon="medkit-outline" tone="#0F766E" theme={theme} />
-              <MetricCard title="Assistants" value={counts.assistants ?? 0} icon="headset-outline" tone="#7C3AED" theme={theme} />
-              <MetricCard title="Virtual clinics" value={counts.virtual_clinics ?? 0} icon="layers-outline" tone="#EA580C" theme={theme} />
-            </View>
+            {loading ? (
+              <View style={localStyles.loadingRow}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text style={localStyles.loadingText}>Loading dashboard…</Text>
+              </View>
+            ) : (
+              <View style={styles.statsRow}>
+                <MetricCard title="Patients" value={counts.patients ?? 0} icon="people-outline" tone="#2563EB" theme={theme} />
+                <MetricCard title="Doctors" value={counts.doctors ?? 0} icon="medkit-outline" tone="#0F766E" theme={theme} />
+                <MetricCard title="Assistants" value={counts.assistants ?? 0} icon="headset-outline" tone="#7C3AED" theme={theme} />
+                <MetricCard title="Virtual clinics" value={counts.virtual_clinics ?? 0} icon="layers-outline" tone="#EA580C" theme={theme} />
+              </View>
+            )}
 
             <View style={[styles.chartCard, localStyles.sectionCard]}>
               <View style={localStyles.sectionHeader}>
@@ -418,6 +425,18 @@ function avatarTone(index: number) {
 const localStyles = StyleSheet.create({
   heroCard: {
     gap: 18,
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 20,
+    justifyContent: "center",
+  },
+  loadingText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#64748B",
   },
   heroTop: {
     flexDirection: "row",

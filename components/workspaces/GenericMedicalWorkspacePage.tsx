@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { SpecialtyWorkspaceScaffold } from "@/components/workspaces/SpecialtyWorkspaceScaffold";
 import { WorkspaceFlatTabs, WorkspaceInputField, WorkspaceReadOnlyField } from "@/components/workspaces/theme/WorkspaceTheme";
 import { useTheme } from "@/theme/theme_provider";
@@ -42,7 +42,7 @@ export default function GenericMedicalWorkspacePage(props: Props) {
   const [parameters, setParameters] = React.useState<Record<string, string>>(props.initialValues);
   const [treatmentType, setTreatmentType] = React.useState("follow_up_treatment");
   const [treatmentNote, setTreatmentNote] = React.useState("");
-  const [treatmentHistory, setTreatmentHistory] = React.useState<Array<{ id: string; type: string; note: string; createdAt: string }>>([]);
+  const [treatmentHistory, setTreatmentHistory] = React.useState<{ id: string; type: string; note: string; createdAt: string }[]>([]);
   const [isEditingCurrentParams, setIsEditingCurrentParams] = React.useState(false);
   const [draftCurrentParams, setDraftCurrentParams] = React.useState<Record<string, string> | null>(null);
   const snapshots = React.useMemo<PreviousSnapshot[]>(

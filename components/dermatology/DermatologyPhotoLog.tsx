@@ -1,8 +1,8 @@
 import React from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import DatePickerField from "@/components/datepicker";
-import { TextArea, TextField } from "@/components/input_fields";
+import DatePickerField from "@/components/common/datepicker";
+import { TextArea, TextField } from "@/components/common/input_fields";
 import type { DermatologyPhotoEntry } from "./types";
 
 function makeId() {

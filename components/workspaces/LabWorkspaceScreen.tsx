@@ -1,5 +1,5 @@
-import { TopBar } from "@/components/top_bar";
-import { Avatar } from "@/components/patient_avatar";
+import { TopBar } from "@/components/layout/top_bar";
+import { Avatar } from "@/components/common/patient_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { createLabOrder, getLabOrders, saveLabResults } from "@/services/lab.services";
 import { getPatients } from "@/services/patients.services";
@@ -8,6 +8,7 @@ import { useTheme } from "@/theme/theme_provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Platform,
@@ -245,7 +246,7 @@ function paymentSuccess(status: string) {
 }
 
 function buildTimeline(request: LabRequest) {
-  const steps: Array<{ label: string; time: string; done: boolean }> = [
+  const steps: { label: string; time: string; done: boolean }[] = [
     {
       label: "Demande creee",
       time: formatRequestDate(request.raw.requested_at),
@@ -469,7 +470,7 @@ export default function LabWorkspaceScreen() {
 
   const doctorName = String((user as any)?.fullname || "Medecin");
 
-  const loadData = async () => {
+  const loadData = async (cancelledRef?: { current: boolean }) => {
     if (!user?.id || !user.clinic_id) return;
     setLoading(true);
     setError("");
@@ -483,6 +484,7 @@ export default function LabWorkspaceScreen() {
           itemsPerPage: 100,
         }).catch(() => ({ patients: [], total: 0 })),
       ]);
+      if (cancelledRef?.current) return;
 
       const mappedRequests = (labOrders ?? []).map(mapOrder);
       const patientOptions = (patientRes?.patients ?? []).map((patient) => ({
@@ -495,15 +497,20 @@ export default function LabWorkspaceScreen() {
       setPatients(patientOptions);
       setSelectedOrderId((current) => current ?? mappedRequests[0]?.id ?? null);
     } catch (err) {
+      if (cancelledRef?.current) return;
       setError(err instanceof Error ? err.message : "Impossible de charger les analyses.");
       setRequests([]);
     } finally {
-      setLoading(false);
+      if (!cancelledRef?.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    const cancelledRef = { current: false };
+    loadData(cancelledRef);
+    return () => {
+      cancelledRef.current = true;
+    };
   }, [user?.id]);
 
   const filteredRequests = useMemo(() => {
@@ -644,20 +651,6 @@ export default function LabWorkspaceScreen() {
     }
   };
 
-  const updateDraftRow = (index: number, patch: Partial<ResultRow>) => {
-    setResultDraft((current) => {
-      const nextRows = current.rows.map((row, rowIndex) => {
-        if (rowIndex !== index) return row;
-        const updated = { ...row, ...patch };
-        return {
-          ...updated,
-          note: normalizeNote(updated.note, updated.value, updated.normal),
-        };
-      });
-      return { ...current, rows: nextRows };
-    });
-  };
-
   const persistResults = async (status: "collected" | "completed") => {
     if (!user?.id || !selectedRequest) return;
     setSaving(true);
@@ -706,7 +699,7 @@ export default function LabWorkspaceScreen() {
 
               <Text style={styles.title}>Analyses medicales</Text>
               <Text style={styles.description}>
-                Two simple workflows: request tests inside the clinic, or import external lab results for doctor review.
+                Two simple options: request tests inside the clinic, or import external lab results for doctor review.
               </Text>
             </View>
 
@@ -786,20 +779,25 @@ export default function LabWorkspaceScreen() {
                     <Text style={[styles.filterChipText, statusFilter === item && styles.filterChipTextActive]}>{item === "all" ? "Tous" : item}</Text>
                   </Pressable>
                 ))}
-                <Pressable onPress={loadData} style={styles.filterChip}>
+                <Pressable onPress={() => loadData()} style={styles.filterChip}>
                   <Text style={styles.filterChipText}>{loading ? "Chargement..." : "Actualiser"}</Text>
                 </Pressable>
               </View>
 
               <View style={styles.requestList}>
-                {!loading && filteredRequests.length === 0 ? (
+                {loading ? (
+                  <View style={styles.emptyStateWrap}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                    <Text style={styles.emptyStateTitle}>Chargement des demandes…</Text>
+                  </View>
+                ) : filteredRequests.length === 0 ? (
                   <View style={styles.emptyStateWrap}>
                     <Ionicons name="search-outline" size={20} color="#94A3B8" />
                     <Text style={styles.emptyStateTitle}>Aucun resultat</Text>
                     <Text style={styles.emptyStateText}>Ajustez la recherche ou creez une nouvelle demande.</Text>
                   </View>
                 ) : null}
-                {filteredRequests.map((request) => (
+                {!loading && filteredRequests.map((request) => (
                   <View key={request.id} style={[styles.requestItem, isWideDesktop && styles.requestItemDesktop]}>
                     <View style={styles.requestLeft}>
                       <Avatar name={request.patient} size={46} />

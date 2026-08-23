@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { Dropdown, TextArea, TextField } from "@/components/input_fields";
+import { Dropdown, TextArea, TextField } from "@/components/common/input_fields";
 
 const REGIONS = [
   "Scalp",

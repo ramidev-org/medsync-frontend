@@ -1,6 +1,7 @@
-import { DateRangePickerField } from "@/components/datepicker";
-import { PageShell } from "@/components/page_shell";
-import { Avatar } from "@/components/patient_avatar";
+import { DataState } from "@/components/common/data_state";
+import { DateRangePickerField } from "@/components/common/datepicker";
+import { PageShell } from "@/components/layout/page_shell";
+import { Avatar } from "@/components/common/patient_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { getPayments } from "@/services/payments.services";
 import type { Payment } from "@/services/payments.services";
@@ -122,20 +123,17 @@ export default function PaymentsPage() {
             ))}
           </View>
           <ScrollView style={styles.tableScroller} contentContainerStyle={styles.tableScrollerContent}>
-            {loading ? (
-              <View style={tableStyles.emptyState}>
-                <Text style={tableStyles.emptyText}>Chargement...</Text>
-              </View>
-            ) : error ? (
-              <View style={tableStyles.emptyState}>
-                <Text style={tableStyles.emptyText}>{error}</Text>
-              </View>
-            ) : visibleRows.length === 0 ? (
-              <View style={tableStyles.emptyState}>
-                <Text style={tableStyles.emptyText}>Aucun paiement</Text>
-              </View>
-            ) : (
-              visibleRows.map((payment, index) => (
+            <DataState
+              loading={loading}
+              error={error}
+              onRetry={loadPayments}
+              isEmpty={visibleRows.length === 0}
+              emptyIcon="card-outline"
+              emptyTitle="Aucun paiement"
+              emptyBody="Les paiements correspondant a vos filtres apparaitront ici."
+              loadingLabel="Chargement des paiements…"
+            >
+              {visibleRows.map((payment, index) => (
                 <View key={`${payment.code}-${index}`} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
                   <View style={tableStyles.cell}>
                     <Avatar firstName={payment.prenom} lastName={payment.nom} size={48} borderRadius={12} />
@@ -166,8 +164,8 @@ export default function PaymentsPage() {
                     </Text>
                   </View>
                 </View>
-              ))
-            )}
+              ))}
+            </DataState>
           </ScrollView>
         </View>
 

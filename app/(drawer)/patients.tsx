@@ -1,7 +1,8 @@
-import { DateRangePickerField } from "@/components/datepicker";
-import PatientFormWithMedical from "@/components/new_patient";
-import { Avatar } from "@/components/patient_avatar";
-import { PageShell } from "@/components/page_shell";
+import { DataState } from "@/components/common/data_state";
+import { DateRangePickerField } from "@/components/common/datepicker";
+import PatientFormWithMedical from "@/components/patient/new_patient";
+import { Avatar } from "@/components/common/patient_avatar";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import { getPatients, type PatientListRow } from "@/services/patients.services";
 import { createTableStyles } from "@/theme/table_styles";
@@ -23,6 +24,7 @@ export default function PatientsPage() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [rows, setRows] = useState<PatientListRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -53,6 +55,7 @@ export default function PatientsPage() {
       setTotal(0);
       setError(loadError instanceof Error ? loadError.message : "Unable to load patients.");
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   }, [user?.id, user?.clinic_id, globalSearch, fromDate, toDate]);
@@ -115,41 +118,44 @@ export default function PatientsPage() {
             ))}
           </View>
           <ScrollView style={styles.tableScroller} contentContainerStyle={styles.tableScrollerContent}>
-            {error ? (
-              <View style={tableStyles.emptyState}>
-                <Text style={tableStyles.emptyText}>{error}</Text>
-              </View>
-            ) : rows.length === 0 && !refreshing ? (
-              <View style={tableStyles.emptyState}>
-                <Text style={tableStyles.emptyText}>No patients found</Text>
-              </View>
-            ) : rows.map((patient, index) => (
-              <View key={patient.id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
-                <View style={tableStyles.cell}>
-                  <Avatar firstName={patient.first_name} lastName={patient.last_name} size={48} borderRadius={12} />
+            <DataState
+              loading={loading}
+              error={error || null}
+              onRetry={fetchRows}
+              isEmpty={rows.length === 0}
+              emptyIcon="people-outline"
+              emptyTitle="No patients found"
+              emptyBody="Patients you add or that match your filters will show up here."
+              loadingLabel="Loading patients…"
+            >
+              {rows.map((patient, index) => (
+                <View key={patient.id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
+                  <View style={tableStyles.cell}>
+                    <Avatar firstName={patient.first_name} lastName={patient.last_name} size={48} borderRadius={12} />
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{patient.first_name} {patient.last_name}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{patient.age ?? "-"}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{patient.sex}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{patient.phone || "-"}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <Text style={tableStyles.cellText}>{patient.address_city || "-"}</Text>
+                  </View>
+                  <View style={tableStyles.cell}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: "/patient_medical_info", params: { patientId: patient.id } })}>
+                      <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{patient.first_name} {patient.last_name}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{patient.age ?? "-"}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{patient.sex}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{patient.phone || "-"}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <Text style={tableStyles.cellText}>{patient.address_city || "-"}</Text>
-                </View>
-                <View style={tableStyles.cell}>
-                  <TouchableOpacity onPress={() => router.push({ pathname: "/patient_medical_info", params: { patientId: patient.id } })}>
-                    <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              ))}
+            </DataState>
           </ScrollView>
         </View>
       </View>

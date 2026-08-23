@@ -1,4 +1,5 @@
-import { PageShell } from "@/components/page_shell";
+import { DataState } from "@/components/common/data_state";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import type { InventoryItemRow } from "@/services/backend.types";
 import { adjustInventory, getInventory, upsertInventoryItem } from "@/services/inventory.services";
@@ -38,6 +39,7 @@ export default function InventoryPage() {
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const [migrationMissing, setMigrationMissing] = React.useState(false);
   const [items, setItems] = React.useState<InventoryItemRow[]>([]);
   const [search, setSearch] = React.useState("");
@@ -57,6 +59,7 @@ export default function InventoryPage() {
   const refresh = React.useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
+    setError(null);
     try {
       setMigrationMissing(false);
       const res = await getInventory({
@@ -73,7 +76,8 @@ export default function InventoryPage() {
         setMigrationMissing(true);
         setItems([]);
       } else {
-        Alert.alert("Error", msg || "Failed to load inventory");
+        setItems([]);
+        setError(msg || "Failed to load inventory");
       }
     } finally {
       setLoading(false);
@@ -234,11 +238,16 @@ export default function InventoryPage() {
           </View>
 
           <ScrollView style={styles.listScroller} contentContainerStyle={styles.listScrollerContent}>
-            {items.length === 0 && !loading && (
-              <View style={styles.emptyRow}>
-                <Text style={styles.emptyText}>No inventory items found.</Text>
-              </View>
-            )}
+            <DataState
+              loading={loading}
+              error={error}
+              onRetry={refresh}
+              isEmpty={items.length === 0 && !migrationMissing}
+              emptyIcon="cube-outline"
+              emptyTitle="No inventory items found"
+              emptyBody="Add your first item to start tracking clinic stock."
+              loadingLabel="Loading inventory…"
+            >
             {visibleItems.map((item) => {
               const low = Number(item.qty_on_hand ?? 0) < Number(item.reorder_threshold ?? 0);
               return (
@@ -263,6 +272,7 @@ export default function InventoryPage() {
                 </View>
               );
             })}
+            </DataState>
           </ScrollView>
         </View>
       </View>

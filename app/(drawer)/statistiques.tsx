@@ -1,5 +1,5 @@
 import { EChart } from "@/components/charts/echart";
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAuth } from "@/contexts/auth_context";
 import { getClinicAnalytics } from "@/services/analytics.services";
 import { useTheme } from "@/theme/theme_provider";

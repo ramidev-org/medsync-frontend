@@ -1,5 +1,5 @@
-import { PageShell } from "@/components/page_shell";
-import { Avatar } from "@/components/patient_avatar";
+import { PageShell } from "@/components/layout/page_shell";
+import { Avatar } from "@/components/common/patient_avatar";
 import { useAuth } from "@/contexts/auth_context";
 import { callRpc } from "@/services/backend";
 import { useTheme } from "@/theme/theme_provider";

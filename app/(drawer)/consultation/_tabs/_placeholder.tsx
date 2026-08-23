@@ -1,4 +1,4 @@
-import { ThemedCard } from "@/components/default_card";
+import { ThemedCard } from "@/components/common/default_card";
 import { Text } from "react-native";
 
 export default function PlaceholderTab({ theme, title }: { theme: any; title: string }) {

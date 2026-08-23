@@ -1,5 +1,5 @@
-import { PageShell } from "@/components/page_shell";
-import { UserAvatar } from "@/components/user_avatar";
+import { PageShell } from "@/components/layout/page_shell";
+import { UserAvatar } from "@/components/common/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { db } from "@/database/database_conn";
@@ -72,8 +72,8 @@ export default function UsersPage() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
-  const { user, session } = useAuth();
-  const { clinic, isClinicAdmin, subscription } = useAppData();
+  const { user } = useAuth();
+  const { isClinicAdmin, subscription } = useAppData();
   const [rows, setRows] = useState<StaffRow[]>([]);
   const [invites, setInvites] = useState<StaffInviteRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -570,7 +570,7 @@ export default function UsersPage() {
                   />
                   <SettingItem
                     label="Next step"
-                    value="Use profile or services pages for current edits"
+                    value="Use profile page for current edits"
                     styles={styles}
                   />
                 </View>
@@ -582,16 +582,6 @@ export default function UsersPage() {
                     onPress={() => {
                       setSelectedMember(null);
                       router.push("/profile");
-                    }}
-                    styles={styles}
-                    theme={theme}
-                  />
-                  <ActionButton
-                    icon="medical-outline"
-                    label="Open services"
-                    onPress={() => {
-                      setSelectedMember(null);
-                      router.push("/services");
                     }}
                     styles={styles}
                     theme={theme}
@@ -653,28 +643,6 @@ function RoleOption({ label, detail, active, disabled, onPress, styles }: any) {
       <Text style={[styles.roleCardTitle, active && styles.roleCardTitleActive]}>{label}</Text>
       <Text style={styles.roleCardDetail}>{detail}</Text>
     </Pressable>
-  );
-}
-
-function DataPill({ label, tone, styles }: any) {
-  const toneStyle =
-    tone === "success"
-      ? [styles.dataPill, styles.dataPillSuccess]
-      : tone === "neutral"
-        ? [styles.dataPill, styles.dataPillNeutral]
-        : [styles.dataPill, styles.dataPillPrimary];
-
-  const textStyle =
-    tone === "success"
-      ? styles.dataPillSuccessText
-      : tone === "neutral"
-        ? styles.dataPillNeutralText
-        : styles.dataPillPrimaryText;
-
-  return (
-    <View style={toneStyle}>
-      <Text style={[styles.dataPillText, textStyle]}>{label}</Text>
-    </View>
   );
 }
 

@@ -1,4 +1,4 @@
-import DatePickerField from "@/components/datepicker";
+import DatePickerField from "@/components/common/datepicker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";

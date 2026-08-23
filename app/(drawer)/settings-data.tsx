@@ -1,5 +1,5 @@
-import { ThemedCard } from "@/components/default_card";
-import { PageShell } from "@/components/page_shell";
+import { ThemedCard } from "@/components/common/default_card";
+import { PageShell } from "@/components/layout/page_shell";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";

@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/page_shell";
+import { PageShell } from "@/components/layout/page_shell";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
@@ -25,12 +25,15 @@ type SidebarItem = {
   section: "account" | "workspace";
 };
 
+type SettingsStyles = ReturnType<typeof createStyles>;
+
 type ToggleRowProps = {
   title: string;
   description: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
   theme: any;
+  styles: SettingsStyles;
 };
 
 type ChoiceRowProps = {
@@ -38,6 +41,7 @@ type ChoiceRowProps = {
   description: string;
   value: string;
   theme: any;
+  styles: SettingsStyles;
 };
 
 type LinkRowProps = {
@@ -46,9 +50,10 @@ type LinkRowProps = {
   actionLabel: string;
   onPress: () => void;
   theme: any;
+  styles: SettingsStyles;
 };
 
-function ToggleRow({ title, description, value, onValueChange, theme }: ToggleRowProps) {
+function ToggleRow({ title, description, value, onValueChange, theme, styles }: ToggleRowProps) {
   return (
     <View style={styles.prefRow}>
       <View style={styles.prefCopy}>
@@ -65,7 +70,7 @@ function ToggleRow({ title, description, value, onValueChange, theme }: ToggleRo
   );
 }
 
-function ChoiceRow({ title, description, value, theme }: ChoiceRowProps) {
+function ChoiceRow({ title, description, value, theme, styles }: ChoiceRowProps) {
   return (
     <View style={styles.prefRow}>
       <View style={styles.prefCopy}>
@@ -80,7 +85,7 @@ function ChoiceRow({ title, description, value, theme }: ChoiceRowProps) {
   );
 }
 
-function LinkRow({ title, description, actionLabel, onPress, theme }: LinkRowProps) {
+function LinkRow({ title, description, actionLabel, onPress, theme, styles }: LinkRowProps) {
   return (
     <View style={styles.prefRow}>
       <View style={styles.prefCopy}>
@@ -95,7 +100,7 @@ function LinkRow({ title, description, actionLabel, onPress, theme }: LinkRowPro
   );
 }
 
-function SectionCard({ children, theme }: { children: React.ReactNode; theme: any }) {
+function SectionCard({ children, theme, styles }: { children: React.ReactNode; theme: any; styles: SettingsStyles }) {
   return <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>{children}</View>;
 }
 
@@ -164,7 +169,7 @@ export default function SettingsPage() {
   };
 
   const renderGeneralContent = () => (
-    <SectionCard theme={theme}>
+    <SectionCard theme={theme} styles={stylesMemo}>
       <View style={stylesMemo.sectionBlock}>
         <View style={stylesMemo.sectionHeadingRow}>
           <View>
@@ -191,18 +196,18 @@ export default function SettingsPage() {
           </TouchableOpacity>
         </View>
 
-        <ToggleRow title="Mobile push notifications" description="Receive push notification whenever your organisation requires your attention." value={mobilePush} onValueChange={setMobilePush} theme={theme} />
-        <ToggleRow title="Desktop notification" description="Receive desktop notification whenever your organisation requires your attention." value={desktopNotification} onValueChange={setDesktopNotification} theme={theme} />
-        <ToggleRow title="Email notification" description="Receive email whenever your organisation requires your attention." value={emailNotification} onValueChange={setEmailNotification} theme={theme} />
+        <ToggleRow title="Mobile push notifications" description="Receive push notification whenever your organisation requires your attention." value={mobilePush} onValueChange={setMobilePush} theme={theme} styles={stylesMemo} />
+        <ToggleRow title="Desktop notification" description="Receive desktop notification whenever your organisation requires your attention." value={desktopNotification} onValueChange={setDesktopNotification} theme={theme} styles={stylesMemo} />
+        <ToggleRow title="Email notification" description="Receive email whenever your organisation requires your attention." value={emailNotification} onValueChange={setEmailNotification} theme={theme} styles={stylesMemo} />
       </View>
 
       <View style={[stylesMemo.sectionDivider, { backgroundColor: theme.colors.border }]} />
 
       <View style={stylesMemo.sectionBlock}>
         <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>My Settings</Text>
-        <ChoiceRow title="Appearance" description="Customize how the theme looks on your device." value="Light" theme={theme} />
-        <ToggleRow title="Two-factor authentication" description="Keep your account secure by enabling 2FA via SMS or using a temporary one-time passcode (TOTP)." value={twoFactorEnabled} onValueChange={setTwoFactorEnabled} theme={theme} />
-        <ChoiceRow title="Language" description="Choose the language used across your workspace." value="English" theme={theme} />
+        <ChoiceRow title="Appearance" description="Customize how the theme looks on your device." value="Light" theme={theme} styles={stylesMemo} />
+        <ToggleRow title="Two-factor authentication" description="Keep your account secure by enabling 2FA via SMS or using a temporary one-time passcode (TOTP)." value={twoFactorEnabled} onValueChange={setTwoFactorEnabled} theme={theme} styles={stylesMemo} />
+        <ChoiceRow title="Language" description="Choose the language used across your workspace." value="English" theme={theme} styles={stylesMemo} />
       </View>
     </SectionCard>
   );
@@ -211,87 +216,87 @@ export default function SettingsPage() {
     switch (activeTab) {
       case "profile":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>My Profile</Text>
-              <LinkRow title="Profile details" description={`Manage name, username, avatar color, and professional details for ${user?.fullname || "your account"}.`} actionLabel="Open profile" onPress={() => router.push("/profile")} theme={theme} />
-              <ChoiceRow title="Role" description="Your current role inside the clinic workspace." value={`${String(user?.user_type ?? "assistant")}${isClinicAdmin ? " admin" : ""}`} theme={theme} />
-              <ChoiceRow title="Clinic" description="The clinic currently linked to this account." value={clinic?.name ? String(clinic.name) : "No clinic"} theme={theme} />
+              <LinkRow title="Profile details" description={`Manage name, username, avatar color, and professional details for ${user?.fullname || "your account"}.`} actionLabel="Open profile" onPress={() => router.push("/profile")} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Role" description="Your current role inside the clinic workspace." value={`${String(user?.user_type ?? "assistant")}${isClinicAdmin ? " admin" : ""}`} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Clinic" description="The clinic currently linked to this account." value={clinic?.name ? String(clinic.name) : "No clinic"} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "preferences":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Preferences</Text>
-              <ToggleRow title="Compact data tables" description="Reduce row height across lists and workspace tables." value={compactTables} onValueChange={setCompactTables} theme={theme} />
-              <ToggleRow title="Auto refresh dashboards" description="Refresh dashboard widgets and counts automatically while you work." value={autoRefresh} onValueChange={setAutoRefresh} theme={theme} />
-              <ChoiceRow title="Default calendar view" description="Choose how schedules should open when visiting the calendar page." value="Week" theme={theme} />
+              <ToggleRow title="Compact data tables" description="Reduce row height across lists and workspace tables." value={compactTables} onValueChange={setCompactTables} theme={theme} styles={stylesMemo} />
+              <ToggleRow title="Auto refresh dashboards" description="Refresh dashboard widgets and counts automatically while you work." value={autoRefresh} onValueChange={setAutoRefresh} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Default calendar view" description="Choose how schedules should open when visiting the calendar page." value="Week" theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "applications":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Applications</Text>
-              <ToggleRow title="Unread badges" description="Show unread counters for key areas such as notifications and chat." value={appBadges} onValueChange={setAppBadges} theme={theme} />
-              <ToggleRow title="Session alerts" description="Warn when another login or sensitive account action is detected." value={sessionAlerts} onValueChange={setSessionAlerts} theme={theme} />
-              <LinkRow title="Notification center" description="Review the full list of alerts and operational updates." actionLabel="Open notifications" onPress={() => router.push("/notifications")} theme={theme} />
+              <ToggleRow title="Unread badges" description="Show unread counters for key areas such as notifications and chat." value={appBadges} onValueChange={setAppBadges} theme={theme} styles={stylesMemo} />
+              <ToggleRow title="Session alerts" description="Warn when another login or sensitive account action is detected." value={sessionAlerts} onValueChange={setSessionAlerts} theme={theme} styles={stylesMemo} />
+              <LinkRow title="Notification center" description="Review the full list of alerts and operational updates." actionLabel="Open notifications" onPress={() => router.push("/notifications")} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "workspace":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Workspace Settings</Text>
-              <LinkRow title="Practice settings" description="Update clinic identity, business details, and workspace information." actionLabel="Open practice" onPress={() => router.push("/settings-practice")} theme={theme} />
-              <ChoiceRow title="Current clinic" description="The active workspace connected to your account." value={clinic?.name ? String(clinic.name) : "No clinic"} theme={theme} />
-              <ChoiceRow title="Workspace mode" description="Current workspace access level used inside the clinic." value={isClinicAdmin ? "Clinic admin" : "Standard staff"} theme={theme} />
+              <LinkRow title="Practice settings" description="Update clinic identity, business details, and workspace information." actionLabel="Open practice" onPress={() => router.push("/settings-practice")} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Current clinic" description="The active workspace connected to your account." value={clinic?.name ? String(clinic.name) : "No clinic"} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Workspace mode" description="Current workspace access level used inside the clinic." value={isClinicAdmin ? "Clinic admin" : "Standard staff"} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "members":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Members</Text>
-              <LinkRow title="Clinic staff" description="Manage team members, staff access, and invitations." actionLabel="Open staff" onPress={() => router.push(isClinicAdmin ? "/users" : "/profile")} theme={theme} />
-              <ChoiceRow title="Admin access" description="Whether this account can manage clinic-level settings and staff." value={isClinicAdmin ? "Enabled" : "Not enabled"} theme={theme} />
+              <LinkRow title="Clinic staff" description="Manage team members, staff access, and invitations." actionLabel="Open staff" onPress={() => router.push(isClinicAdmin ? "/users" : "/profile")} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Admin access" description="Whether this account can manage clinic-level settings and staff." value={isClinicAdmin ? "Enabled" : "Not enabled"} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "upgrade":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Upgrade</Text>
-              <ChoiceRow title="Current plan" description="Active plan tied to your clinic subscription." value={String(subscription?.tier_plan || clinic?.tier_plan || "basic")} theme={theme} />
-              <ChoiceRow title="Subscription status" description="Current billing and access state." value={String(subscription?.status || "missing").replace(/_/g, " ")} theme={theme} />
-              <LinkRow title="Plan management" description="Review plan limits, renewal details, and billing options." actionLabel="Open subscription" onPress={() => router.push("/settings-subscription")} theme={theme} />
+              <ChoiceRow title="Current plan" description="Active plan tied to your clinic subscription." value={String(subscription?.tier_plan || clinic?.tier_plan || "basic")} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Subscription status" description="Current billing and access state." value={String(subscription?.status || "missing").replace(/_/g, " ")} theme={theme} styles={stylesMemo} />
+              <LinkRow title="Plan management" description="Review plan limits, renewal details, and billing options." actionLabel="Open subscription" onPress={() => router.push("/settings-subscription")} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "security":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Security</Text>
-              <ToggleRow title="Two-factor authentication" description="Keep your account more secure with an additional verification step." value={twoFactorEnabled} onValueChange={setTwoFactorEnabled} theme={theme} />
-              <LinkRow title="Security settings page" description="Open the full security workspace for password and session-related controls." actionLabel="Open security" onPress={() => router.push("/settings-security")} theme={theme} />
+              <ToggleRow title="Two-factor authentication" description="Keep your account more secure with an additional verification step." value={twoFactorEnabled} onValueChange={setTwoFactorEnabled} theme={theme} styles={stylesMemo} />
+              <LinkRow title="Security settings page" description="Open the full security workspace for password and session-related controls." actionLabel="Open security" onPress={() => router.push("/settings-security")} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
       case "billing":
         return (
-          <SectionCard theme={theme}>
+          <SectionCard theme={theme} styles={stylesMemo}>
             <View style={stylesMemo.sectionBlock}>
               <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>Billing</Text>
-              <ChoiceRow title="Plan" description="Current clinic subscription plan." value={String(subscription?.tier_plan || clinic?.tier_plan || "basic")} theme={theme} />
-              <ChoiceRow title="Status" description="Billing state for the active subscription." value={String(subscription?.status || "missing").replace(/_/g, " ")} theme={theme} />
-              <LinkRow title="Billing workspace" description="Open subscription and billing details for renewals and plan review." actionLabel="Open billing" onPress={() => router.push("/settings-subscription")} theme={theme} />
+              <ChoiceRow title="Plan" description="Current clinic subscription plan." value={String(subscription?.tier_plan || clinic?.tier_plan || "basic")} theme={theme} styles={stylesMemo} />
+              <ChoiceRow title="Status" description="Billing state for the active subscription." value={String(subscription?.status || "missing").replace(/_/g, " ")} theme={theme} styles={stylesMemo} />
+              <LinkRow title="Billing workspace" description="Open subscription and billing details for renewals and plan review." actionLabel="Open billing" onPress={() => router.push("/settings-subscription")} theme={theme} styles={stylesMemo} />
             </View>
           </SectionCard>
         );
@@ -344,18 +349,6 @@ export default function SettingsPage() {
     </PageShell>
   );
 }
-
-const styles = StyleSheet.create({
-  prefRow: {},
-  prefCopy: {},
-  prefTitle: {},
-  prefDesc: {},
-  choicePill: {},
-  choiceText: {},
-  linkButton: {},
-  linkButtonText: {},
-  sectionCard: {},
-});
 
 const createStyles = (theme: any) =>
   StyleSheet.create({

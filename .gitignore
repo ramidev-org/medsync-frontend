@@ -26,6 +26,7 @@ npm-debug.*
 .npm-cache/
 yarn-debug.*
 yarn-error.*
+*.log
 
 # macOS
 .DS_Store

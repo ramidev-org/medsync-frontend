@@ -1,11 +1,10 @@
 import { BlueField, MetricCard } from "./_ui";
-import { ThemedCard } from "@/components/default_card";
+import { ThemedCard } from "@/components/common/default_card";
 import { WorkspaceFlatTabs, WorkspaceInputField, WorkspaceReadOnlyField } from "@/components/workspaces/theme/WorkspaceTheme";
-import { SpecialtyWorkspaceScaffold } from "@/components/workspaces/SpecialtyWorkspaceScaffold";
 import { normalizeSpeciality } from "@/config/speciality";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Avatar } from "@/components/patient_avatar";
+import { Avatar } from "@/components/common/patient_avatar";
 import {
   Modal,
   Platform,
@@ -27,7 +26,6 @@ import {
   FIELD_ICON_MAP,
   SPECIALTY_TABS,
   getConsultationFields,
-  getTreatmentExtraFields,
   getTreatmentOptions,
   isSpecialtyKey,
   type ParameterField,
@@ -63,17 +61,17 @@ type LeftTabKey =
 type MainPageKey = "workspace" | "current_parameters" | "previous_parameters";
 
 // Dynamic: specialty subtabs depend on the doctor's speciality.
-const BASE_LEFT_TABS: Array<{ key: Exclude<LeftTabKey, SpecialtyKey>; label: string }> = [
+const BASE_LEFT_TABS: { key: Exclude<LeftTabKey, SpecialtyKey>; label: string }[] = [
   { key: "label", label: "Étiquette" },
   { key: "history_comment", label: "Antécédents et Commentaire" },
   { key: "previous_labels", label: "Étiquettes précédentes" },
 ];
 
-const MAIN_PAGE_TABS: Array<{
+const MAIN_PAGE_TABS: {
   key: MainPageKey;
   label: string;
   icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-}> = [
+}[] = [
   { key: "workspace", label: "Workspace Page", icon: "stethoscope" },
   { key: "current_parameters", label: "Current Parameters", icon: "clipboard-text-outline" },
   { key: "previous_parameters", label: "Parameters History", icon: "history" },
@@ -286,7 +284,7 @@ export default function ObservationMedicalTab({
   const [treatmentNote, setTreatmentNote] = React.useState("");
   const [treatmentExtra, setTreatmentExtra] = React.useState<Record<string, string>>({});
   const [treatmentHistory, setTreatmentHistory] = React.useState<
-    Array<{
+    {
       id: string;
       type: string;
       note: string;
@@ -294,7 +292,7 @@ export default function ObservationMedicalTab({
       workspace: string;
       extra?: Record<string, string>;
       specialtySnapshot?: any;
-    }>
+    }[]
   >([]);
   const [treatmentCreateOpen, setTreatmentCreateOpen] = React.useState(false);
   const [treatmentViewId, setTreatmentViewId] = React.useState<string | null>(null);
@@ -304,19 +302,19 @@ export default function ObservationMedicalTab({
   const [treatmentViewTab, setTreatmentViewTab] = React.useState<"core" | "specialty">("core");
 
   const workspaceMeta: Record<string, { title: string; subtitle: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = {
-    general_medicine: { title: "General Medicine Workspace", subtitle: "General consultation workflow.", icon: "stethoscope" },
+    general_medicine: { title: "General Medicine Workspace", subtitle: "General consultation follow-up.", icon: "stethoscope" },
     cardiology: { title: "Cardiology Workspace", subtitle: "Cardiac symptoms and follow-up.", icon: "heart-pulse" },
-    dermatology: { title: "Dermatology Workspace", subtitle: "Skin-focused observation workflow.", icon: "face-man-profile" },
-    orthopedics: { title: "Orthopedics Workspace", subtitle: "Functional and pain assessment workflow.", icon: "bone" },
-    dentistry: { title: "Dentistry Workspace", subtitle: "Dental treatment and follow-up workflow.", icon: "tooth-outline" },
-    gynecology: { title: "Gynecology Workspace", subtitle: "Gynecology and obstetrics workflow.", icon: "human-female" },
-    pediatrics: { title: "Pediatrics Workspace", subtitle: "Pediatric assessment workflow.", icon: "baby-face-outline" },
+    dermatology: { title: "Dermatology Workspace", subtitle: "Skin-focused observation.", icon: "face-man-profile" },
+    orthopedics: { title: "Orthopedics Workspace", subtitle: "Functional and pain assessment.", icon: "bone" },
+    dentistry: { title: "Dentistry Workspace", subtitle: "Dental treatment and follow-up.", icon: "tooth-outline" },
+    gynecology: { title: "Gynecology Workspace", subtitle: "Gynecology and obstetrics follow-up.", icon: "human-female" },
+    pediatrics: { title: "Pediatrics Workspace", subtitle: "Pediatric assessment.", icon: "baby-face-outline" },
     endocrinology_diabetes: { title: "Endocrinology Workspace", subtitle: "Diabetes and endocrine follow-up.", icon: "chart-line" },
-    ent: { title: "ENT Workspace", subtitle: "Ear, nose and throat workflow.", icon: "ear-hearing" },
-    ophthalmology: { title: "Ophthalmology Workspace", subtitle: "Vision and eye exam workflow.", icon: "eye-outline" },
-    pulmonology: { title: "Pulmonology Workspace", subtitle: "Respiratory follow-up workflow.", icon: "lungs" },
-    gastroenterology: { title: "Gastroenterology Workspace", subtitle: "Digestive system follow-up workflow.", icon: "stomach" },
-    analyses_medicales: { title: "Analyses Medicales Workspace", subtitle: "Lab request and result workflow.", icon: "flask-outline" },
+    ent: { title: "ENT Workspace", subtitle: "Ear, nose and throat follow-up.", icon: "ear-hearing" },
+    ophthalmology: { title: "Ophthalmology Workspace", subtitle: "Vision and eye exam follow-up.", icon: "eye-outline" },
+    pulmonology: { title: "Pulmonology Workspace", subtitle: "Respiratory follow-up.", icon: "lungs" },
+    gastroenterology: { title: "Gastroenterology Workspace", subtitle: "Digestive system follow-up.", icon: "stomach" },
+    analyses_medicales: { title: "Analyses Medicales Workspace", subtitle: "Lab request and result follow-up.", icon: "flask-outline" },
   };
 
   const meta = workspaceMeta[selectedWorkspace] ?? workspaceMeta.general_medicine;
@@ -384,11 +382,11 @@ export default function ObservationMedicalTab({
         subtitle: "Plan médical",
       },
     ];
-    const sidebarTabs: Array<{
+    const sidebarTabs: {
       key: "summary" | "consultation_history" | "charts";
       label: string;
       icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-    }> = [
+    }[] = [
       { key: "summary", label: "Résumé", icon: "text-box-check-outline" },
       { key: "consultation_history", label: "Historique", icon: "history" },
       { key: "charts", label: "Graphiques", icon: "chart-line" },
@@ -1920,7 +1918,7 @@ function LabelModal({
 
 type PatientModalTabKey = "civil_status" | "history_comment";
 
-const PATIENT_MODAL_TABS: Array<{ key: PatientModalTabKey; label: string }> = [
+const PATIENT_MODAL_TABS: { key: PatientModalTabKey; label: string }[] = [
   { key: "civil_status", label: "Etat Civil" },
   { key: "history_comment", label: "Antécédents et Commentaire" },
 ];

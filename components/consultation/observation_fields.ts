@@ -29,10 +29,10 @@ export type TreatmentOption = {
   description: string;
 };
 
-export const SPECIALTY_TABS: Array<{
+export const SPECIALTY_TABS: {
   key: SpecialtyKey;
   label: string;
-}> = [
+}[] = [
   { key: "general_medicine", label: "Medecine Generale" },
   { key: "gynecology", label: "Gynecologie" },
   { key: "cardiology", label: "Cardiologie" },

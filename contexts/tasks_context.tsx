@@ -7,6 +7,7 @@ import {
 import React, {
   createContext,
   startTransition,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -68,7 +69,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!user?.id) {
       setTasks([]);
       setLoading(false);
@@ -88,11 +89,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     refresh();
-  }, [user?.id]);
+  }, [refresh]);
 
   const stats = useMemo(() => {
     const todo = tasks.filter((item) => item.status === "todo").length;
