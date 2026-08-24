@@ -1,0 +1,10 @@
+# domains:
+MedSync
+DocCloud
+SmartClinic
+
+# medications database:
+https://www.miph.gov.dz/fr/nomenclature-nationale-des-produits-pharmaceutiques/
+
+# vercel deploy:
+npm run deploy:prod
