@@ -4,7 +4,9 @@
     "jsx": "react-jsx",
     "strict": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/services/*": ["./apps/backend/services/*"],
+      "@/database/*": ["./apps/backend/database/*"],
+      "@/*": ["./apps/frontend/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "call:server": "node ./scripts/start-calling-server.cjs",
+    "call:server": "node ./apps/backend/scripts/start-calling-server.cjs",
     "reset-project": "node ./scripts/reset-project.js",
     "postinstall": "node ./scripts/patch-zrender-tslib.cjs",
     "android": "expo start --android",

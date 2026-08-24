@@ -15,6 +15,10 @@ export default ({ config }: any) => {
     userInterfaceStyle: "light",
     extra: {
       ...(config.extra || {}),
+      router: {
+        ...(config.extra?.router || {}),
+        root: "apps/frontend/app",
+      },
       EXPO_PUBLIC_ROLE: role,
       EXPO_PUBLIC_SPECIALITY: speciality,
       EXPO_PUBLIC_CLINIC_ADMIN: clinicAdmin,
