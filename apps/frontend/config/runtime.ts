@@ -40,8 +40,11 @@ const parseRole = (raw: unknown): AppRole | null => {
   return null;
 };
 
+// Role/clinic-admin URL overrides are a dev/demo convenience only. Reading
+// them in production would let anyone escalate by editing the address bar
+// (see claude-review.md §2d), so they're compiled out of production builds.
 const getQueryParam = (key: string): string | null => {
-  if (!isWeb) return null;
+  if (!__DEV__ || !isWeb) return null;
   try {
     return new URLSearchParams(window.location.search).get(key);
   } catch {
