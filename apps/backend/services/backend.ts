@@ -1,4 +1,6 @@
 import { db } from "@/database/database_conn";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 export type EdgeFunctionName =
   | "activate-clinic"
@@ -60,7 +62,8 @@ export type RpcName =
   | "rpc_get_notifications"
   | "rpc_mark_notifications_read"
   | "rpc_get_prescriptions"
-  | "rpc_upsert_prescription";
+  | "rpc_upsert_prescription"
+  | "rpc_log_client_error";
 
 const asErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;
@@ -111,6 +114,28 @@ export async function callRpc<TResponse, TParams extends Record<string, unknown>
     throw new Error(msg);
   }
   return data as TResponse;
+}
+
+// Best-effort crash reporting: logs a client-side error into
+// public.client_error_log (see 2026_08_28_client_error_logging.sql) so it's
+// visible somewhere durable instead of only console.error. Deliberately
+// swallows its own failures - a caller reporting a crash must never throw
+// a second error.
+export async function logClientError(
+  message: string,
+  options?: { stack?: string; route?: string },
+): Promise<void> {
+  try {
+    await callRpc<void, Record<string, unknown>>("rpc_log_client_error", {
+      p_message: message,
+      p_stack: options?.stack ?? null,
+      p_route: options?.route ?? null,
+      p_platform: Platform.OS,
+      p_app_version: Constants.expoConfig?.version ?? null,
+    });
+  } catch {
+    // Nothing more we can do here.
+  }
 }
 
 /**
