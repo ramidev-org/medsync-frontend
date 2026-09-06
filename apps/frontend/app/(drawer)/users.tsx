@@ -1,5 +1,6 @@
 import { AnimatedLoading } from "@/components/common/animated_loading";
 import { PageShell } from "@/components/layout/page_shell";
+import { Toggle } from "@/components/common/toggle";
 import { UserAvatar } from "@/components/common/user_avatar";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
@@ -601,17 +602,13 @@ export default function UsersPage() {
                   : "Paused — cannot sign in"}
               </Text>
             </View>
-            <Pressable
-              onPress={() => {
+            <Toggle
+              value={!!selected.active}
+              onValueChange={() => {
                 /* TODO: call the enable/disable RPC, then loadTeamData() */
               }}
-              style={[
-                styles.toggle,
-                { backgroundColor: selected.active ? theme.colors.primary : theme.colors.disabled },
-              ]}
-            >
-              <View style={[styles.toggleKnob, { left: selected.active ? 21 : 3 }]} />
-            </Pressable>
+              accessibilityLabel="Can sign in"
+            />
           </View>
 
           <View>
@@ -1065,15 +1062,6 @@ const createStyles = (theme: any) =>
       borderRadius: 999,
     },
     rolePillText: { fontSize: 12.5, fontWeight: "600", color: theme.colors.primary },
-
-    toggle: { width: 44, height: 26, borderRadius: 999, justifyContent: "center" },
-    toggleKnob: {
-      position: "absolute",
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: theme.colors.surface,
-    },
 
     permHead: {
       flexDirection: "row",

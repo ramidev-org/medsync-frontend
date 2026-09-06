@@ -8,6 +8,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -145,153 +148,189 @@ export default function ConsultationsPage() {
     }
   };
 
+  const statusTabs: { key: "all" | "open" | "closed" | "cancelled"; label: string }[] = [
+    { key: "all", label: "Toutes" },
+    { key: "open", label: "Ouvertes" },
+    { key: "closed", label: "Clôturées" },
+    { key: "cancelled", label: "Annulees" },
+  ];
+
   return (
-    <PageShell
-      title="Consultations"
-      subtitle={`${total} consultation${total > 1 ? "s" : ""}`}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => fetchConsultations(true, 1)} />}
-      actions={
-        <View style={styles.filtersRow}>
-          <View style={styles.searchWrap}>
-            <Ionicons name="search-outline" size={18} color={theme.colors.textSecondary} />
-            <TextInput
-              value={searchInput}
-              onChangeText={setSearchInput}
-              placeholder="Patient, médecin, ID..."
-              placeholderTextColor={theme.colors.textSecondary}
-              style={styles.searchInput}
-              onSubmitEditing={() => setGlobalSearch(searchInput)}
-              returnKeyType="search"
-            />
+    <PageShell scrollable={false}>
+      <View style={styles.pageCard}>
+        <View style={styles.pageHeader}>
+          <View>
+            <Text style={styles.pageTitle}>Consultations</Text>
+            <View style={styles.pageSubtitleRow}>
+              <Text style={styles.pageSubtitle}>
+                {total} consultation{total > 1 ? "s" : ""}
+              </Text>
+              {isLoading && rows.length > 0 ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} style={styles.subtitleSpinner} />
+              ) : null}
+            </View>
           </View>
-          <TouchableOpacity style={styles.searchBtn} onPress={() => setGlobalSearch(searchInput)}>
-            <Text style={styles.searchBtnText}>Rechercher</Text>
-          </TouchableOpacity>
-        </View>
-      }
-    >
-
-        <View style={styles.statusRow}>
-          {(["all", "open", "closed", "cancelled"] as const).map((k) => {
-            const active = statusFilter === k;
-            const label =
-              k === "all"
-                ? "Toutes"
-                : k === "open"
-                  ? "Ouvertes"
-                  : k === "closed"
-                    ? "Clôturées"
-                    : "Annulees";
-            return (
-              <TouchableOpacity
-                key={k}
-                onPress={() => setStatusFilter(k)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: active ? theme.colors.primary : theme.colors.surface,
-                    borderColor: active ? theme.colors.primary : theme.colors.border,
-                  },
-                ]}
-              >
-                <Text style={{ color: active ? theme.colors.textOnPrimary : theme.colors.text, fontWeight: "700" }}>{label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={[tableStyles.tableCard, styles.tableCard]}>
-          <View style={tableStyles.tableHeader}>
-            <Text style={[tableStyles.headerCell, tableStyles.headerText, { flex: 2 }]}>Patient</Text>
-            <Text style={[tableStyles.headerCell, tableStyles.headerText, { flex: 1.5 }]}>Médecin</Text>
-            <Text style={[tableStyles.headerCell, tableStyles.headerText, { flex: 1.5 }]}>Date</Text>
-            <Text style={[tableStyles.headerCell, tableStyles.headerText, { flex: 1 }]}>Statut</Text>
-            <Text style={[tableStyles.headerCell, tableStyles.headerText, { width: 110, textAlign: "right" }]}>Action</Text>
-          </View>
-
-          <ScrollView style={styles.tableScroller} contentContainerStyle={styles.tableScrollerContent}>
-            <DataState
-              loading={isLoading}
-              error={error}
-              onRetry={() => fetchConsultations(false, currentPage)}
-              isEmpty={rows.length === 0}
-              emptyIcon="document-text-outline"
-              emptyTitle="No consultations found"
-              emptyBody="Consultations you open or that match your filters will show up here."
-              loadingLabel="Loading consultations…"
-            >
-              {rows.map((r, index) => {
-                const tone = statusTone(String(r.status || ""));
+          <View style={styles.headerActions}>
+            <View style={styles.searchWrap}>
+              <Ionicons name="search-outline" size={16} color={theme.colors.textSecondary} />
+              <TextInput
+                value={searchInput}
+                onChangeText={setSearchInput}
+                placeholder="Patient, médecin, ID..."
+                placeholderTextColor={theme.colors.textSecondary}
+                style={styles.searchInput}
+                onSubmitEditing={() => setGlobalSearch(searchInput)}
+                returnKeyType="search"
+              />
+            </View>
+            <View style={styles.tabs}>
+              {statusTabs.map(({ key, label }) => {
+                const active = statusFilter === key;
                 return (
-                  <View key={r.consultation_id} style={[tableStyles.tableRow, index % 2 === 0 ? tableStyles.tableRowAlt : null]}>
-                    <View style={[tableStyles.cell, { flex: 2 }]}>
-                      <Text style={[tableStyles.cellText, { fontWeight: "700" }]}>
-                        {r.patient_first_name} {r.patient_last_name}
-                      </Text>
-                    </View>
-                    <View style={[tableStyles.cell, { flex: 1.5 }]}>
-                      <Text style={tableStyles.cellText}>{r.doctor_name || "—"}</Text>
-                    </View>
-                    <View style={[tableStyles.cell, { flex: 1.5 }]}>
-                      <Text style={tableStyles.cellText}>{fmt(r.opened_at || r.scheduled_at)}</Text>
-                    </View>
-                    <View style={[tableStyles.cell, { flex: 1 }]}>
-                      <View style={[tableStyles.badge, { backgroundColor: tone.bg }]}>
-                        <Text style={[tableStyles.badgeText, { color: tone.fg }]}>{statusLabel(String(r.status || ""))}</Text>
-                      </View>
-                    </View>
-
-                    <View style={{ width: 110, alignItems: "flex-end" }}>
-                      <TouchableOpacity
-                        style={[styles.openBtn, { backgroundColor: theme.colors.primary }, !r.appointment_id && styles.openBtnDisabled]}
-                        disabled={!r.appointment_id}
-                        onPress={() => {
-                          if (!r.appointment_id) return;
-                          router.push(`/consultation?id=${r.appointment_id}`);
-                        }}
-                      >
-                        <Ionicons name="open-outline" size={16} color={theme.colors.textOnPrimary} />
-                        <Text style={[styles.openBtnText, { color: theme.colors.textOnPrimary }]}>
-                          {r.appointment_id ? "Ouvrir" : "Sans RDV"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  <Pressable
+                    key={key}
+                    onPress={() => setStatusFilter(key)}
+                    style={[styles.tab, active && styles.tabActive]}
+                  >
+                    <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+                  </Pressable>
                 );
               })}
-            </DataState>
-          </ScrollView>
-        </View>
-
-        <View style={tableStyles.paginationContainer}>
-          <Text style={tableStyles.paginationText}>
-            {total === 0 ? "0" : `${startIndex + 1}-${endIndex}`} sur {total}
-          </Text>
-
-          <View style={tableStyles.paginationButtons}>
-            <TouchableOpacity
-              style={[tableStyles.paginationButton, currentPage === 1 && { opacity: 0.5 }]}
-              onPress={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <Ionicons name="chevron-back" size={16} color={theme.colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[tableStyles.paginationButton, currentPage === totalPages && { opacity: 0.5 }]}
-              onPress={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <Ionicons name="chevron-forward" size={16} color={theme.colors.text} />
-            </TouchableOpacity>
+            </View>
           </View>
         </View>
+
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={styles.main}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => fetchConsultations(true, 1)} />}
+        >
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderText, { flex: 2 }]}>Patient</Text>
+            <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Médecin</Text>
+            <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Date</Text>
+            <Text style={[styles.tableHeaderText, { width: 110 }]}>Statut</Text>
+            <Text style={[styles.tableHeaderText, { width: 110, textAlign: "right" }]}>Action</Text>
+          </View>
+
+          <DataState
+            loading={isLoading && rows.length === 0}
+            error={error}
+            onRetry={() => fetchConsultations(false, currentPage)}
+            isEmpty={rows.length === 0}
+            emptyIcon="document-text-outline"
+            emptyTitle="No consultations found"
+            emptyBody="Consultations you open or that match your filters will show up here."
+            loadingLabel="Loading consultations…"
+          >
+            <View style={isLoading ? styles.rowsRefreshing : undefined}>
+            {rows.map((r) => {
+              const tone = statusTone(String(r.status || ""));
+              return (
+                <View key={r.consultation_id} style={styles.row}>
+                  <View style={[styles.rowCell, { flex: 2 }]}>
+                    <Text style={styles.rowName}>
+                      {r.patient_first_name} {r.patient_last_name}
+                    </Text>
+                  </View>
+                  <View style={[styles.rowCell, { flex: 1.5 }]}>
+                    <Text style={styles.rowMeta}>{r.doctor_name || "—"}</Text>
+                  </View>
+                  <View style={[styles.rowCell, { flex: 1.5 }]}>
+                    <Text style={styles.rowMeta}>{fmt(r.opened_at || r.scheduled_at)}</Text>
+                  </View>
+                  <View style={[styles.rowCell, { width: 110 }]}>
+                    <View style={[styles.badge, { backgroundColor: tone.bg }]}>
+                      <Text style={[styles.badgeText, { color: tone.fg }]}>{statusLabel(String(r.status || ""))}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ width: 110, alignItems: "flex-end" }}>
+                    <TouchableOpacity
+                      style={[styles.openBtn, !r.appointment_id && styles.openBtnDisabled]}
+                      disabled={!r.appointment_id}
+                      onPress={() => {
+                        if (!r.appointment_id) return;
+                        router.push(`/consultation?id=${r.appointment_id}`);
+                      }}
+                    >
+                      <Ionicons name="open-outline" size={14} color={theme.colors.textOnPrimary} />
+                      <Text style={styles.openBtnText}>{r.appointment_id ? "Ouvrir" : "Sans RDV"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+            </View>
+          </DataState>
+
+          <View style={tableStyles.paginationContainer}>
+            <Text style={tableStyles.paginationText}>
+              {total === 0 ? "0" : `${startIndex + 1}-${endIndex}`} sur {total}
+            </Text>
+
+            <View style={tableStyles.paginationButtons}>
+              <TouchableOpacity
+                style={[tableStyles.paginationButton, currentPage === 1 && { opacity: 0.5 }]}
+                onPress={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <Ionicons name="chevron-back" size={16} color={theme.colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[tableStyles.paginationButton, currentPage === totalPages && { opacity: 0.5 }]}
+                onPress={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <Ionicons name="chevron-forward" size={16} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
     </PageShell>
   );
 }
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    filtersRow: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
+    // Same continuous-card shell as users.tsx - header (title, search,
+    // status tabs) and the table body below it are one bordered surface,
+    // not a separate floating header card from PageShell's built-in title.
+    pageCard: {
+      flex: 1,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 18,
+      overflow: "hidden",
+      ...(Platform.OS === "web" ? ({ boxShadow: "0px 8px 24px rgba(15,23,42,0.05)" } as any) : null),
+    },
+    pageHeader: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      flexWrap: "wrap",
+      gap: 20,
+      paddingHorizontal: 36,
+      paddingTop: 30,
+      paddingBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderMuted,
+    },
+    pageTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -0.3, color: theme.colors.text },
+    pageSubtitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+    pageSubtitle: { fontSize: 13, fontWeight: "500", color: theme.colors.textSecondary },
+    subtitleSpinner: { marginLeft: 2 },
+    // Dims (not unmounts) the existing rows while a background refetch is
+    // in flight - e.g. clicking a status tab - so the list doesn't flash
+    // out to a skeleton and back in for data that's already on screen.
+    rowsRefreshing: { opacity: 0.45 },
+
+    body: { flex: 1 },
+    main: { paddingHorizontal: 36, paddingTop: 26, paddingBottom: 36 },
+
+    headerActions: { flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" },
     searchWrap: {
       flexDirection: "row",
       alignItems: "center",
@@ -300,39 +339,68 @@ const createStyles = (theme: any) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
       borderRadius: 12,
-      paddingHorizontal: 12,
-      height: 44,
-      minWidth: 260,
-    },
-    searchInput: { flex: 1, fontWeight: "600", color: theme.colors.text },
-    searchBtn: {
-      height: 44,
       paddingHorizontal: 14,
-      borderRadius: 12,
-      backgroundColor: theme.colors.primary,
-      alignItems: "center",
-      justifyContent: "center",
+      height: 42,
+      minWidth: 240,
     },
-    searchBtnText: { color: theme.colors.textOnPrimary, fontWeight: "700" },
+    searchInput: { flex: 1, fontSize: 13, fontWeight: "500", color: theme.colors.text },
 
-    statusRow: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    chip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, borderWidth: 1 },
+    tabs: {
+      flexDirection: "row",
+      gap: 4,
+      padding: 4,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 10,
+    },
+    tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 7 },
+    tabActive: { backgroundColor: theme.colors.surface },
+    tabText: { fontSize: 12.5, fontWeight: "600", color: theme.colors.textSecondary },
+    tabTextActive: { color: theme.colors.text },
 
-    tableCard: { marginTop: 12, flex: 1, minHeight: 420 },
-    tableScroller: { flex: 1 },
-    tableScrollerContent: { flexGrow: 1, paddingBottom: 8 },
+    tableHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderMuted,
+    },
+    tableHeaderText: {
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.9,
+      textTransform: "uppercase",
+      color: theme.colors.muted,
+    },
+
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderSubtle,
+    },
+    rowCell: { minWidth: 0, paddingRight: 10 },
+    rowName: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
+    rowMeta: { fontSize: 12.5, fontWeight: "500", color: theme.colors.textSecondary },
+
+    badge: {
+      alignSelf: "flex-start",
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+    },
+    badgeText: { fontSize: 12.5, fontWeight: "600" },
 
     openBtn: {
-      paddingHorizontal: 12,
-      paddingVertical: 9,
-      borderRadius: 10,
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
     },
-    openBtnDisabled: {
-      opacity: 0.45,
-    },
-    openBtnText: { fontWeight: "700" },
+    openBtnDisabled: { opacity: 0.45 },
+    openBtnText: { color: theme.colors.textOnPrimary, fontWeight: "600", fontSize: 12.5 },
   });
-

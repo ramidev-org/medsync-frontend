@@ -1,11 +1,12 @@
 import { PageShell } from "@/components/layout/page_shell";
+import { Toggle } from "@/components/common/toggle";
 import { useAppData } from "@/contexts/appData_context";
 import { useAuth } from "@/contexts/auth_context";
 import { useTheme } from "@/theme/theme_provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 type SettingsTabKey =
   | "profile"
@@ -59,17 +60,10 @@ function ToggleRow({ title, description, value, onValueChange, theme, styles }: 
         <Text style={[styles.prefTitle, { color: theme.colors.text }]}>{title}</Text>
         <Text style={[styles.prefDesc, { color: theme.colors.textSecondary }]}>{description}</Text>
       </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        // Standard pattern is a colored track when on + a neutral thumb -
-        // this previously had it backwards (a near-invisible pale-blue
-        // track with the THUMB carrying the primary color), which read as
-        // "wrong" regardless of on/off state.
-        trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-        thumbColor={theme.colors.surface}
-        ios_backgroundColor={theme.colors.border}
-      />
+      {/* React Native's Switch ignores trackColor on web and falls back to the
+          platform green, which clashed with the primary blue used by the
+          checkboxes directly above it. Toggle draws its own track. */}
+      <Toggle value={value} onValueChange={onValueChange} accessibilityLabel={title} />
     </View>
   );
 }
@@ -105,7 +99,9 @@ function LinkRow({ title, description, actionLabel, onPress, theme, styles }: Li
 }
 
 function SectionCard({ children, theme, styles }: { children: React.ReactNode; theme: any; styles: SettingsStyles }) {
-  return <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>{children}</View>;
+  // `background` is the page fill - using it here made the card the same
+  // colour as the surface behind it, leaving only a border to separate them.
+  return <View style={[styles.sectionCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>{children}</View>;
 }
 
 export default function SettingsPage() {
@@ -204,7 +200,7 @@ export default function SettingsPage() {
         <ToggleRow title="Email notification" description="Receive email whenever your organisation requires your attention." value={emailNotification} onValueChange={setEmailNotification} theme={theme} styles={stylesMemo} />
       </View>
 
-      <View style={[stylesMemo.sectionDivider, { backgroundColor: theme.colors.border }]} />
+      <View style={[stylesMemo.sectionDivider, { backgroundColor: theme.colors.borderMuted }]} />
 
       <View style={stylesMemo.sectionBlock}>
         <Text style={[stylesMemo.sectionHeading, { color: theme.colors.text }]}>My Settings</Text>
@@ -315,12 +311,12 @@ export default function SettingsPage() {
           <Text style={[stylesMemo.sidebarCaption, { color: theme.colors.textSecondary }]}>ACCOUNT</Text>
           {sidebarItems.filter((item) => item.section === "account").map(renderSidebarItem)}
 
-          <View style={[stylesMemo.sidebarDivider, { backgroundColor: theme.colors.border }]} />
+          <View style={[stylesMemo.sidebarDivider, { backgroundColor: theme.colors.borderMuted }]} />
 
           <Text style={[stylesMemo.sidebarCaption, { color: theme.colors.textSecondary }]}>WORKSPACE</Text>
           {sidebarItems.filter((item) => item.section === "workspace").map(renderSidebarItem)}
 
-          <View style={[stylesMemo.sidebarDivider, { backgroundColor: theme.colors.border }]} />
+          <View style={[stylesMemo.sidebarDivider, { backgroundColor: theme.colors.borderMuted }]} />
 
           <TouchableOpacity onPress={() => void logout()} style={stylesMemo.logoutItem}>
             <Ionicons name="log-out-outline" size={15} color={theme.colors.error} />
@@ -329,7 +325,7 @@ export default function SettingsPage() {
         </View>
 
         <ScrollView style={stylesMemo.contentScroll} contentContainerStyle={stylesMemo.contentInner} showsVerticalScrollIndicator={false}>
-          <View style={[stylesMemo.breadcrumbRow, { borderBottomColor: theme.colors.border }]}>
+          <View style={[stylesMemo.breadcrumbRow, { borderBottomColor: theme.colors.borderMuted }]}>
             <Text style={[stylesMemo.breadcrumbTitle, { color: theme.colors.text }]}>Settings</Text>
             <Ionicons name="chevron-forward" size={14} color={theme.colors.textSecondary} />
             <Text style={[stylesMemo.breadcrumbCurrent, { color: theme.colors.textSecondary }]}>{tabLabel}</Text>
@@ -364,10 +360,11 @@ const createStyles = (theme: any) =>
       paddingBottom: 10,
     },
     sidebarCaption: {
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: "600",
       marginBottom: 8,
-      letterSpacing: 0.5,
+      letterSpacing: 0.9,
+      textTransform: "uppercase",
     },
     sidebarDivider: {
       height: 1,
@@ -383,8 +380,10 @@ const createStyles = (theme: any) =>
       marginBottom: 4,
     },
     sidebarItemText: {
-      fontSize: 12,
-      fontWeight: "700",
+      fontSize: 12.5,
+      // Inactive items were heavier (700) than the active one (600), so the
+      // selected row read as the *least* emphasised in the list.
+      fontWeight: "500",
     },
     sidebarItemTextActive: {
       fontWeight: "600",
@@ -413,15 +412,16 @@ const createStyles = (theme: any) =>
     },
     breadcrumbTitle: {
       fontSize: 28,
-      fontWeight: "600",
+      fontWeight: "700",
+      letterSpacing: -0.3,
     },
     breadcrumbCurrent: {
       fontSize: 13,
-      fontWeight: "700",
+      fontWeight: "500",
     },
     sectionCard: {
       borderWidth: 1,
-      borderRadius: 20,
+      borderRadius: 16,
       padding: 20,
     },
     sectionBlock: {
@@ -434,18 +434,20 @@ const createStyles = (theme: any) =>
       gap: 12,
       flexWrap: "wrap",
     },
+    // Was 26 - within a point of the 28px page title, so a card heading
+    // competed with the page it sits inside.
     sectionHeading: {
-      fontSize: 26,
+      fontSize: 17,
       fontWeight: "600",
     },
     sectionSubheading: {
-      marginTop: 6,
-      fontSize: 14,
-      fontWeight: "600",
+      marginTop: 5,
+      fontSize: 13,
+      fontWeight: "500",
     },
     helpLink: {
-      fontSize: 13,
-      fontWeight: "700",
+      fontSize: 12.5,
+      fontWeight: "500",
       marginTop: 4,
     },
     checkList: {
@@ -459,10 +461,10 @@ const createStyles = (theme: any) =>
     },
     checkText: {
       fontSize: 13,
-      fontWeight: "600",
+      fontWeight: "500",
     },
     prefRow: {
-      minHeight: 72,
+      minHeight: 64,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -472,9 +474,11 @@ const createStyles = (theme: any) =>
     prefCopy: {
       flex: 1,
     },
+    // Was 18/700, which made every settings row title as loud as a section
+    // heading and flattened the hierarchy of the whole page.
     prefTitle: {
-      fontSize: 18,
-      fontWeight: "700",
+      fontSize: 14,
+      fontWeight: "600",
     },
     prefDesc: {
       marginTop: 5,
@@ -496,7 +500,7 @@ const createStyles = (theme: any) =>
     },
     choiceText: {
       fontSize: 13,
-      fontWeight: "700",
+      fontWeight: "600",
     },
     linkButton: {
       minWidth: 120,

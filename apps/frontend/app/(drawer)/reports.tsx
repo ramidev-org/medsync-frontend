@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -135,7 +137,7 @@ export default function ReportsPage() {
           detail: bestDay
             ? `${bestDay.appointments} appointments and ${bestDay.consultations} consultations`
             : "Fresh appointments will start shaping the trend here.",
-          accent: "#DBEAFE",
+          accent: theme.colors.primarySoft,
         },
         {
           title: "Low stock watch",
@@ -146,13 +148,13 @@ export default function ReportsPage() {
                 .map((item) => `${item.name} (${item.qty_on_hand})`)
                 .join(" • ")
             : "Inventory looks healthy for now.",
-          accent: "#FEF3C7",
+          accent: theme.colors.warningSoft,
         },
         {
           title: "Team workload",
           meta: `${summary?.pendingTasks ?? 0} open tasks`,
           detail: `${summary?.doneTasks ?? 0} completed tasks in the current board`,
-          accent: "#DCFCE7",
+          accent: theme.colors.successSoft,
         },
       ]
     : [];
@@ -300,179 +302,166 @@ export default function ReportsPage() {
   }, [chartModel, theme.colors.border, theme.colors.surface, theme.colors.text, theme.colors.textSecondary]);
 
   return (
-    <PageShell
-      title="Clinic Reports"
-      subtitle="Operational and financial insights backed by the live clinic workspace."
-    >
-      <View style={styles.heroCard}>
-        <View style={styles.brandPill}>
-          <Ionicons name="analytics-outline" size={16} color="#1D4ED8" />
-          <Text style={styles.brandText}>MedSync Analytics</Text>
-        </View>
-
-        <View style={styles.heroTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>A reporting desk tied to real clinic activity.</Text>
-            <Text style={styles.heroDescription}>
-              Revenue, consultations, open tasks, and stock pressure now come from the live
-              clinic data instead of placeholder widgets.
+    <PageShell scrollable={false}>
+      <View style={styles.pageCard}>
+        <View style={styles.pageHeader}>
+          <View style={styles.pageHeaderCopy}>
+            <Text style={styles.pageTitle}>Clinic Reports</Text>
+            <Text style={styles.pageSubtitle}>
+              Operational and financial insights backed by the live clinic workspace.
             </Text>
           </View>
-
-          <View style={styles.heroActions}>
-            <TouchableOpacity
-              style={[styles.heroButton, styles.heroButtonPrimary]}
-              onPress={load}
-            >
-              <Ionicons name="refresh-outline" size={16} color="#fff" />
-              <Text style={styles.heroButtonText}>Refresh Summary</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.primaryButton} onPress={load}>
+            <Ionicons name="refresh-outline" size={16} color={theme.colors.textOnPrimary} />
+            <Text style={styles.primaryButtonText}>Refresh Summary</Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {error ? (
-        <View style={styles.feedbackCard}>
-          <Ionicons name="alert-circle-outline" size={18} color={theme.colors.error} />
-          <Text style={[styles.feedbackText, { color: theme.colors.error }]}>
-            {error}
-          </Text>
-        </View>
-      ) : null}
-
-      {loading ? (
-        <View style={styles.feedbackCard}>
-          <ActivityIndicator color={theme.colors.primary} />
-          <Text style={styles.feedbackText}>Loading the clinic reporting layer…</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.kpiGrid}>
-        {kpiCards.map((card) => (
-          <View key={card.label} style={styles.kpiCard}>
-            <View style={styles.kpiHeader}>
-              <View style={[styles.kpiIconWrap, { backgroundColor: `${card.tone}14` }]}>
-                <Ionicons name={card.icon} size={18} color={card.tone} />
-              </View>
-              <Text style={[styles.badge, { color: card.tone, backgroundColor: `${card.tone}14` }]}>
-                {card.badge}
+        <ScrollView contentContainerStyle={styles.main}>
+          {error ? (
+            <View style={styles.feedbackCard}>
+              <Ionicons name="alert-circle-outline" size={18} color={theme.colors.error} />
+              <Text style={[styles.feedbackText, { color: theme.colors.error }]}>
+                {error}
               </Text>
             </View>
-            <Text style={styles.kpiValue}>{card.value}</Text>
-            <Text style={styles.kpiLabel}>{card.label}</Text>
-          </View>
-        ))}
-      </View>
+          ) : null}
 
-      <View style={styles.contentGrid}>
-        <View style={styles.contentCard}>
-          <Text style={styles.sectionTitle}>Weekly Highlights</Text>
-          <Text style={styles.sectionSubtitle}>
-            Short, current signals pulled from the same appointments, payments, and tasks
-            the team works with every day.
-          </Text>
+          {loading ? (
+            <View style={styles.feedbackCard}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={styles.feedbackText}>Loading the clinic reporting layer…</Text>
+            </View>
+          ) : null}
 
-          <View style={styles.highlightList}>
-            {performanceRows.map((item) => (
-              <View key={item.title} style={styles.highlightRow}>
-                <View style={[styles.highlightAccent, { backgroundColor: item.accent }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.highlightTitle}>{item.title}</Text>
-                  <Text style={styles.highlightMeta}>{item.meta}</Text>
-                  <Text style={styles.highlightDetail}>{item.detail}</Text>
+          <View style={styles.kpiGrid}>
+            {kpiCards.map((card) => (
+              <View key={card.label} style={styles.kpiCard}>
+                <View style={styles.kpiHeader}>
+                  <View style={[styles.kpiIconWrap, { backgroundColor: `${card.tone}14` }]}>
+                    <Ionicons name={card.icon} size={18} color={card.tone} />
+                  </View>
+                  <Text style={[styles.badge, { color: card.tone, backgroundColor: `${card.tone}14` }]}>
+                    {card.badge}
+                  </Text>
                 </View>
+                <Text style={styles.kpiValue}>{card.value}</Text>
+                <Text style={styles.kpiLabel}>{card.label}</Text>
               </View>
             ))}
           </View>
-        </View>
 
-        <View style={styles.contentCard}>
-          <Text style={styles.sectionTitle}>Executive Snapshot</Text>
-          <Text style={styles.sectionSubtitle}>
-            A fast admin-readable story generated from the current month window.
-          </Text>
+          <View style={styles.contentGrid}>
+            <View style={styles.contentCard}>
+              <Text style={styles.sectionTitle}>Weekly Highlights</Text>
+              <Text style={styles.sectionSubtitle}>
+                Short, current signals pulled from the same appointments, payments, and tasks
+                the team works with every day.
+              </Text>
 
-          <View style={styles.snapshotBox}>
-            <Text style={styles.snapshotLead}>{snapshotLead}</Text>
-            <Text style={styles.snapshotText}>
-              The clinic logged {summary?.appointmentsTotal ?? 0} appointments,{" "}
-              {summary?.consultationsTotal ?? 0} consultations, and{" "}
-              {formatMoney(summary?.revenueTotal ?? 0)} in payments during the active period.
-            </Text>
-          </View>
-
-          <View style={styles.snapshotMetric}>
-            <Text style={styles.snapshotMetricLabel}>Revenue pacing</Text>
-            <Text style={styles.snapshotMetricValue}>
-              {formatMoney(summary?.revenueTotal ?? 0)} revenue vs{" "}
-              {formatMoney(summary?.expensesTotal ?? 0)} expenses
-            </Text>
-          </View>
-
-          <View style={styles.snapshotMetric}>
-            <Text style={styles.snapshotMetricLabel}>Front desk pressure</Text>
-            <Text style={styles.snapshotMetricValue}>
-              {summary?.cancelledAppointments ?? 0} cancelled and{" "}
-              {summary?.noShowAppointments ?? 0} no-show appointments
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.chartsSection}>
-        <Text style={styles.sectionTitle}>Detailed Charts</Text>
-        <Text style={styles.sectionSubtitle}>
-          Interactive breakdowns of the same clinic activity - pick a view below.
-        </Text>
-
-        <View style={styles.statTabsRow}>
-          {STAT_TABS.map((tab) => {
-            const active = activeStatTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                onPress={() => setActiveStatTab(tab.key)}
-                style={[styles.statTab, active ? styles.statTabActive : null]}
-              >
-                <Text style={[styles.statTabText, active ? styles.statTabTextActive : null]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View
-          style={styles.chartCard}
-          onLayout={(e) => setChartWidth(Math.max(320, e.nativeEvent.layout.width - 40))}
-        >
-          <Text style={styles.chartCardTitle}>
-            {STAT_TABS.find((x) => x.key === activeStatTab)?.label}
-          </Text>
-
-          {loading ? (
-            <View style={styles.chartLoading}>
-              <ActivityIndicator color={theme.colors.primary} />
-              <Text style={styles.feedbackText}>Loading chart data…</Text>
+              <View style={styles.highlightList}>
+                {performanceRows.map((item) => (
+                  <View key={item.title} style={styles.highlightRow}>
+                    <View style={[styles.highlightAccent, { backgroundColor: item.accent }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.highlightTitle}>{item.title}</Text>
+                      <Text style={styles.highlightMeta}>{item.meta}</Text>
+                      <Text style={styles.highlightDetail}>{item.detail}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
-          ) : (
-            <Animated.View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                transform: [
-                  {
-                    translateY: enterAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }),
-                  },
-                ],
-                opacity: enterAnim,
-                paddingVertical: 4,
-              }}
+
+            <View style={styles.contentCard}>
+              <Text style={styles.sectionTitle}>Executive Snapshot</Text>
+              <Text style={styles.sectionSubtitle}>
+                A fast admin-readable story generated from the current month window.
+              </Text>
+
+              <View style={styles.snapshotBox}>
+                <Text style={styles.snapshotLead}>{snapshotLead}</Text>
+                <Text style={styles.snapshotText}>
+                  The clinic logged {summary?.appointmentsTotal ?? 0} appointments,{" "}
+                  {summary?.consultationsTotal ?? 0} consultations, and{" "}
+                  {formatMoney(summary?.revenueTotal ?? 0)} in payments during the active period.
+                </Text>
+              </View>
+
+              <View style={styles.snapshotMetric}>
+                <Text style={styles.snapshotMetricLabel}>Revenue pacing</Text>
+                <Text style={styles.snapshotMetricValue}>
+                  {formatMoney(summary?.revenueTotal ?? 0)} revenue vs{" "}
+                  {formatMoney(summary?.expensesTotal ?? 0)} expenses
+                </Text>
+              </View>
+
+              <View style={styles.snapshotMetric}>
+                <Text style={styles.snapshotMetricLabel}>Front desk pressure</Text>
+                <Text style={styles.snapshotMetricValue}>
+                  {summary?.cancelledAppointments ?? 0} cancelled and{" "}
+                  {summary?.noShowAppointments ?? 0} no-show appointments
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.chartsSection}>
+            <View style={styles.groupHead}>
+              <Text style={styles.groupTitle}>Detailed Charts</Text>
+              <Text style={styles.groupNote}>Interactive breakdowns of the same clinic activity</Text>
+            </View>
+
+            <View style={styles.statTabsRow}>
+              {STAT_TABS.map((tab) => {
+                const active = activeStatTab === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    onPress={() => setActiveStatTab(tab.key)}
+                    style={[styles.statTab, active ? styles.statTabActive : null]}
+                  >
+                    <Text style={[styles.statTabText, active ? styles.statTabTextActive : null]}>
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View
+              style={styles.chartCard}
+              onLayout={(e) => setChartWidth(Math.max(320, e.nativeEvent.layout.width - 40))}
             >
-              <EChart option={chartOption} width={chartWidth} height={320} />
-            </Animated.View>
-          )}
-        </View>
+              <Text style={styles.chartCardTitle}>
+                {STAT_TABS.find((x) => x.key === activeStatTab)?.label}
+              </Text>
+
+              {loading ? (
+                <View style={styles.chartLoading}>
+                  <ActivityIndicator color={theme.colors.primary} />
+                  <Text style={styles.feedbackText}>Loading chart data…</Text>
+                </View>
+              ) : (
+                <Animated.View
+                  style={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transform: [
+                      {
+                        translateY: enterAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }),
+                      },
+                    ],
+                    opacity: enterAnim,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <EChart option={chartOption} width={chartWidth} height={320} />
+                </Animated.View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
       </View>
     </PageShell>
   );
@@ -480,82 +469,61 @@ export default function ReportsPage() {
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
-    heroCard: {
-      borderRadius: 24,
+    // Same single continuous bordered card shell used by users.tsx - a
+    // pageHeader strip (title + primary action) separated by a divider,
+    // with the scrollable body below it, rather than PageShell's own
+    // floating title/subtitle header card.
+    pageCard: {
+      flex: 1,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-      padding: 20,
-      gap: 16,
-      marginBottom: 14,
+      borderRadius: 18,
+      overflow: "hidden",
+      ...(Platform.OS === "web" ? ({ boxShadow: "0px 8px 24px rgba(15,23,42,0.05)" } as any) : null),
     },
-    brandPill: {
-      alignSelf: "flex-start",
+    pageHeader: {
       flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: "#EFF6FF",
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    brandText: {
-      color: "#1D4ED8",
-      fontWeight: "600",
-      fontSize: 12,
-    },
-    heroTop: {
-      flexDirection: "row",
-      flexWrap: "wrap",
+      alignItems: "flex-end",
       justifyContent: "space-between",
-      gap: 16,
-    },
-    heroTitle: {
-      color: theme.colors.text,
-      fontSize: 28,
-      fontWeight: "700",
-    },
-    heroDescription: {
-      marginTop: 8,
-      maxWidth: 720,
-      color: theme.colors.textSecondary,
-      fontWeight: "700",
-      lineHeight: 22,
-    },
-    heroActions: {
-      flexDirection: "row",
       flexWrap: "wrap",
-      gap: 10,
-      alignItems: "center",
+      gap: 24,
+      paddingHorizontal: 36,
+      paddingTop: 30,
+      paddingBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderMuted,
     },
-    heroButton: {
-      minHeight: 44,
-      borderRadius: 16,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+    pageHeaderCopy: { flex: 1, minWidth: 260 },
+    pageTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -0.3, color: theme.colors.text },
+    pageSubtitle: { marginTop: 6, maxWidth: 640, fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20 },
+    main: { paddingHorizontal: 36, paddingTop: 26, paddingBottom: 36 },
+
+    primaryButton: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       gap: 8,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 18,
+      paddingVertical: 11,
+      borderRadius: 10,
     },
-    heroButtonPrimary: {
-      backgroundColor: "#2563EB",
-    },
-    heroButtonText: {
-      color: "#fff",
-      fontWeight: "700",
-    },
+    primaryButtonText: { color: theme.colors.textOnPrimary, fontWeight: "600", fontSize: 13 },
+
     feedbackCard: {
-      borderRadius: 16,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceRaised,
       padding: 14,
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      marginBottom: 12,
+      marginBottom: 16,
     },
-    feedbackText: { color: theme.colors.textSecondary, fontWeight: "600" },
+    feedbackText: { color: theme.colors.textSecondary, fontWeight: "500", fontSize: 13 },
+
     kpiGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -564,7 +532,7 @@ const createStyles = (theme: any) =>
     kpiCard: {
       flexGrow: 1,
       minWidth: 210,
-      borderRadius: 20,
+      borderRadius: 14,
       borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
@@ -579,7 +547,7 @@ const createStyles = (theme: any) =>
     kpiIconWrap: {
       width: 38,
       height: 38,
-      borderRadius: 19,
+      borderRadius: 11,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -588,27 +556,28 @@ const createStyles = (theme: any) =>
       paddingHorizontal: 10,
       paddingVertical: 5,
       fontSize: 11,
-      fontWeight: "700",
+      fontWeight: "600",
     },
     kpiValue: {
       color: theme.colors.text,
-      fontSize: 28,
+      fontSize: 26,
       fontWeight: "700",
     },
     kpiLabel: {
       color: theme.colors.textSecondary,
-      fontWeight: "700",
+      fontWeight: "500",
+      fontSize: 12.5,
     },
     contentGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 12,
-      marginTop: 14,
+      marginTop: 20,
     },
     contentCard: {
       flex: 1,
       minWidth: 320,
-      borderRadius: 22,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
@@ -617,124 +586,148 @@ const createStyles = (theme: any) =>
     },
     sectionTitle: {
       color: theme.colors.text,
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: "700",
     },
     sectionSubtitle: {
       color: theme.colors.textSecondary,
-      fontWeight: "700",
-      lineHeight: 20,
+      fontWeight: "500",
+      fontSize: 12.5,
+      lineHeight: 19,
     },
     highlightList: {
-      gap: 12,
+      gap: 10,
     },
     highlightRow: {
       flexDirection: "row",
       gap: 12,
-      borderRadius: 16,
+      borderRadius: 12,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
+      borderColor: theme.colors.borderMuted,
+      backgroundColor: theme.colors.surfaceRaised,
       padding: 14,
     },
     highlightAccent: {
-      width: 10,
+      width: 4,
       borderRadius: 999,
     },
     highlightTitle: {
-      color: theme.colors.textSecondary,
-      fontSize: 12,
-      fontWeight: "700",
+      color: theme.colors.muted,
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.9,
       textTransform: "uppercase",
     },
     highlightMeta: {
-      marginTop: 4,
+      marginTop: 5,
       color: theme.colors.text,
-      fontSize: 17,
-      fontWeight: "700",
+      fontSize: 16,
+      fontWeight: "600",
     },
     highlightDetail: {
       marginTop: 4,
       color: theme.colors.textSecondary,
-      fontWeight: "700",
-      lineHeight: 20,
+      fontWeight: "500",
+      fontSize: 12.5,
+      lineHeight: 19,
     },
     snapshotBox: {
-      borderRadius: 18,
-      backgroundColor: "#EFF6FF",
+      borderRadius: 12,
+      backgroundColor: theme.colors.primarySoft,
       padding: 16,
       gap: 8,
     },
     snapshotLead: {
-      color: "#1D4ED8",
-      fontSize: 16,
-      fontWeight: "700",
+      color: theme.colors.primary,
+      fontSize: 15,
+      fontWeight: "600",
     },
     snapshotText: {
-      color: "#334155",
-      fontWeight: "700",
-      lineHeight: 20,
+      color: theme.colors.textSecondary,
+      fontWeight: "500",
+      fontSize: 12.5,
+      lineHeight: 19,
     },
     snapshotMetric: {
-      borderRadius: 16,
+      borderRadius: 12,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
+      borderColor: theme.colors.borderMuted,
+      backgroundColor: theme.colors.surfaceRaised,
       padding: 14,
       gap: 6,
     },
     snapshotMetricLabel: {
-      color: theme.colors.textSecondary,
-      fontSize: 12,
-      fontWeight: "700",
+      color: theme.colors.muted,
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.9,
       textTransform: "uppercase",
     },
     snapshotMetricValue: {
       color: theme.colors.text,
-      fontWeight: "700",
+      fontWeight: "600",
+      fontSize: 13,
     },
     chartsSection: {
-      marginTop: 20,
+      marginTop: 26,
       gap: 4,
     },
+    groupHead: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "space-between",
+      flexWrap: "wrap",
+      gap: 8,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderMuted,
+    },
+    groupTitle: {
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.9,
+      textTransform: "uppercase",
+      color: theme.colors.muted,
+    },
+    groupNote: { fontSize: 12, color: theme.colors.muted },
     statTabsRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 8,
+      gap: 4,
+      padding: 4,
       marginTop: 14,
       marginBottom: 4,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 10,
+      alignSelf: "flex-start",
     },
     statTab: {
-      paddingVertical: 9,
-      paddingHorizontal: 12,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 7,
     },
     statTabActive: {
-      borderColor: theme.colors.primary,
       backgroundColor: theme.colors.primary,
     },
     statTabText: {
-      fontWeight: "700",
-      fontSize: 12,
-      color: theme.colors.text,
+      fontWeight: "600",
+      fontSize: 12.5,
+      color: theme.colors.textSecondary,
     },
     statTabTextActive: {
-      color: "#fff",
+      color: theme.colors.textOnPrimary,
     },
     chartCard: {
       marginTop: 10,
-      borderRadius: 20,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
       padding: 16,
     },
     chartCardTitle: {
-      fontWeight: "700",
-      fontSize: 18,
+      fontWeight: "600",
+      fontSize: 15,
       color: theme.colors.text,
       marginBottom: 12,
     },
